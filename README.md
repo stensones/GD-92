@@ -18,25 +18,40 @@ All images share a network (via docker Compose or K8?)
 Clean architecture; every solution has the following projects (and thier corresponding unit tests in a `[project].tests.unit` project)
 
  - The API (all UAs, MTAs and the router expose a REST API)
-   - `[project].
+   - `[project].api
+   - a ASP.NET Core web API project, this hosts the REST API
  - The Application project
-   - `[project].
+   - `[project].application
  - The Infrastucture project
-   - `[project].
+   - `[project].infrastucture
  - The Domain project
    - `[project].domain
    - this uses the domain NuGet project.
+
+``` mermaid
+graph LR;
+
+API["REST API (ASP.NET Core API)"];
+App["Application"];
+Dom["Domain"];
+Inf["Infrastucture"];
+
+API --> App --> Dom;
+App --> Inf;
+```
+
+These projects run in a docker image (See the `Dockerfile`). Each docker image exposes a REST API, the various containers use this to implement IPC between the apps. If using docker-compose the need to share a network for this to work! **TBC**.
+
 ### Router
+Implements the GD-92 router. This is port 25 in GD-92 definition. Exposed as TCP port 10025 ?
+
 ### LAN MTA
+Implements a LAN MTA to allow the host machine (of the docker images) to communicate with another GD-92 node on annother machine in your network.
+
 ### NM UA
+Implements a node mananger UA, requires some sort of persistns storage for node config, files? or Mongo DB? **TBC**
+
 ### IO UA
+**TBC**
 ### Sim UA
-
-Stensones.GD92.Domain
-Stensones.GD92.Domain.Tests.Unit
-
-Stensones.GD92.Domain.Application
-
-Stensones.GD92.Domain.Api
-
-Stensones.GD92.Infrastucture
+A UI that can display received GD-92 messages, and can create and send GD-92 messages. **TBC**
