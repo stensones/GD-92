@@ -1,5 +1,7 @@
 # GD-92
-Want to create your own GD-92 solution in .NET Core? This GitHub project implments the core of the [GD-92 v2.2 specification](https://github.com/stensones/GD-92/blob/master/gd92.pdf)
+Want to create your own GD-92 solution in .NET Core? This GitHub project implments the core of the [GD-92 v2.2 specification](https://github.com/stensones/GD-92/blob/master/gd92.pdf) or it will if I ever find the time to complete it!
+
+**WARNING** Right now this is very incomplete!
 
 ## NuGet packages
 The Domain model for you to use in your projects. This contains the `entities`, `value objects`, etc.. that GD-92 defines.
