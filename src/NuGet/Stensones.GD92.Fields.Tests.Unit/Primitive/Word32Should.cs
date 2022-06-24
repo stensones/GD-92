@@ -1,6 +1,6 @@
 namespace Stensones.GD92.Fields.Tests.Unit.Primitive;
 
-public class Word32Facts
+public class Word32Should
 {
 	[Fact]
 	public void Value_Always_AsPassedInCtor()
@@ -10,17 +10,9 @@ public class Word32Facts
 	}
 	
 	[Fact]
-	public void Value_Always_IsUnsigned8Bit()
+	public void Have_Value_That_Is_Unsigned_32Bit()
 	{
 		var sut = new Word32(0);
 		Assert.IsAssignableFrom<uint>(sut.Value);
-	}
-
-	[Fact]
-	public void Value_WhenSet_IsReturned()
-	{
-		var sut = new Word32(12);
-		sut.Value = 69;
-		Assert.Equal<uint>(69, sut.Value);
 	}
 }
