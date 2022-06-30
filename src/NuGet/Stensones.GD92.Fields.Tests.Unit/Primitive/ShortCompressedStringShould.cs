@@ -1,6 +1,6 @@
 namespace Stensones.GD92.Fields.Tests.Unit.Primitive;
 
-public class ShortStringShould
+public class ShortCompressesStringShould
 {
 	[Fact]
 	public void Set_Value_When_Constructor_Data_Is_Ascii()

@@ -1,12 +1,11 @@
 namespace Stensones.GD92.Fields;
 
-using System.IO;
 using Stensones.GD92.Core;
 
 // short string 0-255 chars long, ASCII characters, no compression
-public class ShortString : Field<string>, IValueObject
+public class ShortCompressesString : ShortString, IValueObject
 {
-	public ShortString(string initalValue)
+	public ShortCompressesString(string initalValue)
 		: base(initalValue)
 	{
 		if (string.IsNullOrEmpty(initalValue)) 
@@ -23,11 +22,6 @@ public class ShortString : Field<string>, IValueObject
 		{
 			throw new ArgumentOutOfRangeException(nameof(initalValue), "value of string field cannot contain non ACSII characters");
 		}
-	}
-
-	public override void WriteToStream(Stream stream)
-	{
-		throw new NotImplementedException();
 	}
 
 	private bool HasNonASCIIChars(string str)
