@@ -20,7 +20,7 @@ public class Steps
 		var source = GetSourceAddressFromTable(table);
 		var destinations = GetDestAddressesFromTable(table);
 		var message = MessageFactory.Create(messageNumber);
-		//var envelope = EnvelopeFactory.Create()
+		var envelope = EnvelopeFactory.Create(source, destinations, message);
 		//this.routerContext.Envelope = envelope;
 		this.routerContext.ReceivedMessage = message;
 	}
@@ -29,8 +29,8 @@ public class Steps
 	public void WhenTheRouterRoutesTheMessage()
 	{
 		var router = this.routerContext.Router;
-		var message = this.routerContext.ReceivedMessage;
-		router.Route(message);
+		var envelope = this.routerContext.Envelope;
+		router!.Route(envelope!);
 		throw new PendingStepException();
 	}
 

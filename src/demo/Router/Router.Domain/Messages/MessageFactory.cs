@@ -54,7 +54,6 @@ public static class MessageFactory
 			//	break;
 			case MessageTypes.Ack:
 				return new AckMessage();
-				break;
 			//case MessageTypes.Nak:
 			//	break;
 			//case MessageTypes.Set_parameter:

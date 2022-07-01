@@ -5,9 +5,11 @@ namespace Router.Domain.Tests.Features;
 
 public class RouterContext
 {
+	private ServiceProvider? provider;
+
 	public IServiceCollection ServiceCollection { get; init; }
 
-	public IRouter Router => this.Get<IRouter>();
+	public IRouter? Router => this.provider?.GetService<IRouter>();
 
 	public IMessage? ReceivedMessage { get; internal set; }
 
@@ -21,23 +23,6 @@ public class RouterContext
 	public void LoadRouterDomain()
 	{
 		this.ServiceCollection.AddRouter();
-	}
-
-	private T Get<T>()
-	{
-		var instance = this.TryGet<T>();
-		if (instance == null)
-		{
-			throw new NullReferenceException();
-		}
-
-		return instance;
-	}
-
-	private T? TryGet<T>()
-	{
-		return (T?)this.ServiceCollection
-			.SingleOrDefault(_=>_.ServiceType is (T))
-			?.ImplementationInstance;
+		this.provider = this.ServiceCollection.BuildServiceProvider();
 	}
 }

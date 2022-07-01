@@ -4,5 +4,5 @@ namespace Router.Domain;
 
 public interface IRouter
 {
-	void Route(IMessage message);
+	void Route(IEnvelope envelope);
 }

@@ -7,7 +7,7 @@ namespace Router.Application.Tests.Unit;
 public class ServiceCollectionExtensionsShould
 {
     [Fact]
-    public void RegisterZeroInterfaces()
+    public void Register_1_Interface()
     {
 		var seriveProvider = new Mock<IServiceCollection>();
 
@@ -15,6 +15,6 @@ public class ServiceCollectionExtensionsShould
 
 		seriveProvider.Verify(
 			_ => _.Add(It.IsAny<ServiceDescriptor>()),
-			Times.Never());
+			Times.Exactly(1));
 	}
 }

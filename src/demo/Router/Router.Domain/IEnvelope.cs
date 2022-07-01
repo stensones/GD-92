@@ -11,12 +11,12 @@ namespace Router.Domain;
 public interface IEnvelope
 {
 	//	<source>, which defines the unique address of the source of the message;
-	CommsAddress Source { get; set; }
+	CommsAddress? Source { get; set; }
 
 	//- <dest_count>, which specifies the number of destination addresses which are
 	//included in the envelope(minimum 1, maximum 63);
 	//- <destination>, which defines<dest_count> unique addresses;
-	IEnumerable<CommsAddress> Destinations { get; set; }
+	IEnumerable<CommsAddress>? Destinations { get; set; }
 
 	//- <priority>, which defines the priority of the message(minimum 1, maximum 9)
 	//with priority 1 being the highest priority;

@@ -6,7 +6,7 @@ public static class ServiceCollectionExtensions
 {
 	public static IServiceCollection AddRouter(this IServiceCollection collection)
 	{
-		//collection.AddScoped<IRouter, Router>();
+		collection.AddScoped<IRouter, Router>();
 
 		return collection;
 	}
