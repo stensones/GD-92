@@ -4,9 +4,12 @@ namespace Stensones.GD92.Fields;
 
 public static class ServiceCollectionExtensions
 {
-	public static IServiceCollection AddProtocolField(this IServiceCollection services)
+	extension(IServiceCollection services)
 	{
-		services.AddSingleton<ISerializableProtocolField, ProtocolField>();
-		return services;
+		public IServiceCollection AddGD92Fields()
+		{
+			services.AddSingleton<ISerializableProtocolField, ProtocolField>();
+			return services;
+		}
 	}
 }
