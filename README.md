@@ -3,57 +3,15 @@ Want to create your own GD-92 solution in .NET Core? This GitHub project implmen
 
 **WARNING** Right now this is very incomplete!
 
-## NuGet packages
-The Domain model for you to use in your projects. This contains the `entities`, `value objects`, etc.. that GD-92 defines.
+## Physical solution/project layout
 
-### Stensones.GD92.Fields
-Defines every GD-92 field
+flatish structure. One folder per .NET project, with the same name as the project without the company name and application name prefixes (for example a .NET project called `Stensones.GD92.Domain.One` would be within a foldder called 'Domain.One' )
 
-### Stensones.GD92.Messages
-Defines every GD-92 message
+When adding a new project allways add a corresponding unit test project with a name the samme as the project it tests suffixed with `.Tests.Unit` The project being added should be marked as having its interals visible to that unit test project.
 
-## GR-92 Implementation Projects
-A pile of Docker images where each image is a router, MTA, or UA.
-All images share a network (via docker Compose or K8?)
+Unit test projects should use assertions from the NuGet library `AwesomeAssertions`
 
-### General Solution layout
-Clean architecture; every solution has the following projects (and thier corresponding unit tests in a `[project].tests.unit` project)
+Integration test projects should have the naming converntion of '*.Tests.Integration'
+Integration test projects should use ReqnRoll NuGet package to surface tests as `.feature' files with Gherkin syntax.
 
- - The API (all UAs, MTAs and the router expose a REST API)
-   - `[project].api
-   - a ASP.NET Core web API project, this hosts the REST API
- - The Application project
-   - `[project].application
- - The Infrastucture project
-   - `[project].infrastucture
- - The Domain project
-   - `[project].domain
-   - this uses the domain NuGet project.
-
-``` mermaid
-graph LR;
-
-API["REST API (ASP.NET Core API)"];
-App["Application"];
-Dom["Domain"];
-Inf["Infrastucture"];
-
-API --> App --> Dom;
-App --> Inf;
-```
-
-These projects run in a docker image (See the `Dockerfile`). Each docker image exposes a REST API, the various containers use this to implement IPC between the apps. If using docker-compose the need to share a network for this to work! **TBC**.
-
-### Router
-Implements the GD-92 router. This is port 25 in GD-92 definition. Exposed as TCP port 10025 ?
-
-### LAN MTA
-Implements a LAN MTA to allow the host machine (of the docker images) to communicate with another GD-92 node on annother machine in your network.
-
-### NM UA
-Implements a node mananger UA, requires some sort of persistns storage for node config, files? or Mongo DB? **TBC**
-
-### IO UA
-**TBC**
-### Sim UA
-A UI that can display received GD-92 messages, and can create and send GD-92 messages. **TBC**
+solution structure: **TBC**
