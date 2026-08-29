@@ -146,7 +146,7 @@ The sequential number of one Text_message block.
 The total number of blocks in one Text_message.
 
 **Text**:
-A long compressed ASCII Protocol Field used for unstructured message text.
+A long compressed ASCII Protocol Field used for unstructured message text, which is decompressed when received.
 
 **Text Message**:
 The Message Type 27 Contents, composed of a Block, OfBlocks, and Text.

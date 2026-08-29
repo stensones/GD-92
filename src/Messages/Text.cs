@@ -28,6 +28,14 @@ public sealed record Text : IGD92MessageContents
 		return new Text(block, ofBlocks, text);
 	}
 
+	public static Text FromEncodedMessageBuffer(ref EncodedMessageBuffer buffer)
+	{
+		return FromFields(
+			Block.FromEncodedMessageBuffer(ref buffer),
+			OfBlocks.FromEncodedMessageBuffer(ref buffer),
+			FieldText.FromEncodedMessageBuffer(ref buffer));
+	}
+
 	public byte[] ToWireValue()
 	{
 		return [.. this.Block.ToWireValue(), .. this.OfBlocks.ToWireValue(), .. this.MessageText.ToWireValue()];

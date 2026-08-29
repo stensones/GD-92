@@ -16,6 +16,8 @@ public sealed record Text : IGD9Field
 		this.value = value;
 	}
 
+	public string Value => Ascii.GetString(Decompress(this.value));
+
 	public static Text FromValue(string value)
 	{
 		ArgumentNullException.ThrowIfNull(value);
@@ -105,5 +107,49 @@ public sealed record Text : IGD9Field
 		}
 
 		return compressedValue.ToArray();
+	}
+
+	private static byte[] Decompress(ReadOnlySpan<byte> value)
+	{
+		var decompressedValue = new List<byte>();
+
+		for (var index = 0; index < value.Length;)
+		{
+			if (value[index] != 0x1B)
+			{
+				decompressedValue.Add(value[index]);
+				index++;
+				continue;
+			}
+
+			if (index + 2 >= value.Length)
+			{
+				throw new InvalidOperationException("The compressed text contains an incomplete escape sequence.");
+			}
+
+			var character = value[index + 1];
+			var count = value[index + 2];
+
+			if (character == 0x1B && count == 1)
+			{
+				decompressedValue.Add(character);
+			}
+			else
+			{
+				if (count <= 3)
+				{
+					throw new InvalidOperationException("The compressed text contains an invalid run length.");
+				}
+
+				for (var occurrence = 0; occurrence < count; occurrence++)
+				{
+					decompressedValue.Add(character);
+				}
+			}
+
+			index += 3;
+		}
+
+		return decompressedValue.ToArray();
 	}
 }

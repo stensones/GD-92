@@ -23,6 +23,17 @@ public sealed class TextTests
 	}
 
 	[Fact]
+	public void Creates_text_contents_from_an_encoded_message_buffer()
+	{
+		var buffer = new EncodedMessageBuffer(Convert.FromHexString("0101000446495245"));
+
+		var contents = Text.FromEncodedMessageBuffer(ref buffer);
+
+		contents.ToWireValue().Should().Equal(Convert.FromHexString("0101000446495245"));
+		buffer.BitPosition.Should().Be(64);
+	}
+
+	[Fact]
 	public void Serializes_its_block_of_blocks_and_text_in_protocol_order()
 	{
 		var message = Text.FromFields(

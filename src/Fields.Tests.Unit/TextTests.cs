@@ -64,4 +64,12 @@ public sealed class TextTests
 		Text.FromEncodedMessageBuffer(ref buffer).ToWireValue().Should().Equal(new byte[] { 0x00, 0x04, 0x46, 0x49, 0x52, 0x45 });
 		buffer.BitPosition.Should().Be(48);
 	}
+
+	[Fact]
+	public void Decodes_an_encoded_text_value()
+	{
+		var buffer = new EncodedMessageBuffer(new byte[] { 0x00, 0x04, 0x46, 0x49, 0x52, 0x45 });
+
+		Text.FromEncodedMessageBuffer(ref buffer).Value.Should().Be("FIRE");
+	}
 }
