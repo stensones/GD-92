@@ -258,6 +258,10 @@ _Avoid_: final rejection, delivery failure
 A typed diagnostic, comprising a reason-code set and code, that explains a Negative Acknowledgement.
 _Avoid_: free-text error, delivery acknowledgement
 
+**General Reason Code**:
+A Reason Code in the General reason-code set (set 1), such as Invalid Message.
+_Avoid_: arbitrary numeric error code, delivery acknowledgement
+
 **Negative Acknowledgement (NAK)**:
 A response Message from a Router or User Agent that reports delivery failure, rejected processing, or deferred processing.
 _Avoid_: final failure, successful acknowledgement
@@ -346,6 +350,7 @@ _Avoid_: retransmission, duplicate Message
 - A **Deferred Transaction Response** keeps its **Unacknowledged Delivery** pending until a final **User-Agent Transaction Response**.
 - A rejected **User-Agent Transaction Response** includes a **Reason Code**.
 - A **Negative Acknowledgement** identifies one or more affected destination **Communications Addresses** and a **Reason Code**.
+- A **General Reason Code** is a **Reason Code** from reason-code set 1.
 - An **Acknowledgement** is a final **User-Agent Transaction Response** for one destination.
 - A **Manual Acknowledgement** causes the relevant local **User Agent** to send a final **Acknowledgement**.
 - A **Router** selects a **Route Entry** by destination Communications Node, Message priority, and **MTA Availability**.

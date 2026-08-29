@@ -207,6 +207,30 @@ public sealed class EnvelopeSteps
 		this.envelope!.Contents.Should().BeOfType<Acknowledgement>();
 	}
 
+	[Then(@"its Contents are a Negative Acknowledgement")]
+	public void ThenItsContentsAreANegativeAcknowledgement()
+	{
+		this.envelope!.Contents.Should().BeOfType<NegativeAcknowledgement>();
+	}
+
+	[Then(@"it identifies Brigade (.*), Node (.*), Port (.*) as the affected destination")]
+	public void ThenItIdentifiesTheAffectedDestination(byte brigade, ushort node, byte port)
+	{
+		var negativeAcknowledgement = this.envelope!.Contents.Should().BeOfType<NegativeAcknowledgement>().Which;
+
+		negativeAcknowledgement.Destinations.Addresses.Should().ContainSingle()
+			.Which.Should().Be(CreateAddress(brigade, node, port));
+	}
+
+	[Then(@"its General Reason Code is ""(.*)""")]
+	public void ThenItsGeneralReasonCodeIs(string expectedReasonCode)
+	{
+		var negativeAcknowledgement = this.envelope!.Contents.Should().BeOfType<NegativeAcknowledgement>().Which;
+
+		negativeAcknowledgement.ReasonCode.GeneralReasonCode.Should().Be(
+			Enum.Parse<GeneralReasonCode>(expectedReasonCode));
+	}
+
 	[When(@"an Acknowledgement Envelope is created by Brigade (.*), Node (.*), Port (.*) using protocol version (.*)")]
 	public void WhenAnAcknowledgementEnvelopeIsCreated(
 		byte brigade,

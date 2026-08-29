@@ -154,6 +154,7 @@ public sealed class Envelope
 		{
 			GD92MessageType.Text => Text.FromEncodedMessageBuffer(ref contentsBuffer),
 			GD92MessageType.Acknowledgement => Acknowledgement.FromEncodedMessageBuffer(ref contentsBuffer),
+			GD92MessageType.NegativeAcknowledgement => NegativeAcknowledgement.FromEncodedMessageBuffer(ref contentsBuffer),
 			_ => throw new NotSupportedException($"Message Type {messageType.Value} is not supported.")
 		};
 

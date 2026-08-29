@@ -25,6 +25,15 @@ public sealed class NegativeAcknowledgement : IGD92MessageContents
 		return new NegativeAcknowledgement(destinations, reasonCode);
 	}
 
+	public static NegativeAcknowledgement FromEncodedMessageBuffer(ref EncodedMessageBuffer buffer)
+	{
+		var destinationCount = DestinationCount.FromValue((byte)buffer.ReadUnsignedBits(8));
+		var destinations = Destinations.FromEncodedMessageBuffer(ref buffer, destinationCount);
+		var reasonCode = ReasonCode.FromEncodedMessageBuffer(ref buffer);
+
+		return FromValues(destinations, reasonCode);
+	}
+
 	public byte[] ToWireValue()
 	{
 		return [this.Destinations.Count.Value, .. this.Destinations.ToWireValue(), .. this.ReasonCode.ToWireValue()];

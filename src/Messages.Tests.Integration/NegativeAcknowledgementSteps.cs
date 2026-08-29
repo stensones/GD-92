@@ -26,7 +26,11 @@ public sealed class NegativeAcknowledgementSteps
 	public void GivenTheGeneralReasonCode(string reasonCode)
 	{
 		this.reasonCode = ReasonCode.FromGeneralReasonCode(
-			Enum.Parse<GeneralReasonCode>(reasonCode, ignoreCase: true));
+			reasonCode switch
+			{
+				"inv_mess" => GeneralReasonCode.InvalidMessage,
+				_ => throw new ArgumentOutOfRangeException(nameof(reasonCode))
+			});
 	}
 
 	[When(@"a Negative Acknowledgement is created")]
