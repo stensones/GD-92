@@ -21,7 +21,7 @@ public class Steps
 		var destinations = GetDestAddressesFromTable(table);
 		var message = MessageFactory.Create(messageNumber);
 		var envelope = EnvelopeFactory.Create(source, destinations, message);
-		//this.routerContext.Envelope = envelope;
+		this.routerContext.Envelope = envelope;
 		this.routerContext.ReceivedMessage = message;
 	}
 
@@ -30,14 +30,20 @@ public class Steps
 	{
 		var router = this.routerContext.Router;
 		var envelope = this.routerContext.Envelope;
+		router!.ForwardToLocalNode += this.Router_ForwardToLocalNode;
 		router!.Route(envelope!);
-		throw new PendingStepException();
+		router!.ForwardToLocalNode -= this.Router_ForwardToLocalNode;
 	}
 
-	[Then(@"the message is forwarded to port (.*)")]
-	public void ThenTheMessageIsForwardedToPort(int p0)
+	private void Router_ForwardToLocalNode(object? sender, EventArgs<byte> e)
 	{
-		throw new PendingStepException();
+		this.routerContext.ForwardedToPort = true;
+	}
+
+	[Then(@"the message is forwarded to port (\d+)")]
+	public void ThenTheMessageIsForwardedToPort(byte port)
+	{
+		Assert.True(this.routerContext.ForwardedToPort);
 	}
 
 	private static IEnumerable<CommsAddress> GetDestAddressesFromTable(Table table)

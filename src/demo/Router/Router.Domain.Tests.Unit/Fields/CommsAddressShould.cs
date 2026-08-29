@@ -10,6 +10,13 @@ namespace Router.Domain.Tests.Unit.Fields;
 public class CommsAddressShould
 {
 	[Fact]
+	public void Be_An_IField()
+	{
+		var sut = new CommsAddress(1, 1, 1);
+		Assert.IsAssignableFrom<IField>(sut);
+	}
+
+	[Fact]
 	public void Set_BrigadeNodeAndPort_WhenConstructedViaParts()
 	{
 		const byte Brigade = 26;

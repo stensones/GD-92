@@ -7,6 +7,11 @@ public class EnvelopeFactory
 {
 	public static IEnvelope Create(CommsAddress source, IEnumerable<CommsAddress> destinations, IMessage message)
 	{
-		throw new NotImplementedException();
+		return new Envelope
+		{
+			Source = source,
+			Destinations = destinations,
+			Message = message
+		};
 	}
 }

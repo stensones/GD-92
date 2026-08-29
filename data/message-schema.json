@@ -1,0 +1,116 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "http://stensones.com/schema/gd-92/message-schema.json",
+  "title": "Message",
+  "description": "A GD-92 message as decoded by an MTA and used within a node",
+  "type": "object",
+  "properties": {
+    "envelope": {
+      "description": "The message envelope, contains detils used to route the message body",
+      "type": "object",
+	  "properties": {
+		  "uswr": {
+			  "description": "Unique system wide reference number",
+			  "type": "object",
+			  "properties": {
+				  "source": {
+					  "description": "The GD-92 address of the message originator",
+					  "$ref" :  "#/$defs/comms-address"
+				  }, 
+				  "destinations": {
+					  "description": "list of destination GD-92 address ranges the message should be sent to",
+					  "type": "array",
+					  "items": {
+						  "type": "object",
+						  "properties": {
+							  "start": {
+	  							  "description": "",
+									"$ref" :  "#/$defs/comms-address"
+							  },
+							  "end": {
+								   "description": "",
+									"$ref" :  "#/$defs/comms-address"
+							  }
+						  },
+						  "required": ["start", "end"]
+					  },
+					  "minItems": 1,
+					  "uniqueItems": true
+				  }, 
+				  "sequence": {
+					  "description": "Sequence number of this message to the source+desinations tuple",
+					  "type": "number",
+					  "minimum": 0,
+					  "maximum": 32767
+				  }
+			  },
+			  "required": ["source", "destinations", "sequence"]
+		  },
+		  "message-type": {
+			  "description": "GD-92 message number. The format of the message property is determined by this value",
+			  "type": "number",
+			  "minimum": 1,
+			  "maximum": 105
+		  },
+		  "ack-required": {
+			  "description": "$true if this message requires an ACK/NAK",
+			  "type": "boolean"
+		  },
+		  "priority": {
+			  "description": "The router message processing priority.",
+			  "type": "number",
+			  "minimum": 1,
+			  "maximum": 9
+		  },
+		  "protocol-version": {
+			  "description": "",
+			  "type": "number",
+			  "minimum": 1,
+			  "maximum": 2
+		  },
+		  "bcc": {
+			  "description": "a 8 bit unsigned BCC calculated on the raw bytes of the whole message less the last byte that is this BCC value. Avalable only if the uuencoded-binary-message-buffer is not empty",
+			  "type": "number",
+			  "minimum": 0,
+			  "maximum": 255
+		  }		  
+	  },
+	  "required": ["uswr", "message-type", "protocol-version", "priority", "ack-required", "bcc"]
+    },
+	"message": {
+		"description": "JSON object mapped to the specific message type decoded",
+		"type": "object"
+	},
+	"uuencoded-binary-message-buffer": {
+		"description": "a UUencoded Base64 string of the WHOLE gd-92 message buffer recieved by an MTA",
+		"type": "string"
+	}
+  },
+  "required": [ "envelope", "message" ],
+  
+  "$defs": {
+	 "comms-address": {
+	  "title": "A GD-92 comms address",
+	  "description": "A GD-92 comms address, specifies a brigade, node and port number",
+	  "required": [ "port", "node", "brigade" ],
+	  "type": "object",
+	  "properties": {
+		"brigade": {
+		  "type": "number",
+		  "minimum": 0,
+		  "maximum": 255
+		},
+		"node": {
+		  "type": "number",
+		  "minimum": 0,
+		  "maximum": 1023
+		},
+		"port": {
+		  "type": "number",
+		  "minimum": 0,
+		  "maximum": 63
+		}
+	  }
+	 }
+  }
+}

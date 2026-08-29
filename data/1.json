@@ -1,0 +1,27 @@
+{
+	"__$schema" : "https://json-schema.org/draft/2020-12/schema",
+	"$schema": "./message-schema.json"
+	"envelope" : {
+		"uswr": {
+			"source": { "brigade": 26, "node": 100, "port": 25},
+			"destinations": [
+				{
+					"start": { "brigade": 26, "node": 110, "port": 25},
+					"end":{ "brigade": 26, "node": 110, "port": 25}
+				},
+				{
+					"start": { "brigade": 26, "node": 110, "port": 2},
+					"end":{ "brigade": 26, "node": 110, "port": 2}
+				}
+			],
+			"sequence": 31953
+		},
+		"message-type": 2,
+		"ack-required": true,
+		"priority": 1,
+		"protocol-version": 1,
+		"bcc": 253
+	},
+	"message" : {},
+	"uuencoded-binary-message-buffer": "--"
+}

@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace Router.Domain.Fields;
 
-public record CommsAddress
+public record CommsAddress : IField
 {
 	//	<comms_address> 3 bytes(24 bits), binary encoded as follows:
 	//bits 0-7 brigade_identifier(0-255)

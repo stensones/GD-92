@@ -16,9 +16,15 @@ public class SetupSteps
 		this.routerContext.LoadRouterDomain();
 	}
 
-	[Given(@"the following configuration")]
+	[Given(@"the following current parameter table")]
 	public void GivenTheFollowingConfiguration(Table table)
 	{
+		foreach(var row in table.Rows)
+		{
+			var name = row["name"];
+			var value = row["value"];
+			var parameter = ParameterFactory.Create(name, value);
+		}
 		//throw new PendingStepException();
 	}
 

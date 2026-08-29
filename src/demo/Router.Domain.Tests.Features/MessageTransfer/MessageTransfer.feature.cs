@@ -91,12 +91,22 @@ router shall select another MTA and pass the message to it, and so on.", Program
 #line hidden
             TechTalk.SpecFlow.Table table1 = new TechTalk.SpecFlow.Table(new string[] {
                         "name",
-                        "value"});
+                        "value",
+                        "password_level"});
             table1.AddRow(new string[] {
-                        "brigade",
-                        "26"});
+                        "brigade_number",
+                        "26",
+                        "3"});
+            table1.AddRow(new string[] {
+                        "node_number",
+                        "3",
+                        "3"});
+            table1.AddRow(new string[] {
+                        "node_name",
+                        "bob",
+                        "3"});
 #line 14
- testRunner.And("the following configuration", ((string)(null)), table1, "And ");
+ testRunner.And("the following current parameter table", ((string)(null)), table1, "And ");
 #line hidden
             TechTalk.SpecFlow.Table table2 = new TechTalk.SpecFlow.Table(new string[] {
                         "name",
@@ -110,7 +120,7 @@ router shall select another MTA and pass the message to it, and so on.", Program
             table2.AddRow(new string[] {
                         "NM UA",
                         "1"});
-#line 17
+#line 19
  testRunner.And("the following GD-92 bits are running", ((string)(null)), table2, "And ");
 #line hidden
         }
@@ -128,7 +138,7 @@ router shall select another MTA and pass the message to it, and so on.", Program
             string[] tagsOfScenario = ((string[])(null));
             System.Collections.Specialized.OrderedDictionary argumentsOfScenario = new System.Collections.Specialized.OrderedDictionary();
             TechTalk.SpecFlow.ScenarioInfo scenarioInfo = new TechTalk.SpecFlow.ScenarioInfo("Routing message to local UA that exists", null, tagsOfScenario, argumentsOfScenario, featureTags);
-#line 23
+#line 26
 this.ScenarioInitialize(scenarioInfo);
 #line hidden
             if ((TagHelper.ContainsIgnoreTag(tagsOfScenario) || TagHelper.ContainsIgnoreTag(featureTags)))
@@ -149,14 +159,74 @@ this.FeatureBackground();
                             "51",
                             "26:100:1",
                             "26:3:1,26:1:27"});
-#line 24
+#line 27
  testRunner.Given("the router receives the following message", ((string)(null)), table3, "Given ");
 #line hidden
-#line 27
+#line 30
  testRunner.When("the router routes the message", ((string)(null)), ((TechTalk.SpecFlow.Table)(null)), "When ");
 #line hidden
-#line 28
+#line 31
  testRunner.Then("the message is forwarded to port 1", ((string)(null)), ((TechTalk.SpecFlow.Table)(null)), "Then ");
+#line hidden
+            }
+            this.ScenarioCleanup();
+        }
+        
+        [Xunit.SkippableFactAttribute(DisplayName="Routing message to remote UA")]
+        [Xunit.TraitAttribute("FeatureTitle", "MessageTransfer")]
+        [Xunit.TraitAttribute("Description", "Routing message to remote UA")]
+        public void RoutingMessageToRemoteUA()
+        {
+            string[] tagsOfScenario = ((string[])(null));
+            System.Collections.Specialized.OrderedDictionary argumentsOfScenario = new System.Collections.Specialized.OrderedDictionary();
+            TechTalk.SpecFlow.ScenarioInfo scenarioInfo = new TechTalk.SpecFlow.ScenarioInfo("Routing message to remote UA", null, tagsOfScenario, argumentsOfScenario, featureTags);
+#line 36
+this.ScenarioInitialize(scenarioInfo);
+#line hidden
+            if ((TagHelper.ContainsIgnoreTag(tagsOfScenario) || TagHelper.ContainsIgnoreTag(featureTags)))
+            {
+                testRunner.SkipScenario();
+            }
+            else
+            {
+                this.ScenarioStart();
+#line 12
+this.FeatureBackground();
+#line hidden
+                TechTalk.SpecFlow.Table table4 = new TechTalk.SpecFlow.Table(new string[] {
+                            "number",
+                            "source",
+                            "dest"});
+                table4.AddRow(new string[] {
+                            "51",
+                            "26:100:1",
+                            "26:333:1,26:1:27"});
+#line 37
+ testRunner.Given("the router receives the following message", ((string)(null)), table4, "Given ");
+#line hidden
+                TechTalk.SpecFlow.Table table5 = new TechTalk.SpecFlow.Table(new string[] {
+                            "next_node",
+                            "desination_nodes",
+                            "agent_type",
+                            "preference"});
+                table5.AddRow(new string[] {
+                            "200",
+                            "26:200:0,26:333:0",
+                            "0",
+                            "1"});
+                table5.AddRow(new string[] {
+                            "200",
+                            "26:333:0",
+                            "1",
+                            "2"});
+#line 40
+ testRunner.And("the Following router table exists", ((string)(null)), table5, "And ");
+#line hidden
+#line 44
+ testRunner.When("the router routes the message", ((string)(null)), ((TechTalk.SpecFlow.Table)(null)), "When ");
+#line hidden
+#line 45
+ testRunner.Then("the message is forwarded to port 23", ((string)(null)), ((TechTalk.SpecFlow.Table)(null)), "Then ");
 #line hidden
             }
             this.ScenarioCleanup();

@@ -1,0 +1,25 @@
+{
+  "$id": "file://./comms-address.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "A GD-92 comms address",
+  "description": "A GD-92 comms address, specifies a brigade, node and port number",
+  "required": [ "port", "node", "brigade" ],
+  "type": "object",
+  "properties": {
+    "brigade": {
+      "type": "number",
+      "minimum": 0,
+      "maximum": 255
+    },
+    "node": {
+      "type": "number",
+      "minimum": 0,
+      "maximum": 1023
+    },
+    "port": {
+      "type": "number",
+      "minimum": 0,
+      "maximum": 63
+    }
+  }
+}

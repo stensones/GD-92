@@ -14,6 +14,7 @@ public class RouterContext
 	public IMessage? ReceivedMessage { get; internal set; }
 
 	public IEnvelope? Envelope { get; internal set; }
+	public bool ForwardedToPort { get; internal set; }
 
 	public RouterContext()
 	{
