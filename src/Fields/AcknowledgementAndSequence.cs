@@ -21,6 +21,17 @@ public sealed record AcknowledgementAndSequence : IGD9Field
 		return new AcknowledgementAndSequence(sequenceNumber, acknowledgementRequest);
 	}
 
+	public static AcknowledgementAndSequence FromEncodedMessageBuffer(ref EncodedMessageBuffer buffer)
+	{
+		var value = (ushort)buffer.ReadUnsignedBits(16);
+
+		return FromValues(
+			SequenceNumber.FromValue((ushort)(value & 0x7FFF)),
+			(value & 0x8000) != 0
+				? AcknowledgementRequest.Requested
+				: AcknowledgementRequest.NotRequested);
+	}
+
 	public byte[] ToWireValue()
 	{
 		var value = this.SequenceNumber.Value;

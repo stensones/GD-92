@@ -55,4 +55,13 @@ public sealed class TextTests
 		wireValue.Should().HaveCount(774);
 		wireValue[..2].Should().Equal(new byte[] { 0x03, 0x04 });
 	}
+
+	[Fact]
+	public void Creates_text_from_an_encoded_message_buffer()
+	{
+		var buffer = new EncodedMessageBuffer(new byte[] { 0x00, 0x04, 0x46, 0x49, 0x52, 0x45 });
+
+		Text.FromEncodedMessageBuffer(ref buffer).ToWireValue().Should().Equal(new byte[] { 0x00, 0x04, 0x46, 0x49, 0x52, 0x45 });
+		buffer.BitPosition.Should().Be(48);
+	}
 }

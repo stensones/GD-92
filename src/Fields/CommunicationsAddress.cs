@@ -18,6 +18,14 @@ public sealed record CommunicationsAddress : IGD9Field
 		return new CommunicationsAddress(brigade, node, port);
 	}
 
+	public static CommunicationsAddress FromEncodedMessageBuffer(ref EncodedMessageBuffer buffer)
+	{
+		return FromValues(
+			Brigade.FromValue((byte)buffer.ReadUnsignedBits(8)),
+			Node.FromValue((ushort)buffer.ReadUnsignedBits(10)),
+			Port.FromValue((byte)buffer.ReadUnsignedBits(6)));
+	}
+
 	public byte[] ToWireValue()
 	{
 		return [this.Brigade.Value, (byte)(this.Node.Value >> 2), (byte)((this.Node.Value << 6) | this.Port.Value)];

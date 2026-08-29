@@ -19,6 +19,15 @@ public sealed record ProtocolAndPriority : IGD9Field
 		return new ProtocolAndPriority(priority, protocolVersion);
 	}
 
+	public static ProtocolAndPriority FromEncodedMessageBuffer(ref EncodedMessageBuffer buffer)
+	{
+		var value = (byte)buffer.ReadUnsignedBits(8);
+
+		return FromValues(
+			MessagePriority.FromValue((byte)(value >> 4)),
+			ProtocolVersion.FromValue((byte)(value & 0x0F)));
+	}
+
 	public byte[] ToWireValue()
 	{
 		return [(byte)((this.Priority.Value << 4) | this.ProtocolVersion.Value)];

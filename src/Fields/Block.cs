@@ -11,4 +11,9 @@ public sealed record Block : Word8
 	{
 		return new Block(value);
 	}
+
+	public new static Block FromEncodedMessageBuffer(ref EncodedMessageBuffer buffer)
+	{
+		return new Block((byte)buffer.ReadUnsignedBits(8));
+	}
 }

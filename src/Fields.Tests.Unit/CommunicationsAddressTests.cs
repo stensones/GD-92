@@ -14,4 +14,13 @@ public sealed class CommunicationsAddressTests
 
 		address.ToWireValue().Should().Equal(new byte[] { 0x1A, 0x19, 0x19 });
 	}
+
+	[Fact]
+	public void Creates_an_address_from_an_encoded_message_buffer()
+	{
+		var buffer = new EncodedMessageBuffer(new byte[] { 0x1A, 0x19, 0x19 });
+
+		CommunicationsAddress.FromEncodedMessageBuffer(ref buffer).ToWireValue().Should().Equal(new byte[] { 0x1A, 0x19, 0x19 });
+		buffer.BitPosition.Should().Be(24);
+	}
 }

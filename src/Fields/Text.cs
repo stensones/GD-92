@@ -30,6 +30,19 @@ public sealed record Text : IGD9Field
 		return new Text(encodedValue);
 	}
 
+	public static Text FromEncodedMessageBuffer(ref EncodedMessageBuffer buffer)
+	{
+		var length = (ushort)buffer.ReadUnsignedBits(16);
+		var value = new byte[length];
+
+		for (var index = 0; index < value.Length; index++)
+		{
+			value[index] = (byte)buffer.ReadUnsignedBits(8);
+		}
+
+		return new Text(value);
+	}
+
 	public byte[] ToWireValue()
 	{
 		var wireValue = new byte[this.value.Length + 2];

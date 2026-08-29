@@ -11,4 +11,9 @@ public sealed record OfBlocks : Word8
 	{
 		return new OfBlocks(value);
 	}
+
+	public new static OfBlocks FromEncodedMessageBuffer(ref EncodedMessageBuffer buffer)
+	{
+		return new OfBlocks((byte)buffer.ReadUnsignedBits(8));
+	}
 }

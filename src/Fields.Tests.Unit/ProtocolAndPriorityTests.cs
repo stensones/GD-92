@@ -13,4 +13,13 @@ public sealed class ProtocolAndPriorityTests
 
 		field.ToWireValue().Should().Equal(new byte[] { 0x12 });
 	}
+
+	[Fact]
+	public void Creates_priority_and_protocol_from_an_encoded_message_buffer()
+	{
+		var buffer = new EncodedMessageBuffer(new byte[] { 0x12 });
+
+		ProtocolAndPriority.FromEncodedMessageBuffer(ref buffer).ToWireValue().Should().Equal(new byte[] { 0x12 });
+		buffer.BitPosition.Should().Be(8);
+	}
 }

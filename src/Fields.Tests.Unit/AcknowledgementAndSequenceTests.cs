@@ -13,4 +13,13 @@ public sealed class AcknowledgementAndSequenceTests
 
 		field.ToWireValue().Should().Equal(new byte[] { 0xFC, 0xD1 });
 	}
+
+	[Fact]
+	public void Creates_an_acknowledgement_and_sequence_from_an_encoded_message_buffer()
+	{
+		var buffer = new EncodedMessageBuffer(new byte[] { 0xFC, 0xD1 });
+
+		AcknowledgementAndSequence.FromEncodedMessageBuffer(ref buffer).ToWireValue().Should().Equal(new byte[] { 0xFC, 0xD1 });
+		buffer.BitPosition.Should().Be(16);
+	}
 }

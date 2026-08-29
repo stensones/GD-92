@@ -19,4 +19,13 @@ public sealed class BlockTests
 
 		block.Should().BeAssignableTo<Word8>();
 	}
+
+	[Fact]
+	public void Creates_a_block_from_an_encoded_message_buffer()
+	{
+		var buffer = new EncodedMessageBuffer(new byte[] { 0x01 });
+
+		Block.FromEncodedMessageBuffer(ref buffer).ToWireValue().Should().Equal(new byte[] { 0x01 });
+		buffer.BitPosition.Should().Be(8);
+	}
 }
