@@ -60,6 +60,12 @@ Feature: Envelopes
     And its General Reason Code is "InvalidMessage"
     And its complete Envelope bytes are "1A195A01811A1919127CD133011A1919010356"
 
+  Scenario: Rejecting an acknowledgement-requested Text Message with a Negative Acknowledgement
+    Given encoded Envelope bytes "1A191902011A195A12FCD11B010100044649524578"
+    And the affected destination is Brigade 26, Node 100, Port 25
+    When a Negative Acknowledgement Envelope is created by Brigade 26, Node 101, Port 26 using protocol version 2 and the General Reason Code "inv_mess"
+    Then its complete Envelope bytes are "1A195A01811A1919127CD133011A1919010356"
+
   Scenario: Rejecting an acknowledgement for an unacknowledged Text Message Envelope
     Given encoded Envelope bytes "1A191902011A195A127CD11B0101000446495245F8"
     When creating an Acknowledgement Envelope is attempted by Brigade 26, Node 101, Port 26 using protocol version 2

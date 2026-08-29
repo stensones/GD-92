@@ -14,6 +14,7 @@ public sealed class EnvelopeSteps
 	private IGD92MessageContents? contents;
 	private Envelope? envelope;
 	private byte[]? encodedEnvelope;
+	private Destinations? affectedDestinations;
 	private InvalidOperationException? decodingException;
 	private InvalidOperationException? acknowledgementException;
 	private NotSupportedException? unsupportedMessageTypeException;
@@ -231,6 +232,31 @@ public sealed class EnvelopeSteps
 			Enum.Parse<GeneralReasonCode>(expectedReasonCode));
 	}
 
+	[Given(@"the affected destination is Brigade (.*), Node (.*), Port (.*)")]
+	public void GivenTheAffectedDestination(byte brigade, ushort node, byte port)
+	{
+		this.affectedDestinations = Destinations.FromAddresses(CreateAddress(brigade, node, port));
+	}
+
+	[When(@"a Negative Acknowledgement Envelope is created by Brigade (.*), Node (.*), Port (.*) using protocol version (.*) and the General Reason Code ""(.*)""")]
+	public void WhenANegativeAcknowledgementEnvelopeIsCreated(
+		byte brigade,
+		ushort node,
+		byte port,
+		byte protocolVersion,
+		string reasonCode)
+	{
+		var buffer = new EncodedMessageBuffer(this.encodedEnvelope!);
+		var receivedEnvelope = Envelope.FromEncodedMessageBuffer(ref buffer);
+
+		this.envelope = Envelope.CreateNegativeAcknowledgement(
+			receivedEnvelope,
+			CreateAddress(brigade, node, port),
+			ProtocolVersion.FromValue(protocolVersion),
+			this.affectedDestinations!,
+			ReasonCode.FromGeneralReasonCode(ParseGeneralReasonCode(reasonCode)));
+	}
+
 	[When(@"an Acknowledgement Envelope is created by Brigade (.*), Node (.*), Port (.*) using protocol version (.*)")]
 	public void WhenAnAcknowledgementEnvelopeIsCreated(
 		byte brigade,
@@ -274,6 +300,15 @@ public sealed class EnvelopeSteps
 	public void ThenTheAcknowledgementResponseIsRejected()
 	{
 		this.acknowledgementException.Should().NotBeNull();
+	}
+
+	private static GeneralReasonCode ParseGeneralReasonCode(string reasonCode)
+	{
+		return reasonCode switch
+		{
+			"inv_mess" => GeneralReasonCode.InvalidMessage,
+			_ => throw new ArgumentOutOfRangeException(nameof(reasonCode))
+		};
 	}
 
 	private static CommunicationsAddress CreateAddress(byte brigade, ushort node, byte port)

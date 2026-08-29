@@ -18,6 +18,21 @@ public sealed class EnvelopeTests
 	}
 
 	[Fact]
+	public void Creates_a_negative_acknowledgement_envelope_for_a_received_message()
+	{
+		var received = DecodeEnvelope("1A191902011A195A12FCD11B010100044649524578");
+		var response = Envelope.CreateNegativeAcknowledgement(
+			received,
+			CommunicationsAddress.FromValues(Brigade.FromValue(26), Node.FromValue(101), Port.FromValue(26)),
+			ProtocolVersion.FromValue(2),
+			Destinations.FromAddresses(
+				CommunicationsAddress.FromValues(Brigade.FromValue(26), Node.FromValue(100), Port.FromValue(25))),
+			ReasonCode.FromGeneralReasonCode(GeneralReasonCode.InvalidMessage));
+
+		response.ToWireValue().Should().Equal(Convert.FromHexString("1A195A01811A1919127CD133011A1919010356"));
+	}
+
+	[Fact]
 	public void Creates_an_envelope_from_an_encoded_message_buffer()
 	{
 		var buffer = new EncodedMessageBuffer(

@@ -352,6 +352,7 @@ _Avoid_: retransmission, duplicate Message
 - A **Negative Acknowledgement** identifies one or more affected destination **Communications Addresses** and a **Reason Code**.
 - A **General Reason Code** is a **Reason Code** from reason-code set 1.
 - An **Acknowledgement** is a final **User-Agent Transaction Response** for one destination.
+- A **Negative Acknowledgement Envelope** responding to an acknowledgement-requested **Envelope** targets the received Envelope's source, preserves its Message Priority and Sequence Number, and does not request an acknowledgement.
 - A **Manual Acknowledgement** causes the relevant local **User Agent** to send a final **Acknowledgement**.
 - A **Router** selects a **Route Entry** by destination Communications Node, Message priority, and **MTA Availability**.
 - A **Route Entry** identifies one adjacent **Communications Node**, a bearer type, and an ordered preference.

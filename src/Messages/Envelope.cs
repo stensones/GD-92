@@ -125,6 +125,36 @@ public sealed class Envelope
 			Acknowledgement.Create());
 	}
 
+	public static Envelope CreateNegativeAcknowledgement(
+		Envelope receivedEnvelope,
+		CommunicationsAddress respondingSource,
+		ProtocolVersion protocolVersion,
+		Destinations affectedDestinations,
+		ReasonCode reasonCode)
+	{
+		ArgumentNullException.ThrowIfNull(receivedEnvelope);
+		ArgumentNullException.ThrowIfNull(respondingSource);
+		ArgumentNullException.ThrowIfNull(protocolVersion);
+		ArgumentNullException.ThrowIfNull(affectedDestinations);
+		ArgumentNullException.ThrowIfNull(reasonCode);
+
+		if (!receivedEnvelope.AcknowledgementAndSequence.AcknowledgementRequest.IsRequested)
+		{
+			throw new InvalidOperationException("A negative acknowledgement can only respond to an acknowledgement-requested Envelope.");
+		}
+
+		return FromValues(
+			respondingSource,
+			Destinations.FromAddresses(receivedEnvelope.Source),
+			ProtocolAndPriority.FromValues(
+				receivedEnvelope.ProtocolAndPriority.Priority,
+				protocolVersion),
+			AcknowledgementAndSequence.FromValues(
+				receivedEnvelope.AcknowledgementAndSequence.SequenceNumber,
+				AcknowledgementRequest.NotRequested),
+			NegativeAcknowledgement.FromValues(affectedDestinations, reasonCode));
+	}
+
 	public byte[] ToWireValue()
 	{
 		var envelopeBytesBeforeBlockCheckCharacter = this.GetBytesBeforeBlockCheckCharacter();
