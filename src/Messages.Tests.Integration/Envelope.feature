@@ -40,3 +40,9 @@ Feature: Envelopes
     When the Envelope is created and decoded
     Then its complete Envelope bytes are "1A191902021A19191A195A12FCD11B010100044649524561"
     And it has 2 decoded destinations in the declared order
+
+  Scenario: Decoding an Acknowledgement Envelope
+    Given encoded Envelope bytes "1A195A00011A1919127CD132CF"
+    When the Envelope is decoded
+    Then its Contents are an Acknowledgement
+    And its complete Envelope bytes are "1A195A00011A1919127CD132CF"

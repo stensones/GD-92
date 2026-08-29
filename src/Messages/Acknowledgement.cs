@@ -18,6 +18,16 @@ public sealed class Acknowledgement : IGD92MessageContents
 		return new Acknowledgement();
 	}
 
+	public static Acknowledgement FromEncodedMessageBuffer(ref EncodedMessageBuffer buffer)
+	{
+		if (buffer.RemainingBitCount != 0)
+		{
+			throw new InvalidOperationException("Acknowledgement Contents must be empty.");
+		}
+
+		return Create();
+	}
+
 	public byte[] ToWireValue()
 	{
 		return [];

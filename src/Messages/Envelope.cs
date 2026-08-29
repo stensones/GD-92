@@ -123,13 +123,13 @@ public sealed class Envelope
 
 	private static IGD92MessageContents DecodeContents(MessageType messageType, byte[] contentsWireValue)
 	{
-		if (messageType.Value != (byte)GD92MessageType.Text)
-		{
-			throw new NotSupportedException($"Message Type {messageType.Value} is not supported.");
-		}
-
 		var contentsBuffer = new EncodedMessageBuffer(contentsWireValue);
-		var contents = Text.FromEncodedMessageBuffer(ref contentsBuffer);
+		IGD92MessageContents contents = (GD92MessageType)messageType.Value switch
+		{
+			GD92MessageType.Text => Text.FromEncodedMessageBuffer(ref contentsBuffer),
+			GD92MessageType.Acknowledgement => Acknowledgement.FromEncodedMessageBuffer(ref contentsBuffer),
+			_ => throw new NotSupportedException($"Message Type {messageType.Value} is not supported.")
+		};
 
 		if (contentsBuffer.RemainingBitCount != 0)
 		{

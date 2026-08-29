@@ -200,6 +200,12 @@ public sealed class EnvelopeSteps
 			Convert.FromHexString("1A19191A195A"));
 	}
 
+	[Then(@"its Contents are an Acknowledgement")]
+	public void ThenItsContentsAreAnAcknowledgement()
+	{
+		this.envelope!.Contents.Should().BeOfType<Acknowledgement>();
+	}
+
 	private static CommunicationsAddress CreateAddress(byte brigade, ushort node, byte port)
 	{
 		return CommunicationsAddress.FromValues(

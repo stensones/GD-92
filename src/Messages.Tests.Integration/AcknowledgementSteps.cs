@@ -14,8 +14,8 @@ public sealed class AcknowledgementSteps
 		this.acknowledgement = Acknowledgement.Create();
 	}
 
-	[Then(@"its Message Type bytes are ""(.*)""")]
-	public void ThenItsMessageTypeBytesAre(string expectedBytes)
+	[Then(@"its Acknowledgement Message Type bytes are ""(.*)""")]
+	public void ThenItsAcknowledgementMessageTypeBytesAre(string expectedBytes)
 	{
 		this.acknowledgement!.Type.ToWireValue().Should().Equal(Convert.FromHexString(expectedBytes));
 	}
