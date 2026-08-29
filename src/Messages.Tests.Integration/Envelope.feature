@@ -21,6 +21,11 @@ Feature: Envelopes
     When decoding the Envelope is attempted
     Then the Block Check Character mismatch is rejected
 
+  Scenario: Rejecting an Envelope whose declared Message Length exceeds its Text Contents
+    Given encoded Envelope bytes "1A191902411A191912FCD11B01010004464952453B"
+    When decoding the Envelope is attempted
+    Then the Message Contents length mismatch is rejected
+
   Scenario: Creating and decoding a Text Message Envelope for two destinations
     Given an Envelope source of Brigade 26, Node 100, and Port 25
     And Envelope destinations Brigade 26, Node 100, Port 25 and Brigade 26, Node 101, Port 26

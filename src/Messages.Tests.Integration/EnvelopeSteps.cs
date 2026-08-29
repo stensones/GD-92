@@ -130,6 +130,12 @@ public sealed class EnvelopeSteps
 		this.decodingException.Should().NotBeNull();
 	}
 
+	[Then(@"the Message Contents length mismatch is rejected")]
+	public void ThenTheMessageContentsLengthMismatchIsRejected()
+	{
+		this.decodingException.Should().NotBeNull();
+	}
+
 	[Given(@"an Envelope source of Brigade (.*), Node (.*), and Port (.*)")]
 	public void GivenAnEnvelopeSource(byte brigade, ushort node, byte port)
 	{
