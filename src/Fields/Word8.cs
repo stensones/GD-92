@@ -1,8 +1,8 @@
 namespace Stensones.GD92.Fields;
 
-public sealed record Word8
+public record Word8
 {
-	private Word8(byte value)
+	protected Word8(byte value)
 	{
 		this.Value = value;
 	}

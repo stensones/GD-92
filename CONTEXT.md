@@ -120,6 +120,15 @@ _Avoid_: domain Entity, arbitrary JSON field
 An unsigned eight-bit Protocol Field that is encoded as eight consecutive bits.
 _Avoid_: signed byte, variable-length integer
 
+**Block**:
+The sequential number of one Text_message block.
+
+**OfBlocks**:
+The total number of blocks in one Text_message.
+
+**Text**:
+A long compressed ASCII Protocol Field used for unstructured message text.
+
 **Message Family**:
 A protocol grouping of Message Types: Mobilisation, Resource or Incident, Peripheral, Protocol, Network Management, or Non-Mandatory.
 _Avoid_: bounded context, transport layer
