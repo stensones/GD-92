@@ -116,6 +116,10 @@ _Avoid_: application event, arbitrary payload type
 An encoded value type used to construct an Envelope or Message Contents.
 _Avoid_: domain Entity, arbitrary JSON field
 
+**Word8**:
+An unsigned eight-bit Protocol Field that is encoded as eight consecutive bits.
+_Avoid_: signed byte, variable-length integer
+
 **Message Family**:
 A protocol grouping of Message Types: Mobilisation, Resource or Incident, Peripheral, Protocol, Network Management, or Non-Mandatory.
 _Avoid_: bounded context, transport layer

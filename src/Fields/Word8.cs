@@ -9,6 +9,11 @@ public sealed record Word8
 
 	public byte Value { get; }
 
+	public static Word8 FromValue(byte value)
+	{
+		return new Word8(value);
+	}
+
 	public static Word8 FromEncodedMessageBuffer(ref EncodedMessageBuffer buffer)
 	{
 		return new Word8((byte)buffer.ReadUnsignedBits(8));

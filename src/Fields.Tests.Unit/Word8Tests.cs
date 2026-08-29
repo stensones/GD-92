@@ -34,6 +34,27 @@ public sealed class Word8Tests
 		secondWord8.Should().NotBe(firstWord8);
 	}
 
+	[Fact]
+	public void FromValue_accepts_an_unsigned_eight_bit_value()
+	{
+		var factoryMethod = typeof(Word8).GetMethod(nameof(Word8.FromValue));
+
+		factoryMethod.Should().NotBeNull();
+		factoryMethod!.GetParameters().Should().ContainSingle()
+			.Which.ParameterType.Should().Be(typeof(byte));
+	}
+
+	[Theory]
+	[InlineData(byte.MinValue)]
+	[InlineData(byte.MaxValue)]
+	public void Creates_values_at_the_unsigned_eight_bit_boundaries(byte value)
+	{
+		var word8 = Word8.FromValue(value);
+
+		word8.Value.Should().Be(value);
+		word8.ToWireValue().Should().Equal(new byte[] { value });
+	}
+
 	private static Word8 CreateWord8(byte value)
 	{
 		var buffer = new EncodedMessageBuffer(new byte[] { value });
