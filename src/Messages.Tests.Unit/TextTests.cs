@@ -6,20 +6,20 @@ namespace Stensones.GD92.Messages.Tests.Unit;
 public sealed class TextTests
 {
 	[Fact]
-	public void Is_a_GD92_message()
+	public void Is_GD92_message_contents()
 	{
-		typeof(Text).GetInterfaces().Should().Contain(typeof(IGD92Message));
+		typeof(Text).GetInterfaces().Should().Contain(typeof(IGD92MessageContents));
 	}
 
 	[Fact]
 	public void Has_message_type_27()
 	{
-		IGD92Message message = Text.FromFields(
+		IGD92MessageContents messageContents = Text.FromFields(
 			Block.FromValue(1),
 			OfBlocks.FromValue(1),
 			Stensones.GD92.Fields.Text.FromValue("FIRE"));
 
-		message.Type.ToWireValue().Should().Equal(new byte[] { 0x1B });
+		messageContents.Type.ToWireValue().Should().Equal(new byte[] { 0x1B });
 	}
 
 	[Fact]

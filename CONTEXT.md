@@ -97,8 +97,8 @@ The ordered, unique collection of Communications Addresses to which an Envelope 
 _Avoid_: arbitrary address list, destination range
 
 **Frame**:
-The Message Transfer Agent-to-Message Transfer Agent transfer unit containing a Message and bearer-protocol overhead.
-_Avoid_: Message, Contents
+The Message Transfer Agent-to-Message Transfer Agent transfer unit containing one encoded Envelope and bearer-protocol overhead.
+_Avoid_: Envelope, Contents
 
 **Block Check Character (BCC)**:
 The one-byte value calculated by exclusive-ORing all preceding Envelope and Message Contents bytes to verify end-to-end Message integrity.
@@ -116,15 +116,15 @@ _Avoid_: queue hint, business severity
 The packed Envelope field containing an Acknowledgement Request and Sequence Number.
 
 **Message**:
-The basic unit of network communication composed of an Envelope and Contents.
+The conceptual basic unit of network communication represented on the wire by an Envelope containing Contents.
 _Avoid_: envelope, contents
 
 **Envelope**:
-The Message part containing information used solely to transfer that Message across the network.
-_Avoid_: message, contents
+The complete serializable GD-92 `<envelope>` data entity, containing routing and integrity information, exactly one set of Contents, and its Block Check Character.
+_Avoid_: envelope header, Frame
 
 **Contents**:
-The Message part containing user information.
+The type-specific user information carried within an Envelope. `IGD92MessageContents` is the public contract for encoded Contents.
 _Avoid_: message, envelope, payload
 
 **Message Type**:
@@ -303,8 +303,8 @@ _Avoid_: retransmission, duplicate Message
 - A **Communications Node** belongs to one **Brigade or Agency** through its **Communications Address**.
 - A **Router** switches messages between the **User Agents** and **Message Transfer Agents** in its **Communications Node**.
 - A **Message Transfer Agent** transfers messages only with its paired **Message Transfer Agent**.
-- A **Message Transfer Agent** transfers a **Message** to its paired Message Transfer Agent in a **Frame**.
-- A **Router** and **User Agent** validate the **Block Check Character** of a received **Message**.
+- A **Message Transfer Agent** transfers an encoded **Envelope** to its paired Message Transfer Agent in a **Frame**.
+- A **Router** and **User Agent** validate the **Block Check Character** of a received **Envelope**.
 - A **User Agent** has exactly one **Communications Address** and one or more **UA Capabilities**.
 - An **Alerter User Agent**, **Paging User Agent**, **Printer User Agent**, **Peripheral User Agent**, or **Resource User Agent** is a **User Agent** with the corresponding **UA Capabilities**.
 - Every **User Agent** supports the **Network Manager** and **Alternative Network Manager** addresses.
@@ -313,10 +313,10 @@ _Avoid_: retransmission, duplicate Message
 - A **Router**, **Message Transfer Agent**, or **User Agent** owns zero or more **Parameters**.
 - A **Node Login** at a **Communications Node** authorizes Parameter modification according to each **Parameter**'s **Password Level**.
 - A **User Agent** accepts **Messages** at its current **Protocol Version** or below.
-- A **Message** carries the **Protocol Version** applicable to its **Message Type**.
+- An **Envelope** carries the **Protocol Version** applicable to its **Message Type**.
 - A **Message Sequence** contains one or more **Messages**, each with a distinct **Sequence Number**.
 - A **Router** processes higher **Message Priorities** before lower ones and preserves arrival order within the same priority.
-- A **Message** contains exactly one **Envelope** and exactly one set of **Contents**.
+- A **Message** is represented by an **Envelope** containing exactly one set of **Contents**.
 - An **Envelope** and **Contents** are composed of **Protocol Fields**.
 - An **Envelope** derives its CountAndLength, Message Type, and Block Check Character from its Destinations and Message Contents.
 - A **Message Type** determines the structure and handling constraints of a Message's **Contents**.

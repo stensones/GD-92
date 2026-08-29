@@ -3,7 +3,7 @@ using FieldText = Stensones.GD92.Fields.Text;
 
 namespace Stensones.GD92.Messages;
 
-public sealed record Text : IGD92Message
+public sealed record Text : IGD92MessageContents
 {
 	private static readonly MessageType TextMessageType = MessageType.FromValue(GD92MessageType.Text);
 

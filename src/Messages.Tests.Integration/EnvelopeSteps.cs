@@ -11,7 +11,7 @@ public sealed class EnvelopeSteps
 	private Destinations? destinations;
 	private ProtocolAndPriority? protocolAndPriority;
 	private AcknowledgementAndSequence? acknowledgementAndSequence;
-	private IGD92Message? message;
+	private IGD92MessageContents? contents;
 	private Envelope? envelope;
 
 	[Given(@"an Envelope source and destination of Brigade (.*), Node (.*), and Port (.*)")]
@@ -45,7 +45,7 @@ public sealed class EnvelopeSteps
 	[Given(@"a single-block Text message containing ""(.*)""")]
 	public void GivenASingleBlockTextMessageContaining(string text)
 	{
-		this.message = Text.FromFields(
+		this.contents = Text.FromFields(
 			Block.FromValue(1),
 			OfBlocks.FromValue(1),
 			Stensones.GD92.Fields.Text.FromValue(text));
@@ -59,7 +59,7 @@ public sealed class EnvelopeSteps
 			this.destinations!,
 			this.protocolAndPriority!,
 			this.acknowledgementAndSequence!,
-			this.message!);
+			this.contents!);
 	}
 
 	[Then(@"its complete Envelope bytes are ""(.*)""")]

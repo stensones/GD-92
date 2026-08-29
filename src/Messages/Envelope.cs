@@ -4,31 +4,31 @@ namespace Stensones.GD92.Messages;
 
 public sealed class Envelope
 {
-	private readonly byte[] messageWireValue;
+	private readonly byte[] contentsWireValue;
 
 	private Envelope(
 		CommunicationsAddress source,
 		Destinations destinations,
 		ProtocolAndPriority protocolAndPriority,
 		AcknowledgementAndSequence acknowledgementAndSequence,
-		IGD92Message message,
+		IGD92MessageContents contents,
 		CountAndLength countAndLength,
-		byte[] messageWireValue)
+		byte[] contentsWireValue)
 	{
 		this.Source = source;
 		this.Destinations = destinations;
 		this.ProtocolAndPriority = protocolAndPriority;
 		this.AcknowledgementAndSequence = acknowledgementAndSequence;
-		this.Message = message;
+		this.Contents = contents;
 		this.CountAndLength = countAndLength;
-		this.messageWireValue = messageWireValue;
+		this.contentsWireValue = contentsWireValue;
 	}
 
 	public CommunicationsAddress Source { get; }
 	public Destinations Destinations { get; }
 	public ProtocolAndPriority ProtocolAndPriority { get; }
 	public AcknowledgementAndSequence AcknowledgementAndSequence { get; }
-	public IGD92Message Message { get; }
+	public IGD92MessageContents Contents { get; }
 	public CountAndLength CountAndLength { get; }
 
 	public static Envelope FromValues(
@@ -36,24 +36,24 @@ public sealed class Envelope
 		Destinations destinations,
 		ProtocolAndPriority protocolAndPriority,
 		AcknowledgementAndSequence acknowledgementAndSequence,
-		IGD92Message message)
+		IGD92MessageContents contents)
 	{
 		ArgumentNullException.ThrowIfNull(source);
 		ArgumentNullException.ThrowIfNull(destinations);
 		ArgumentNullException.ThrowIfNull(protocolAndPriority);
 		ArgumentNullException.ThrowIfNull(acknowledgementAndSequence);
-		ArgumentNullException.ThrowIfNull(message);
+		ArgumentNullException.ThrowIfNull(contents);
 
-		var messageWireValue = message.ToWireValue();
-		ArgumentNullException.ThrowIfNull(messageWireValue);
+		var contentsWireValue = contents.ToWireValue();
+		ArgumentNullException.ThrowIfNull(contentsWireValue);
 
-		if (messageWireValue.Length > 1023)
+		if (contentsWireValue.Length > 1023)
 		{
-			throw new ArgumentOutOfRangeException(nameof(message));
+			throw new ArgumentOutOfRangeException(nameof(contents));
 		}
 
 		var countAndLength = CountAndLength.FromValues(
-			MessageLength.FromValue((ushort)messageWireValue.Length),
+			MessageLength.FromValue((ushort)contentsWireValue.Length),
 			destinations.Count);
 
 		return new Envelope(
@@ -61,9 +61,9 @@ public sealed class Envelope
 			destinations,
 			protocolAndPriority,
 			acknowledgementAndSequence,
-			message,
+			contents,
 			countAndLength,
-			messageWireValue.ToArray());
+			contentsWireValue.ToArray());
 	}
 
 	public byte[] ToWireValue()
@@ -74,8 +74,8 @@ public sealed class Envelope
 		envelopeBytesBeforeBlockCheckCharacter.AddRange(this.Destinations.ToWireValue());
 		envelopeBytesBeforeBlockCheckCharacter.AddRange(this.ProtocolAndPriority.ToWireValue());
 		envelopeBytesBeforeBlockCheckCharacter.AddRange(this.AcknowledgementAndSequence.ToWireValue());
-		envelopeBytesBeforeBlockCheckCharacter.AddRange(this.Message.Type.ToWireValue());
-		envelopeBytesBeforeBlockCheckCharacter.AddRange(this.messageWireValue);
+		envelopeBytesBeforeBlockCheckCharacter.AddRange(this.Contents.Type.ToWireValue());
+		envelopeBytesBeforeBlockCheckCharacter.AddRange(this.contentsWireValue);
 		var blockCheckCharacter = BlockCheckCharacter.FromEnvelopeBytes(
 			envelopeBytesBeforeBlockCheckCharacter.ToArray());
 
