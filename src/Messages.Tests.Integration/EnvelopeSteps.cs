@@ -206,6 +206,22 @@ public sealed class EnvelopeSteps
 		this.envelope!.Contents.Should().BeOfType<Acknowledgement>();
 	}
 
+	[When(@"an Acknowledgement Envelope is created by Brigade (.*), Node (.*), Port (.*) using protocol version (.*)")]
+	public void WhenAnAcknowledgementEnvelopeIsCreated(
+		byte brigade,
+		ushort node,
+		byte port,
+		byte protocolVersion)
+	{
+		var buffer = new EncodedMessageBuffer(this.encodedEnvelope!);
+		var receivedEnvelope = Envelope.FromEncodedMessageBuffer(ref buffer);
+
+		this.envelope = Envelope.CreateAcknowledgement(
+			receivedEnvelope,
+			CreateAddress(brigade, node, port),
+			ProtocolVersion.FromValue(protocolVersion));
+	}
+
 	private static CommunicationsAddress CreateAddress(byte brigade, ushort node, byte port)
 	{
 		return CommunicationsAddress.FromValues(
