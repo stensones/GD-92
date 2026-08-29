@@ -8,7 +8,7 @@ public static class ServiceCollectionExtensions
 	{
 		public IServiceCollection AddGD92Fields()
 		{
-			services.AddSingleton<ISerializableProtocolField, ProtocolField>();
+			services.AddSingleton<Word8>();
 			return services;
 		}
 	}

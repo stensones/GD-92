@@ -1,0 +1,21 @@
+namespace Stensones.GD92.Fields;
+
+public sealed record Word8
+{
+	private Word8(byte value)
+	{
+		this.Value = value;
+	}
+
+	public byte Value { get; }
+
+	public static Word8 FromEncodedMessageBuffer(ref EncodedMessageBuffer buffer)
+	{
+		return new Word8((byte)buffer.ReadUnsignedBits(8));
+	}
+
+	public byte[] ToWireValue()
+	{
+		return [this.Value];
+	}
+}
