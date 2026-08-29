@@ -45,6 +45,29 @@ public sealed class EnvelopeTests
 	}
 
 	[Fact]
+	public void Rejects_a_parameter_request_without_an_acknowledgement_request()
+	{
+		var address = CommunicationsAddress.FromValues(
+			Brigade.FromValue(26),
+			Node.FromValue(100),
+			Port.FromValue(25));
+		var createEnvelope = () => Envelope.FromValues(
+			address,
+			Destinations.FromAddresses(address),
+			ProtocolAndPriority.FromValues(
+				MessagePriority.FromValue(1),
+				ProtocolVersion.FromValue(2)),
+			AcknowledgementAndSequence.FromValues(
+				SequenceNumber.FromValue(31953),
+				AcknowledgementRequest.NotRequested),
+			ParameterRequest.FromFields(
+				ParameterTable.Current,
+				ParameterNumber.FromValue(1)));
+
+		createEnvelope.Should().Throw<InvalidOperationException>();
+	}
+
+	[Fact]
 	public void Creates_an_envelope_from_an_encoded_message_buffer()
 	{
 		var buffer = new EncodedMessageBuffer(

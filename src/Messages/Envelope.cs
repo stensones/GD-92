@@ -44,6 +44,12 @@ public sealed class Envelope
 		ArgumentNullException.ThrowIfNull(acknowledgementAndSequence);
 		ArgumentNullException.ThrowIfNull(contents);
 
+		if (contents is ParameterRequest &&
+			!acknowledgementAndSequence.AcknowledgementRequest.IsRequested)
+		{
+			throw new InvalidOperationException("A Parameter Request Envelope must request acknowledgement.");
+		}
+
 		var contentsWireValue = contents.ToWireValue();
 		ArgumentNullException.ThrowIfNull(contentsWireValue);
 

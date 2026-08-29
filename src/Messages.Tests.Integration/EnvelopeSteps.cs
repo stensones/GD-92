@@ -17,6 +17,7 @@ public sealed class EnvelopeSteps
 	private Destinations? affectedDestinations;
 	private InvalidOperationException? decodingException;
 	private InvalidOperationException? acknowledgementException;
+	private InvalidOperationException? envelopeCreationException;
 
 	[Given(@"an Envelope source and destination of Brigade (.*), Node (.*), and Port (.*)")]
 	public void GivenAnEnvelopeSourceAndDestination(byte brigade, ushort node, byte port)
@@ -46,6 +47,14 @@ public sealed class EnvelopeSteps
 			AcknowledgementRequest.Requested);
 	}
 
+	[Given(@"an Envelope sequence number of (.*) without requesting acknowledgement")]
+	public void GivenAnEnvelopeSequenceNumberWithoutRequestingAcknowledgement(ushort sequenceNumber)
+	{
+		this.acknowledgementAndSequence = AcknowledgementAndSequence.FromValues(
+			SequenceNumber.FromValue(sequenceNumber),
+			AcknowledgementRequest.NotRequested);
+	}
+
 	[Given(@"a single-block Text message containing ""(.*)""")]
 	public void GivenASingleBlockTextMessageContaining(string text)
 	{
@@ -72,6 +81,30 @@ public sealed class EnvelopeSteps
 			this.protocolAndPriority!,
 			this.acknowledgementAndSequence!,
 			this.contents!);
+	}
+
+	[When(@"Envelope creation is attempted")]
+	public void WhenEnvelopeCreationIsAttempted()
+	{
+		try
+		{
+			this.envelope = Envelope.FromValues(
+				this.source!,
+				this.destinations!,
+				this.protocolAndPriority!,
+				this.acknowledgementAndSequence!,
+				this.contents!);
+		}
+		catch (InvalidOperationException exception)
+		{
+			this.envelopeCreationException = exception;
+		}
+	}
+
+	[Then(@"the Parameter Request Envelope creation is rejected")]
+	public void ThenTheParameterRequestEnvelopeCreationIsRejected()
+	{
+		this.envelopeCreationException.Should().NotBeNull();
 	}
 
 	[Then(@"its complete Envelope bytes are ""(.*)""")]

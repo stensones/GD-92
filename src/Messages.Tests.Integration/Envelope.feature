@@ -53,6 +53,14 @@ Feature: Envelopes
     Then its decoded Parameter Request identifies the current table and parameter number 1
     And its complete Envelope bytes are "1A191900811A191912FCD13D020180"
 
+  Scenario: Rejecting an unacknowledged Parameter Request Envelope
+    Given an Envelope source and destination of Brigade 26, Node 100, and Port 25
+    And an Envelope priority of 1 and protocol version of 2
+    And an Envelope sequence number of 31953 without requesting acknowledgement
+    And a Parameter Request for the current table and parameter number 1
+    When Envelope creation is attempted
+    Then the Parameter Request Envelope creation is rejected
+
   Scenario: Decoding an Acknowledgement Envelope
     Given encoded Envelope bytes "1A195A00011A1919127CD132CF"
     When the Envelope is decoded

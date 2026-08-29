@@ -75,7 +75,7 @@ The eight-bit identifier of a Parameter within a Parameter Table.
 _Avoid_: Message Sequence Number, parameter value
 
 **Parameter Request**:
-The Message Type 61 Contents that requests the value of one Parameter by its Parameter Table and Parameter Number.
+The Message Type 61 Contents that requests the value of one Parameter by its Parameter Table and Parameter Number and requires acknowledgement.
 _Avoid_: Parameter value, Set Parameter
 
 **Password Level**:
@@ -334,6 +334,7 @@ _Avoid_: retransmission, duplicate Message
 - A **Node Login** at a **Communications Node** authorizes Parameter modification according to each **Parameter**'s **Password Level**.
 - A **Parameter Request** identifies one **Parameter Table** and one **Parameter Number**.
 - A **Parameter Number** identifies one **Parameter** within its **Parameter Table**.
+- A **Parameter Request Envelope** always has its **Acknowledgement Request** set.
 - A **User Agent** accepts **Messages** at its current **Protocol Version** or below.
 - An **Envelope** carries the **Protocol Version** applicable to its **Message Type**.
 - A **Message Sequence** contains one or more **Messages**, each with a distinct **Sequence Number**.
