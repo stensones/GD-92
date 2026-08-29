@@ -83,12 +83,25 @@ _Avoid_: node deployment version, software version
 **ProtocolAndPriority**:
 The packed Envelope field containing a Message Priority and Protocol Version.
 
+**CountAndLength**:
+The packed Envelope field containing a Message Length and Destination Count.
+
+**Message Length**:
+The 10-bit count of bytes in an Envelope's Message Contents, ranging from 0 to 1,023.
+
+**Destination Count**:
+The 6-bit count of destination Communications Addresses in an Envelope, ranging from 1 to 63.
+
+**Destinations**:
+The ordered, unique collection of Communications Addresses to which an Envelope is sent.
+_Avoid_: arbitrary address list, destination range
+
 **Frame**:
 The Message Transfer Agent-to-Message Transfer Agent transfer unit containing a Message and bearer-protocol overhead.
 _Avoid_: Message, Contents
 
 **Block Check Character (BCC)**:
-The value calculated over an Envelope to verify the end-to-end integrity of its Message.
+The one-byte value calculated by exclusive-ORing all preceding Envelope and Message Contents bytes to verify end-to-end Message integrity.
 _Avoid_: frame checksum, bearer validation
 
 **Message Sequence**:
@@ -308,6 +321,7 @@ _Avoid_: retransmission, duplicate Message
 - A **Message Type** determines the structure and handling constraints of a Message's **Contents**.
 - A **Text Message** contains one **Block**, one **OfBlocks**, and one **Text**.
 - An **Envelope** contains between 1 and 63 unique destination **Communications Addresses**.
+- **Destinations** preserves its Communications Addresses in their declared order.
 - Each **Message Type** belongs to one **Message Family**.
 - A **Non-Mandatory Message Type** is usable only when the relevant **User Agents** have that **UA Capability**.
 - An **Incident Number** identifies one **Incident**.
