@@ -1,4 +1,5 @@
 # GD-92
+
 Want to create your own GD-92 solution in .NET Core? This GitHub project implments the core of the [GD-92 v2.2 specification](https://github.com/stensones/GD-92/blob/master/gd92.pdf) or it will if I ever find the time to complete it!
 
 **WARNING** Right now this is very incomplete!
@@ -14,8 +15,11 @@ Unit test projects should use assertions from the NuGet library `AwesomeAssertio
 Integration test projects should have the naming converntion of '*.Tests.Integration'
 Integration test projects should use ReqnRoll NuGet package to surface tests as `.feature' files with Gherkin syntax.
 
-solution structure: **TBC**
+## solution structure
 
+**TBC**
+
+## Development methodology
 
 This project is build using BDD. Before creating production code write Gherkin test in the appropriate integration test project, then use TDD to implement it.
 Using TDD we write unit tests for desired new production code funcionality before writing code to satisfy those tests.
