@@ -129,4 +129,54 @@ public sealed class EnvelopeSteps
 	{
 		this.decodingException.Should().NotBeNull();
 	}
+
+	[Given(@"an Envelope source of Brigade (.*), Node (.*), and Port (.*)")]
+	public void GivenAnEnvelopeSource(byte brigade, ushort node, byte port)
+	{
+		this.source = CreateAddress(brigade, node, port);
+	}
+
+	[Given(@"Envelope destinations Brigade (.*), Node (.*), Port (.*) and Brigade (.*), Node (.*), Port (.*)")]
+	public void GivenEnvelopeDestinations(
+		byte firstBrigade,
+		ushort firstNode,
+		byte firstPort,
+		byte secondBrigade,
+		ushort secondNode,
+		byte secondPort)
+	{
+		this.destinations = Destinations.FromAddresses(
+			CreateAddress(firstBrigade, firstNode, firstPort),
+			CreateAddress(secondBrigade, secondNode, secondPort));
+	}
+
+	[When(@"the Envelope is created and decoded")]
+	public void WhenTheEnvelopeIsCreatedAndDecoded()
+	{
+		var envelope = Envelope.FromValues(
+			this.source!,
+			this.destinations!,
+			this.protocolAndPriority!,
+			this.acknowledgementAndSequence!,
+			this.contents!);
+		var buffer = new EncodedMessageBuffer(envelope.ToWireValue());
+
+		this.envelope = Envelope.FromEncodedMessageBuffer(ref buffer);
+	}
+
+	[Then(@"it has (.*) decoded destinations in the declared order")]
+	public void ThenItHasDecodedDestinationsInTheDeclaredOrder(byte expectedCount)
+	{
+		this.envelope!.Destinations.Count.Value.Should().Be(expectedCount);
+		this.envelope.Destinations.ToWireValue().Should().Equal(
+			Convert.FromHexString("1A19191A195A"));
+	}
+
+	private static CommunicationsAddress CreateAddress(byte brigade, ushort node, byte port)
+	{
+		return CommunicationsAddress.FromValues(
+			Brigade.FromValue(brigade),
+			Node.FromValue(node),
+			Port.FromValue(port));
+	}
 }

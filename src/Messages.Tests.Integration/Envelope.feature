@@ -20,3 +20,13 @@ Feature: Envelopes
     Given encoded Envelope bytes "1A191902011A191912FCD11B01010004464952453A"
     When decoding the Envelope is attempted
     Then the Block Check Character mismatch is rejected
+
+  Scenario: Creating and decoding a Text Message Envelope for two destinations
+    Given an Envelope source of Brigade 26, Node 100, and Port 25
+    And Envelope destinations Brigade 26, Node 100, Port 25 and Brigade 26, Node 101, Port 26
+    And an Envelope priority of 1 and protocol version of 2
+    And an Envelope sequence number of 31953 requesting acknowledgement
+    And a single-block Text message containing "FIRE"
+    When the Envelope is created and decoded
+    Then its complete Envelope bytes are "1A191902021A19191A195A12FCD11B010100044649524561"
+    And it has 2 decoded destinations in the declared order
