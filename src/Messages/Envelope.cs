@@ -161,6 +161,34 @@ public sealed class Envelope
 			NegativeAcknowledgement.FromValues(affectedDestinations, reasonCode));
 	}
 
+	public static Envelope CreateParameterResponse(
+		Envelope requestEnvelope,
+		CommunicationsAddress respondingSource,
+		ProtocolVersion protocolVersion,
+		Parameter parameter)
+	{
+		ArgumentNullException.ThrowIfNull(requestEnvelope);
+		ArgumentNullException.ThrowIfNull(respondingSource);
+		ArgumentNullException.ThrowIfNull(protocolVersion);
+		ArgumentNullException.ThrowIfNull(parameter);
+
+		if (requestEnvelope.Contents is not ParameterRequest)
+		{
+			throw new InvalidOperationException("A Parameter response can only respond to a Parameter Request Envelope.");
+		}
+
+		return FromValues(
+			respondingSource,
+			Destinations.FromAddresses(requestEnvelope.Source),
+			ProtocolAndPriority.FromValues(
+				requestEnvelope.ProtocolAndPriority.Priority,
+				protocolVersion),
+			AcknowledgementAndSequence.FromValues(
+				requestEnvelope.AcknowledgementAndSequence.SequenceNumber,
+				AcknowledgementRequest.NotRequested),
+			parameter);
+	}
+
 	public byte[] ToWireValue()
 	{
 		var envelopeBytesBeforeBlockCheckCharacter = this.GetBytesBeforeBlockCheckCharacter();
@@ -192,6 +220,7 @@ public sealed class Envelope
 			GD92MessageType.Acknowledgement => Acknowledgement.FromEncodedMessageBuffer(ref contentsBuffer),
 			GD92MessageType.NegativeAcknowledgement => NegativeAcknowledgement.FromEncodedMessageBuffer(ref contentsBuffer),
 			GD92MessageType.ParameterRequest => ParameterRequest.FromEncodedMessageBuffer(ref contentsBuffer),
+			GD92MessageType.Parameter => Parameter.FromEncodedMessageBuffer(ref contentsBuffer),
 			_ => UnsupportedMessageContents.FromWireValue(messageType, contentsWireValue)
 		};
 

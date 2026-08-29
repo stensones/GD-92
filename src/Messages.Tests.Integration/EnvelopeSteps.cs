@@ -161,6 +161,35 @@ public sealed class EnvelopeSteps
 		contents.ParameterNumber.Value.Should().Be(parameterNumber);
 	}
 
+	[When(@"a Parameter Envelope is created by Brigade (.*), Node (.*), Port (.*) using protocol version (.*) returning brigade number (.*)")]
+	public void WhenAParameterEnvelopeIsCreated(
+		byte brigade,
+		ushort node,
+		byte port,
+		byte protocolVersion,
+		byte returnedBrigadeNumber)
+	{
+		var buffer = new EncodedMessageBuffer(this.encodedEnvelope!);
+		var requestEnvelope = Envelope.FromEncodedMessageBuffer(ref buffer);
+
+		this.envelope = Envelope.CreateParameterResponse(
+			requestEnvelope,
+			CreateAddress(brigade, node, port),
+			ProtocolVersion.FromValue(protocolVersion),
+			Parameter.FromFields(
+				MoreValues.No,
+				ParameterValue.FromWireValue([returnedBrigadeNumber])));
+	}
+
+	[Then(@"its Parameter Contents contain no more values and brigade number (.*)")]
+	public void ThenItsParameterContentsContainNoMoreValuesAndBrigadeNumber(byte brigadeNumber)
+	{
+		var contents = this.envelope!.Contents.Should().BeOfType<Parameter>().Which;
+
+		contents.MoreValues.Should().Be(MoreValues.No);
+		contents.ParameterValue.ToWireValue().Should().Equal(new byte[] { brigadeNumber });
+	}
+
 	[When(@"decoding the Envelope is attempted")]
 	public void WhenDecodingTheEnvelopeIsAttempted()
 	{

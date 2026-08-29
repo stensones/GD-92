@@ -78,6 +78,18 @@ _Avoid_: Message Sequence Number, parameter value
 The Message Type 61 Contents that requests the value of one Parameter by its Parameter Table and Parameter Number and requires acknowledgement.
 _Avoid_: Parameter value, Set Parameter
 
+**More Values**:
+The boolean field in a Parameter Message indicating whether additional Parameter values remain to be returned.
+_Avoid_: parameter count, pagination token
+
+**Parameter Value**:
+The parameter-specific encoded value returned by a Parameter Message.
+_Avoid_: Parameter Number, generic configuration value
+
+**Parameter Message**:
+The Message Type 62 Contents that returns a Parameter Value in response to a Parameter Request.
+_Avoid_: Parameter, Parameter Request
+
 **Password Level**:
 The access level required to modify a Parameter.
 _Avoid_: user role, permanent authentication
@@ -335,6 +347,8 @@ _Avoid_: retransmission, duplicate Message
 - A **Parameter Request** identifies one **Parameter Table** and one **Parameter Number**.
 - A **Parameter Number** identifies one **Parameter** within its **Parameter Table**.
 - A **Parameter Request Envelope** always has its **Acknowledgement Request** set.
+- A **Parameter Message** contains one **Parameter Value** and one **More Values** field.
+- A **Parameter Message Envelope** responds to a **Parameter Request Envelope** using the request Envelope's source, Message Priority, and Sequence Number, with its **Acknowledgement Request** clear.
 - A **User Agent** accepts **Messages** at its current **Protocol Version** or below.
 - An **Envelope** carries the **Protocol Version** applicable to its **Message Type**.
 - A **Message Sequence** contains one or more **Messages**, each with a distinct **Sequence Number**.

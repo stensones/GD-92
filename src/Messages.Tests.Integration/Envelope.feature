@@ -61,6 +61,12 @@ Feature: Envelopes
     When Envelope creation is attempted
     Then the Parameter Request Envelope creation is rejected
 
+  Scenario: Returning the current brigade number for a Parameter Request
+    Given encoded Envelope bytes "1A191900811A195A12FCD13D0201C3"
+    When a Parameter Envelope is created by Brigade 26, Node 101, Port 26 using protocol version 2 returning brigade number 26
+    Then its Parameter Contents contain no more values and brigade number 26
+    And its complete Envelope bytes are "1A195A00811A1919127CD13E001A59"
+
   Scenario: Decoding an Acknowledgement Envelope
     Given encoded Envelope bytes "1A195A00011A1919127CD132CF"
     When the Envelope is decoded
