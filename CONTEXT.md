@@ -135,6 +135,10 @@ The total number of blocks in one Text_message.
 **Text**:
 A long compressed ASCII Protocol Field used for unstructured message text.
 
+**Text Message**:
+The Message Type 27 Contents, composed of a Block, OfBlocks, and Text.
+_Avoid_: text Protocol Field, Envelope
+
 **Message Family**:
 A protocol grouping of Message Types: Mobilisation, Resource or Incident, Peripheral, Protocol, Network Management, or Non-Mandatory.
 _Avoid_: bounded context, transport layer
@@ -302,6 +306,7 @@ _Avoid_: retransmission, duplicate Message
 - A **Message** contains exactly one **Envelope** and exactly one set of **Contents**.
 - An **Envelope** and **Contents** are composed of **Protocol Fields**.
 - A **Message Type** determines the structure and handling constraints of a Message's **Contents**.
+- A **Text Message** contains one **Block**, one **OfBlocks**, and one **Text**.
 - An **Envelope** contains between 1 and 63 unique destination **Communications Addresses**.
 - Each **Message Type** belongs to one **Message Family**.
 - A **Non-Mandatory Message Type** is usable only when the relevant **User Agents** have that **UA Capability**.
