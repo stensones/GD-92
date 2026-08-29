@@ -115,7 +115,7 @@ The Message part containing user information.
 _Avoid_: message, envelope, payload
 
 **Message Type**:
-A numbered protocol classification that determines a Message's Contents structure and associated handling constraints.
+A numbered eight-bit Protocol Field, restricted to the finite catalogue defined by GD-92, that determines a Message's Contents structure and associated handling constraints.
 _Avoid_: application event, arbitrary payload type
 
 **Protocol Field**:

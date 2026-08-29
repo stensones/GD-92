@@ -31,4 +31,10 @@ public sealed class TextMessageSteps
 	{
 		this.message!.ToWireValue().Should().Equal(Convert.FromHexString(expectedBytes));
 	}
+
+	[Then(@"its Message Type bytes are ""(.*)""")]
+	public void ThenItsMessageTypeBytesAre(string expectedBytes)
+	{
+		this.message!.Type.ToWireValue().Should().Equal(Convert.FromHexString(expectedBytes));
+	}
 }

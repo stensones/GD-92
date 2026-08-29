@@ -5,6 +5,8 @@ namespace Stensones.GD92.Messages;
 
 public sealed record Text : IGD92Message
 {
+	private static readonly MessageType TextMessageType = MessageType.FromValue(GD92MessageType.Text);
+
 	private Text(Block block, OfBlocks ofBlocks, FieldText text)
 	{
 		this.Block = block;
@@ -15,6 +17,7 @@ public sealed record Text : IGD92Message
 	public Block Block { get; }
 	public OfBlocks OfBlocks { get; }
 	public FieldText MessageText { get; }
+	public MessageType Type => TextMessageType;
 
 	public static Text FromFields(Block block, OfBlocks ofBlocks, FieldText text)
 	{
