@@ -1,3 +1,4 @@
+using System.Text;
 using AwesomeAssertions;
 
 namespace Stensones.GD92.Fields.Tests.Unit;
@@ -26,6 +27,22 @@ public sealed class TextTests
 		var text = Text.FromValue("\x1B");
 
 		text.ToWireValue().Should().Equal(new byte[] { 0x00, 0x03, 0x1B, 0x1B, 0x01 });
+	}
+
+	[Fact]
+	public void Serializes_the_highest_seven_bit_ascii_character()
+	{
+		var text = Text.FromValue("\x7F");
+
+		text.ToWireValue().Should().Equal(new byte[] { 0x00, 0x01, 0x7F });
+	}
+
+	[Fact]
+	public void Rejects_characters_outside_seven_bit_ascii()
+	{
+		Action createText = () => Text.FromValue("\u0080");
+
+		createText.Should().Throw<EncoderFallbackException>();
 	}
 
 	[Fact]
