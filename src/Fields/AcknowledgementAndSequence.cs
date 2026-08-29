@@ -1,6 +1,6 @@
 namespace Stensones.GD92.Fields;
 
-public sealed record AcknowledgementAndSequence
+public sealed record AcknowledgementAndSequence : IGD9Field
 {
 	private AcknowledgementAndSequence(SequenceNumber sequenceNumber, AcknowledgementRequest acknowledgementRequest)
 	{

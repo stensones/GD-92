@@ -1,6 +1,6 @@
 namespace Stensones.GD92.Fields;
 
-public sealed record ProtocolAndPriority
+public sealed record ProtocolAndPriority : IGD9Field
 {
 	private ProtocolAndPriority(MessagePriority priority, ProtocolVersion protocolVersion)
 	{

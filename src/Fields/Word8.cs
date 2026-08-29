@@ -1,6 +1,6 @@
 namespace Stensones.GD92.Fields;
 
-public record Word8
+public record Word8 : IGD9Field
 {
 	protected Word8(byte value)
 	{

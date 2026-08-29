@@ -1,6 +1,6 @@
 namespace Stensones.GD92.Fields;
 
-public sealed record CommunicationsAddress
+public sealed record CommunicationsAddress : IGD9Field
 {
 	private CommunicationsAddress(Brigade brigade, Node node, Port port)
 	{

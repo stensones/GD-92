@@ -99,6 +99,9 @@ _Avoid_: frame fragmentation, oversized Message
 The ordered delivery urgency of a Message, ranging from 1 (highest) to 9 (lowest).
 _Avoid_: queue hint, business severity
 
+**AcknowledgementAndSequence**:
+The packed Envelope field containing an Acknowledgement Request and Sequence Number.
+
 **Message**:
 The basic unit of network communication composed of an Envelope and Contents.
 _Avoid_: envelope, contents

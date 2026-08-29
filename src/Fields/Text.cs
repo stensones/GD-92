@@ -2,7 +2,7 @@ using System.Text;
 
 namespace Stensones.GD92.Fields;
 
-public sealed record Text
+public sealed record Text : IGD9Field
 {
 	private static readonly Encoding Ascii = Encoding.GetEncoding(
 		"us-ascii",
