@@ -20,7 +20,7 @@ public sealed record Text
 	{
 		ArgumentNullException.ThrowIfNull(value);
 
-		var encodedValue = Ascii.GetBytes(value);
+		var encodedValue = Compress(Ascii.GetBytes(value));
 
 		if (encodedValue.Length > ushort.MaxValue)
 		{
@@ -38,5 +38,59 @@ public sealed record Text
 		this.value.CopyTo(wireValue, 2);
 
 		return wireValue;
+	}
+
+	private static byte[] Compress(ReadOnlySpan<byte> value)
+	{
+		var compressedValue = new List<byte>();
+
+		for (var index = 0; index < value.Length;)
+		{
+			var runLength = 1;
+
+			while (index + runLength < value.Length && value[index + runLength] == value[index])
+			{
+				runLength++;
+			}
+
+			if (runLength > 3)
+			{
+				var remainingRunLength = runLength;
+
+				while (remainingRunLength > 3)
+				{
+					var compressedRunLength = Math.Min(remainingRunLength, byte.MaxValue);
+					compressedValue.Add(0x1B);
+					compressedValue.Add(value[index]);
+					compressedValue.Add((byte)compressedRunLength);
+					remainingRunLength -= compressedRunLength;
+				}
+
+				for (var runIndex = 0; runIndex < remainingRunLength; runIndex++)
+				{
+					compressedValue.Add(value[index]);
+				}
+			}
+			else if (value[index] == 0x1B)
+			{
+				for (var runIndex = 0; runIndex < runLength; runIndex++)
+				{
+					compressedValue.Add(0x1B);
+					compressedValue.Add(0x1B);
+					compressedValue.Add(0x01);
+				}
+			}
+			else
+			{
+				for (var runIndex = 0; runIndex < runLength; runIndex++)
+				{
+					compressedValue.Add(value[index]);
+				}
+			}
+
+			index += runLength;
+		}
+
+		return compressedValue.ToArray();
 	}
 }
