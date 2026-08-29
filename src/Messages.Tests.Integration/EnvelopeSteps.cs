@@ -15,6 +15,7 @@ public sealed class EnvelopeSteps
 	private Envelope? envelope;
 	private byte[]? encodedEnvelope;
 	private InvalidOperationException? decodingException;
+	private NotSupportedException? unsupportedMessageTypeException;
 
 	[Given(@"an Envelope source and destination of Brigade (.*), Node (.*), and Port (.*)")]
 	public void GivenAnEnvelopeSourceAndDestination(byte brigade, ushort node, byte port)
@@ -134,6 +135,27 @@ public sealed class EnvelopeSteps
 	public void ThenTheMessageContentsLengthMismatchIsRejected()
 	{
 		this.decodingException.Should().NotBeNull();
+	}
+
+	[When(@"decoding the unsupported Envelope is attempted")]
+	public void WhenDecodingTheUnsupportedEnvelopeIsAttempted()
+	{
+		try
+		{
+			var buffer = new EncodedMessageBuffer(this.encodedEnvelope!);
+
+			this.envelope = Envelope.FromEncodedMessageBuffer(ref buffer);
+		}
+		catch (NotSupportedException exception)
+		{
+			this.unsupportedMessageTypeException = exception;
+		}
+	}
+
+	[Then(@"the unsupported Message Type is rejected")]
+	public void ThenTheUnsupportedMessageTypeIsRejected()
+	{
+		this.unsupportedMessageTypeException.Should().NotBeNull();
 	}
 
 	[Given(@"an Envelope source of Brigade (.*), Node (.*), and Port (.*)")]

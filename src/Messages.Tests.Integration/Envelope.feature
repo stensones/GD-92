@@ -26,6 +26,11 @@ Feature: Envelopes
     When decoding the Envelope is attempted
     Then the Message Contents length mismatch is rejected
 
+  Scenario: Rejecting a known but unsupported Message Type
+    Given encoded Envelope bytes "1A191902011A191912FCD132010100044649524512"
+    When decoding the unsupported Envelope is attempted
+    Then the unsupported Message Type is rejected
+
   Scenario: Creating and decoding a Text Message Envelope for two destinations
     Given an Envelope source of Brigade 26, Node 100, and Port 25
     And Envelope destinations Brigade 26, Node 100, Port 25 and Brigade 26, Node 101, Port 26
