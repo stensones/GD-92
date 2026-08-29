@@ -1,4 +1,7 @@
 <Solution>
+  <Folder Name="/Fields.Tests.Architecture/">
+    <Project Path="Fields.Tests.Architecture/Stensones.GD92.Fields.Tests.Architecture.csproj" />
+  </Folder>
   <Folder Name="/Fields.Tests.Integration/">
     <Project Path="Fields.Tests.Integration/Stensones.GD92.Fields.Tests.Integration.csproj" />
   </Folder>
