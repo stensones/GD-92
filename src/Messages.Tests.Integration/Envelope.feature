@@ -51,3 +51,8 @@ Feature: Envelopes
     Given encoded Envelope bytes "1A191902011A195A12FCD11B010100044649524578"
     When an Acknowledgement Envelope is created by Brigade 26, Node 101, Port 26 using protocol version 2
     Then its complete Envelope bytes are "1A195A00011A1919127CD132CF"
+
+  Scenario: Rejecting an acknowledgement for an unacknowledged Text Message Envelope
+    Given encoded Envelope bytes "1A191902011A195A127CD11B0101000446495245F8"
+    When creating an Acknowledgement Envelope is attempted by Brigade 26, Node 101, Port 26 using protocol version 2
+    Then the acknowledgement response is rejected

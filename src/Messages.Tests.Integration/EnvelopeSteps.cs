@@ -15,6 +15,7 @@ public sealed class EnvelopeSteps
 	private Envelope? envelope;
 	private byte[]? encodedEnvelope;
 	private InvalidOperationException? decodingException;
+	private InvalidOperationException? acknowledgementException;
 	private NotSupportedException? unsupportedMessageTypeException;
 
 	[Given(@"an Envelope source and destination of Brigade (.*), Node (.*), and Port (.*)")]
@@ -220,6 +221,35 @@ public sealed class EnvelopeSteps
 			receivedEnvelope,
 			CreateAddress(brigade, node, port),
 			ProtocolVersion.FromValue(protocolVersion));
+	}
+
+	[When(@"creating an Acknowledgement Envelope is attempted by Brigade (.*), Node (.*), Port (.*) using protocol version (.*)")]
+	public void WhenCreatingAnAcknowledgementEnvelopeIsAttempted(
+		byte brigade,
+		ushort node,
+		byte port,
+		byte protocolVersion)
+	{
+		var buffer = new EncodedMessageBuffer(this.encodedEnvelope!);
+		var receivedEnvelope = Envelope.FromEncodedMessageBuffer(ref buffer);
+
+		try
+		{
+			this.envelope = Envelope.CreateAcknowledgement(
+				receivedEnvelope,
+				CreateAddress(brigade, node, port),
+				ProtocolVersion.FromValue(protocolVersion));
+		}
+		catch (InvalidOperationException exception)
+		{
+			this.acknowledgementException = exception;
+		}
+	}
+
+	[Then(@"the acknowledgement response is rejected")]
+	public void ThenTheAcknowledgementResponseIsRejected()
+	{
+		this.acknowledgementException.Should().NotBeNull();
 	}
 
 	private static CommunicationsAddress CreateAddress(byte brigade, ushort node, byte port)
