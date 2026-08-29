@@ -33,6 +33,18 @@ public sealed class EnvelopeTests
 	}
 
 	[Fact]
+	public void Preserves_the_contents_of_a_known_unsupported_envelope()
+	{
+		var envelope = DecodeEnvelope("1A191902011A191912FCD13C01010004464952451C");
+
+		var contents = envelope.Contents.Should().BeOfType<UnsupportedMessageContents>().Which;
+
+		contents.Type.Should().Be(MessageType.FromValue(GD92MessageType.SetParameter));
+		contents.ToWireValue().Should().Equal(Convert.FromHexString("0101000446495245"));
+		envelope.ToWireValue().Should().Equal(Convert.FromHexString("1A191902011A191912FCD13C01010004464952451C"));
+	}
+
+	[Fact]
 	public void Creates_an_envelope_from_an_encoded_message_buffer()
 	{
 		var buffer = new EncodedMessageBuffer(

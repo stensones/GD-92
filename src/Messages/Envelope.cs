@@ -185,10 +185,10 @@ public sealed class Envelope
 			GD92MessageType.Text => Text.FromEncodedMessageBuffer(ref contentsBuffer),
 			GD92MessageType.Acknowledgement => Acknowledgement.FromEncodedMessageBuffer(ref contentsBuffer),
 			GD92MessageType.NegativeAcknowledgement => NegativeAcknowledgement.FromEncodedMessageBuffer(ref contentsBuffer),
-			_ => throw new NotSupportedException($"Message Type {messageType.Value} is not supported.")
+			_ => UnsupportedMessageContents.FromWireValue(messageType, contentsWireValue)
 		};
 
-		if (contentsBuffer.RemainingBitCount != 0)
+		if (contents is not UnsupportedMessageContents && contentsBuffer.RemainingBitCount != 0)
 		{
 			throw new InvalidOperationException("The encoded Message Contents length does not match its Message Type.");
 		}

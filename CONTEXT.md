@@ -127,6 +127,10 @@ _Avoid_: envelope header, Frame
 The type-specific user information carried within an Envelope. `IGD92MessageContents` is the public contract for encoded Contents.
 _Avoid_: message, envelope, payload
 
+**Unsupported Message Contents**:
+The byte-preserved Contents of a known Message Type whose type-specific structure is not implemented by this User Agent.
+_Avoid_: invalid Envelope, unknown Message Type
+
 **Message Type**:
 A numbered eight-bit Protocol Field, restricted to the finite catalogue defined by GD-92, that determines a Message's Contents structure and associated handling constraints.
 _Avoid_: application event, arbitrary payload type
@@ -322,6 +326,7 @@ _Avoid_: retransmission, duplicate Message
 - A **Router** processes higher **Message Priorities** before lower ones and preserves arrival order within the same priority.
 - A **Message** is represented by an **Envelope** containing exactly one set of **Contents**.
 - An **Envelope** and **Contents** are composed of **Protocol Fields**.
+- An **Envelope** with a known but unimplemented **Message Type** preserves its **Unsupported Message Contents** without interpreting them.
 - An **Envelope** derives its CountAndLength, Message Type, and Block Check Character from its Destinations and Message Contents.
 - An **Envelope** validates its received Block Check Character against all preceding encoded Envelope and Contents bytes.
 - A **Message Type** determines the structure and handling constraints of a Message's **Contents**.

@@ -26,10 +26,13 @@ Feature: Envelopes
     When decoding the Envelope is attempted
     Then the Message Contents length mismatch is rejected
 
-  Scenario: Rejecting a known but unsupported Message Type
+  Scenario: Rejecting a known unsupported Envelope with a Negative Acknowledgement
     Given encoded Envelope bytes "1A191902011A191912FCD13C01010004464952451C"
-    When decoding the unsupported Envelope is attempted
-    Then the unsupported Message Type is rejected
+    And the affected destination is Brigade 26, Node 101, Port 26
+    When the Envelope is decoded
+    Then its Contents are preserved as Message Type 60 with bytes "0101000446495245"
+    When a Negative Acknowledgement Envelope is created by Brigade 26, Node 101, Port 26 using protocol version 2 and the General Reason Code "inv_mess"
+    Then its complete Envelope bytes are "1A195A01811A1919127CD133011A195A010315"
 
   Scenario: Creating and decoding a Text Message Envelope for two destinations
     Given an Envelope source of Brigade 26, Node 100, and Port 25

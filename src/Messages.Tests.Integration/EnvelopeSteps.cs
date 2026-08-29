@@ -17,7 +17,6 @@ public sealed class EnvelopeSteps
 	private Destinations? affectedDestinations;
 	private InvalidOperationException? decodingException;
 	private InvalidOperationException? acknowledgementException;
-	private NotSupportedException? unsupportedMessageTypeException;
 
 	[Given(@"an Envelope source and destination of Brigade (.*), Node (.*), and Port (.*)")]
 	public void GivenAnEnvelopeSourceAndDestination(byte brigade, ushort node, byte port)
@@ -139,27 +138,6 @@ public sealed class EnvelopeSteps
 		this.decodingException.Should().NotBeNull();
 	}
 
-	[When(@"decoding the unsupported Envelope is attempted")]
-	public void WhenDecodingTheUnsupportedEnvelopeIsAttempted()
-	{
-		try
-		{
-			var buffer = new EncodedMessageBuffer(this.encodedEnvelope!);
-
-			this.envelope = Envelope.FromEncodedMessageBuffer(ref buffer);
-		}
-		catch (NotSupportedException exception)
-		{
-			this.unsupportedMessageTypeException = exception;
-		}
-	}
-
-	[Then(@"the unsupported Message Type is rejected")]
-	public void ThenTheUnsupportedMessageTypeIsRejected()
-	{
-		this.unsupportedMessageTypeException.Should().NotBeNull();
-	}
-
 	[Given(@"an Envelope source of Brigade (.*), Node (.*), and Port (.*)")]
 	public void GivenAnEnvelopeSource(byte brigade, ushort node, byte port)
 	{
@@ -230,6 +208,15 @@ public sealed class EnvelopeSteps
 
 		negativeAcknowledgement.ReasonCode.GeneralReasonCode.Should().Be(
 			Enum.Parse<GeneralReasonCode>(expectedReasonCode));
+	}
+
+	[Then(@"its Contents are preserved as Message Type (.*) with bytes ""(.*)""")]
+	public void ThenItsContentsArePreservedAsMessageTypeWithBytes(byte messageType, string contents)
+	{
+		var unsupportedContents = this.envelope!.Contents.Should().BeOfType<UnsupportedMessageContents>().Which;
+
+		unsupportedContents.Type.Value.Should().Be(messageType);
+		unsupportedContents.ToWireValue().Should().Equal(Convert.FromHexString(contents));
 	}
 
 	[Given(@"the affected destination is Brigade (.*), Node (.*), Port (.*)")]
