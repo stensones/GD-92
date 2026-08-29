@@ -37,6 +37,22 @@ public sealed class Destinations
 		return new Destinations(Array.AsReadOnly(addresses.ToArray()));
 	}
 
+	public static Destinations FromEncodedMessageBuffer(
+		ref EncodedMessageBuffer buffer,
+		DestinationCount count)
+	{
+		ArgumentNullException.ThrowIfNull(count);
+
+		var addresses = new CommunicationsAddress[count.Value];
+
+		for (var index = 0; index < addresses.Length; index++)
+		{
+			addresses[index] = CommunicationsAddress.FromEncodedMessageBuffer(ref buffer);
+		}
+
+		return FromAddresses(addresses);
+	}
+
 	public byte[] ToWireValue()
 	{
 		return [.. this.addresses.SelectMany(address => address.ToWireValue())];

@@ -66,19 +66,88 @@ public sealed class Envelope
 			contentsWireValue.ToArray());
 	}
 
+	public static Envelope FromEncodedMessageBuffer(ref EncodedMessageBuffer buffer)
+	{
+		var source = CommunicationsAddress.FromEncodedMessageBuffer(ref buffer);
+		var countAndLength = CountAndLength.FromEncodedMessageBuffer(ref buffer);
+		var destinations = Destinations.FromEncodedMessageBuffer(
+			ref buffer,
+			countAndLength.DestinationCount);
+		var protocolAndPriority = ProtocolAndPriority.FromEncodedMessageBuffer(ref buffer);
+		var acknowledgementAndSequence = AcknowledgementAndSequence.FromEncodedMessageBuffer(ref buffer);
+		var messageType = MessageType.FromEncodedMessageBuffer(ref buffer);
+		var contentsWireValue = ReadBytes(ref buffer, countAndLength.MessageLength.Value);
+		var contents = DecodeContents(messageType, contentsWireValue);
+		var receivedBlockCheckCharacter = BlockCheckCharacter.FromEncodedMessageBuffer(ref buffer);
+
+		var envelope = new Envelope(
+			source,
+			destinations,
+			protocolAndPriority,
+			acknowledgementAndSequence,
+			contents,
+			countAndLength,
+			contentsWireValue);
+		var expectedBlockCheckCharacter = BlockCheckCharacter.FromEnvelopeBytes(
+			envelope.GetBytesBeforeBlockCheckCharacter());
+
+		if (receivedBlockCheckCharacter != expectedBlockCheckCharacter)
+		{
+			throw new InvalidOperationException("The encoded Envelope Block Check Character does not match.");
+		}
+
+		return envelope;
+	}
+
 	public byte[] ToWireValue()
 	{
-		var envelopeBytesBeforeBlockCheckCharacter = new List<byte>();
-		envelopeBytesBeforeBlockCheckCharacter.AddRange(this.Source.ToWireValue());
-		envelopeBytesBeforeBlockCheckCharacter.AddRange(this.CountAndLength.ToWireValue());
-		envelopeBytesBeforeBlockCheckCharacter.AddRange(this.Destinations.ToWireValue());
-		envelopeBytesBeforeBlockCheckCharacter.AddRange(this.ProtocolAndPriority.ToWireValue());
-		envelopeBytesBeforeBlockCheckCharacter.AddRange(this.AcknowledgementAndSequence.ToWireValue());
-		envelopeBytesBeforeBlockCheckCharacter.AddRange(this.Contents.Type.ToWireValue());
-		envelopeBytesBeforeBlockCheckCharacter.AddRange(this.contentsWireValue);
+		var envelopeBytesBeforeBlockCheckCharacter = this.GetBytesBeforeBlockCheckCharacter();
 		var blockCheckCharacter = BlockCheckCharacter.FromEnvelopeBytes(
-			envelopeBytesBeforeBlockCheckCharacter.ToArray());
+			envelopeBytesBeforeBlockCheckCharacter);
 
 		return [.. envelopeBytesBeforeBlockCheckCharacter, .. blockCheckCharacter.ToWireValue()];
+	}
+
+	private byte[] GetBytesBeforeBlockCheckCharacter()
+	{
+		return [
+			.. this.Source.ToWireValue(),
+			.. this.CountAndLength.ToWireValue(),
+			.. this.Destinations.ToWireValue(),
+			.. this.ProtocolAndPriority.ToWireValue(),
+			.. this.AcknowledgementAndSequence.ToWireValue(),
+			.. this.Contents.Type.ToWireValue(),
+			.. this.contentsWireValue
+		];
+	}
+
+	private static IGD92MessageContents DecodeContents(MessageType messageType, byte[] contentsWireValue)
+	{
+		if (messageType.Value != (byte)GD92MessageType.Text)
+		{
+			throw new NotSupportedException($"Message Type {messageType.Value} is not supported.");
+		}
+
+		var contentsBuffer = new EncodedMessageBuffer(contentsWireValue);
+		var contents = Text.FromEncodedMessageBuffer(ref contentsBuffer);
+
+		if (contentsBuffer.RemainingBitCount != 0)
+		{
+			throw new InvalidOperationException("The encoded Message Contents length does not match its Message Type.");
+		}
+
+		return contents;
+	}
+
+	private static byte[] ReadBytes(ref EncodedMessageBuffer buffer, ushort length)
+	{
+		var bytes = new byte[length];
+
+		for (var index = 0; index < bytes.Length; index++)
+		{
+			bytes[index] = (byte)buffer.ReadUnsignedBits(8);
+		}
+
+		return bytes;
 	}
 }

@@ -319,6 +319,7 @@ _Avoid_: retransmission, duplicate Message
 - A **Message** is represented by an **Envelope** containing exactly one set of **Contents**.
 - An **Envelope** and **Contents** are composed of **Protocol Fields**.
 - An **Envelope** derives its CountAndLength, Message Type, and Block Check Character from its Destinations and Message Contents.
+- An **Envelope** validates its received Block Check Character against all preceding encoded Envelope and Contents bytes.
 - A **Message Type** determines the structure and handling constraints of a Message's **Contents**.
 - A **Text Message** contains one **Block**, one **OfBlocks**, and one **Text**.
 - An **Envelope** contains between 1 and 63 unique destination **Communications Addresses**.
