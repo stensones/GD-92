@@ -5,4 +5,10 @@
     <Project Path="Fields.Tests.Unit/Stensones.GD92.Fields.Tests.Unit.csproj" />
     <Project Path="Fields.Tests.Integration/Stensones.GD92.Fields.Tests.Integration.csproj" />
   </Folder>
+  <Folder Name="/Messages/">
+    <Project Path="Messages/Stensones.GD92.Messages.csproj" />
+    <Project Path="Messages.Tests.Unit/Stensones.GD92.Messages.Tests.Unit.csproj" />
+    <Project Path="Messages.Tests.Integration/Stensones.GD92.Messages.Tests.Integration.csproj" />
+    <Project Path="Messages.Tests.Architecture/Stensones.GD92.Messages.Tests.Architecture.csproj" />
+  </Folder>
 </Solution>
