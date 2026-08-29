@@ -6,6 +6,18 @@ namespace Stensones.GD92.Messages.Tests.Unit;
 public sealed class EnvelopeTests
 {
 	[Fact]
+	public void Creates_an_acknowledgement_envelope_for_a_received_message()
+	{
+		var received = DecodeEnvelope("1A191902011A195A12FCD11B010100044649524578");
+		var response = Envelope.CreateAcknowledgement(
+			received,
+			CommunicationsAddress.FromValues(Brigade.FromValue(26), Node.FromValue(101), Port.FromValue(26)),
+			ProtocolVersion.FromValue(2));
+
+		response.ToWireValue().Should().Equal(Convert.FromHexString("1A195A00011A1919127CD132CF"));
+	}
+
+	[Fact]
 	public void Creates_an_envelope_from_an_encoded_message_buffer()
 	{
 		var buffer = new EncodedMessageBuffer(
@@ -51,10 +63,10 @@ public sealed class EnvelopeTests
 			Convert.FromHexString("1A191902011A191912FCD11B01010004464952453B"));
 	}
 
-	private static void DecodeEnvelope(string encodedEnvelope)
+	private static Envelope DecodeEnvelope(string encodedEnvelope)
 	{
 		var buffer = new EncodedMessageBuffer(Convert.FromHexString(encodedEnvelope));
 
-		Envelope.FromEncodedMessageBuffer(ref buffer);
+		return Envelope.FromEncodedMessageBuffer(ref buffer);
 	}
 }

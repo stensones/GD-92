@@ -99,6 +99,32 @@ public sealed class Envelope
 		return envelope;
 	}
 
+	public static Envelope CreateAcknowledgement(
+		Envelope receivedEnvelope,
+		CommunicationsAddress respondingSource,
+		ProtocolVersion protocolVersion)
+	{
+		ArgumentNullException.ThrowIfNull(receivedEnvelope);
+		ArgumentNullException.ThrowIfNull(respondingSource);
+		ArgumentNullException.ThrowIfNull(protocolVersion);
+
+		if (!receivedEnvelope.AcknowledgementAndSequence.AcknowledgementRequest.IsRequested)
+		{
+			throw new InvalidOperationException("An acknowledgement can only respond to an acknowledgement-requested Envelope.");
+		}
+
+		return FromValues(
+			respondingSource,
+			Destinations.FromAddresses(receivedEnvelope.Source),
+			ProtocolAndPriority.FromValues(
+				receivedEnvelope.ProtocolAndPriority.Priority,
+				protocolVersion),
+			AcknowledgementAndSequence.FromValues(
+				receivedEnvelope.AcknowledgementAndSequence.SequenceNumber,
+				AcknowledgementRequest.NotRequested),
+			Acknowledgement.Create());
+	}
+
 	public byte[] ToWireValue()
 	{
 		var envelopeBytesBeforeBlockCheckCharacter = this.GetBytesBeforeBlockCheckCharacter();
