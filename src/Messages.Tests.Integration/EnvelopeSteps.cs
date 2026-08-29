@@ -55,6 +55,14 @@ public sealed class EnvelopeSteps
 			Stensones.GD92.Fields.Text.FromValue(text));
 	}
 
+	[Given(@"a Parameter Request for the current table and parameter number (.*)")]
+	public void GivenAParameterRequestForTheCurrentTable(byte parameterNumber)
+	{
+		this.contents = ParameterRequest.FromFields(
+			ParameterTable.Current,
+			ParameterNumber.FromValue(parameterNumber));
+	}
+
 	[When(@"the Envelope is created")]
 	public void WhenTheEnvelopeIsCreated()
 	{
@@ -109,6 +117,15 @@ public sealed class EnvelopeSteps
 		contents.Block.Value.Should().Be(block);
 		contents.OfBlocks.Value.Should().Be(ofBlocks);
 		contents.MessageText.Value.Should().Be(text);
+	}
+
+	[Then(@"its decoded Parameter Request identifies the current table and parameter number (.*)")]
+	public void ThenItsDecodedParameterRequestIdentifiesTheCurrentTable(byte parameterNumber)
+	{
+		var contents = this.envelope!.Contents.Should().BeOfType<ParameterRequest>().Which;
+
+		contents.ParameterTable.Should().Be(ParameterTable.Current);
+		contents.ParameterNumber.Value.Should().Be(parameterNumber);
 	}
 
 	[When(@"decoding the Envelope is attempted")]

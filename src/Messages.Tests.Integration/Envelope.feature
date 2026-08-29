@@ -44,6 +44,15 @@ Feature: Envelopes
     Then its complete Envelope bytes are "1A191902021A19191A195A12FCD11B010100044649524561"
     And it has 2 decoded destinations in the declared order
 
+  Scenario: Creating and decoding a Parameter Request Envelope
+    Given an Envelope source and destination of Brigade 26, Node 100, and Port 25
+    And an Envelope priority of 1 and protocol version of 2
+    And an Envelope sequence number of 31953 requesting acknowledgement
+    And a Parameter Request for the current table and parameter number 1
+    When the Envelope is created and decoded
+    Then its decoded Parameter Request identifies the current table and parameter number 1
+    And its complete Envelope bytes are "1A191900811A191912FCD13D020180"
+
   Scenario: Decoding an Acknowledgement Envelope
     Given encoded Envelope bytes "1A195A00011A1919127CD132CF"
     When the Envelope is decoded

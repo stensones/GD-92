@@ -185,6 +185,7 @@ public sealed class Envelope
 			GD92MessageType.Text => Text.FromEncodedMessageBuffer(ref contentsBuffer),
 			GD92MessageType.Acknowledgement => Acknowledgement.FromEncodedMessageBuffer(ref contentsBuffer),
 			GD92MessageType.NegativeAcknowledgement => NegativeAcknowledgement.FromEncodedMessageBuffer(ref contentsBuffer),
+			GD92MessageType.ParameterRequest => ParameterRequest.FromEncodedMessageBuffer(ref contentsBuffer),
 			_ => UnsupportedMessageContents.FromWireValue(messageType, contentsWireValue)
 		};
 

@@ -66,6 +66,18 @@ _Avoid_: backup device
 A protocol-defined configuration value owned by a Router, Message Transfer Agent, or User Agent port.
 _Avoid_: application setting, global configuration
 
+**Parameter Table**:
+The permanent, non-volatile, or current table that contains a protocol Parameter.
+_Avoid_: database table, arbitrary collection
+
+**Parameter Number**:
+The eight-bit identifier of a Parameter within a Parameter Table.
+_Avoid_: Message Sequence Number, parameter value
+
+**Parameter Request**:
+The Message Type 61 Contents that requests the value of one Parameter by its Parameter Table and Parameter Number.
+_Avoid_: Parameter value, Set Parameter
+
 **Password Level**:
 The access level required to modify a Parameter.
 _Avoid_: user role, permanent authentication
@@ -320,6 +332,8 @@ _Avoid_: retransmission, duplicate Message
 - An **External Bearer** carries **Messages** but has no **Communications Address**.
 - A **Router**, **Message Transfer Agent**, or **User Agent** owns zero or more **Parameters**.
 - A **Node Login** at a **Communications Node** authorizes Parameter modification according to each **Parameter**'s **Password Level**.
+- A **Parameter Request** identifies one **Parameter Table** and one **Parameter Number**.
+- A **Parameter Number** identifies one **Parameter** within its **Parameter Table**.
 - A **User Agent** accepts **Messages** at its current **Protocol Version** or below.
 - An **Envelope** carries the **Protocol Version** applicable to its **Message Type**.
 - A **Message Sequence** contains one or more **Messages**, each with a distinct **Sequence Number**.
