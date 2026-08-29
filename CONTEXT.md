@@ -80,6 +80,9 @@ _Avoid_: system-wide login, device session
 The version of the GD-92 protocol used to encode a Message.
 _Avoid_: node deployment version, software version
 
+**ProtocolAndPriority**:
+The packed Envelope field containing a Message Priority and Protocol Version.
+
 **Frame**:
 The Message Transfer Agent-to-Message Transfer Agent transfer unit containing a Message and bearer-protocol overhead.
 _Avoid_: Message, Contents

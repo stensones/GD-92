@@ -24,3 +24,6 @@ Integration test projects should use ReqnRoll NuGet package to surface tests as 
 This project is build using BDD. Before creating production code write Gherkin test in the appropriate integration test project, then use TDD to implement it.
 Using TDD we write unit tests for desired new production code funcionality before writing code to satisfy those tests.
 TDD is an inner loop to the BDD for a scenario.
+
+Avoid primitive obsession when a class or method exposes a primitive type that has a tighter value constraint than the type, or that parameter has a secific symantic meaning then strongly consider creating a simple valuetype to model that meaning and suing that in place of the prmitive.
+
