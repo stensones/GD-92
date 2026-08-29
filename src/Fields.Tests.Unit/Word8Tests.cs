@@ -35,6 +35,14 @@ public sealed class Word8Tests
 	}
 
 	[Fact]
+	public void ToString_includes_the_word8_value()
+	{
+		var word8 = Word8.FromValue(42);
+
+		word8.ToString().Should().Be("Word8 { Value = 42 }");
+	}
+
+	[Fact]
 	public void FromValue_accepts_an_unsigned_eight_bit_value()
 	{
 		var factoryMethod = typeof(Word8).GetMethod(nameof(Word8.FromValue));
