@@ -72,6 +72,19 @@ public sealed class EnvelopeSteps
 			ParameterNumber.FromValue(parameterNumber));
 	}
 
+	[Given(@"a Parameter Request Multiple for current-table parameter number (.*) and entries (.*) through (.*)")]
+	public void GivenAParameterRequestMultipleForCurrentTable(
+		byte parameterNumber,
+		ushort firstEntry,
+		ushort lastEntry)
+	{
+		this.contents = ParameterRequestMultiple.FromFields(
+			ParameterTable.Current,
+			ParameterNumber.FromValue(parameterNumber),
+			ParameterEntryIndex.FromValue(firstEntry),
+			ParameterEntryIndex.FromValue(lastEntry));
+	}
+
 	[When(@"the Envelope is created")]
 	public void WhenTheEnvelopeIsCreated()
 	{
@@ -159,6 +172,20 @@ public sealed class EnvelopeSteps
 
 		contents.ParameterTable.Should().Be(ParameterTable.Current);
 		contents.ParameterNumber.Value.Should().Be(parameterNumber);
+	}
+
+	[Then(@"its decoded Parameter Request Multiple identifies current-table parameter number (.*) and entries (.*) through (.*)")]
+	public void ThenItsDecodedParameterRequestMultipleIdentifiesCurrentTable(
+		byte parameterNumber,
+		ushort firstEntry,
+		ushort lastEntry)
+	{
+		var contents = this.envelope!.Contents.Should().BeOfType<ParameterRequestMultiple>().Which;
+
+		contents.ParameterTable.Should().Be(ParameterTable.Current);
+		contents.ParameterNumber.Value.Should().Be(parameterNumber);
+		contents.FirstEntry.Value.Should().Be(firstEntry);
+		contents.LastEntry.Value.Should().Be(lastEntry);
 	}
 
 	[When(@"a Parameter Envelope is created by Brigade (.*), Node (.*), Port (.*) using protocol version (.*) returning brigade number (.*)")]

@@ -61,6 +61,15 @@ Feature: Envelopes
     When Envelope creation is attempted
     Then the Parameter Request Envelope creation is rejected
 
+  Scenario: Requesting one Router-table entry
+    Given an Envelope source and destination of Brigade 26, Node 100, and Port 25
+    And an Envelope priority of 1 and protocol version of 2
+    And an Envelope sequence number of 31953 requesting acknowledgement
+    And a Parameter Request Multiple for current-table parameter number 13 and entries 1 through 1
+    When the Envelope is created and decoded
+    Then its decoded Parameter Request Multiple identifies current-table parameter number 13 and entries 1 through 1
+    And its complete Envelope bytes are "1A191901811A191912FCD13F020D000100018F"
+
   Scenario: Returning the current brigade number for a Parameter Request
     Given encoded Envelope bytes "1A191900811A195A12FCD13D0201C3"
     When a Parameter Envelope is created by Brigade 26, Node 101, Port 26 using protocol version 2 returning brigade number 26

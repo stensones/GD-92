@@ -74,9 +74,17 @@ _Avoid_: database table, arbitrary collection
 The eight-bit identifier of a Parameter within a Parameter Table.
 _Avoid_: Message Sequence Number, parameter value
 
+**Parameter Entry Index**:
+The sixteen-bit identifier of an entry within a table-valued Parameter.
+_Avoid_: Parameter Number, database row key
+
 **Parameter Request**:
 The Message Type 61 Contents that requests the value of one Parameter by its Parameter Table and Parameter Number and requires acknowledgement.
 _Avoid_: Parameter value, Set Parameter
+
+**Parameter Request Multiple**:
+The Message Type 63 Contents that requests a range of entries from one table-valued Parameter.
+_Avoid_: Parameter Request, Parameter Message
 
 **More Values**:
 The boolean field in a Parameter Message indicating whether additional Parameter values remain to be returned.
@@ -347,6 +355,9 @@ _Avoid_: retransmission, duplicate Message
 - A **Parameter Request** identifies one **Parameter Table** and one **Parameter Number**.
 - A **Parameter Number** identifies one **Parameter** within its **Parameter Table**.
 - A **Parameter Request Envelope** always has its **Acknowledgement Request** set.
+- A **Parameter Request Multiple** identifies one **Parameter Table**, one **Parameter Number**, and first and last **Parameter Entry Indexes**.
+- A **Parameter Request Multiple Envelope** always has its **Acknowledgement Request** set.
+- In a **Parameter Request Multiple**, a first **Parameter Entry Index** of zero requests the most recent entry and interprets the last index as the requested entry count.
 - A **Parameter Message** contains one **Parameter Value** and one **More Values** field.
 - A **Parameter Message Envelope** responds to a **Parameter Request Envelope** using the request Envelope's source, Message Priority, and Sequence Number, with its **Acknowledgement Request** clear.
 - A **User Agent** accepts **Messages** at its current **Protocol Version** or below.
