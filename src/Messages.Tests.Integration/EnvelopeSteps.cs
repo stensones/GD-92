@@ -23,7 +23,7 @@ public sealed class EnvelopeSteps
 	public void GivenAnEnvelopeSourceAndDestination(byte brigade, ushort node, byte port)
 	{
 		var address = CommunicationsAddress.FromValues(
-			Brigade.FromValue(brigade),
+			Brigade.FromValue(BrigadeOrAgencyIdentifier.FromValue(brigade)),
 			Node.FromValue(NodeIdentifier.FromValue(node)),
 			Port.FromValue(PortIdentifier.FromValue(port)));
 
@@ -144,7 +144,7 @@ public sealed class EnvelopeSteps
 	public void ThenItsDecodedSourceIs(byte brigade, ushort node, byte port)
 	{
 		this.envelope!.Source.Should().Be(CommunicationsAddress.FromValues(
-			Brigade.FromValue(brigade),
+			Brigade.FromValue(BrigadeOrAgencyIdentifier.FromValue(brigade)),
 			Node.FromValue(NodeIdentifier.FromValue(node)),
 			Port.FromValue(PortIdentifier.FromValue(port))));
 	}
@@ -407,7 +407,7 @@ public sealed class EnvelopeSteps
 	private static CommunicationsAddress CreateAddress(byte brigade, ushort node, byte port)
 	{
 		return CommunicationsAddress.FromValues(
-			Brigade.FromValue(brigade),
+			Brigade.FromValue(BrigadeOrAgencyIdentifier.FromValue(brigade)),
 			Node.FromValue(NodeIdentifier.FromValue(node)),
 			Port.FromValue(PortIdentifier.FromValue(port)));
 	}

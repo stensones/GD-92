@@ -14,7 +14,7 @@ public sealed class CommunicationsAddressSteps
 	[Given(@"valid Brigade (.*), Node (.*), and Port (.*) values")]
 	public void GivenBrigadeNodeAndPort(byte brigade, ushort node, byte port)
 	{
-		this.brigade = Brigade.FromValue(brigade);
+		this.brigade = Brigade.FromValue(BrigadeOrAgencyIdentifier.FromValue(brigade));
 		this.node = Node.FromValue(NodeIdentifier.FromValue(node));
 		this.port = Port.FromValue(PortIdentifier.FromValue(port));
 	}

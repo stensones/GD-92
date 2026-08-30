@@ -2,14 +2,14 @@ namespace Stensones.GD92.Fields;
 
 public sealed record Brigade
 {
-	private Brigade(byte value)
+	private Brigade(BrigadeOrAgencyIdentifier value)
 	{
 		this.Value = value;
 	}
 
-	public byte Value { get; }
+	public BrigadeOrAgencyIdentifier Value { get; }
 
-	public static Brigade FromValue(byte value)
+	public static Brigade FromValue(BrigadeOrAgencyIdentifier value)
 	{
 		return new Brigade(value);
 	}

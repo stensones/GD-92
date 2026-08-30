@@ -8,7 +8,7 @@ public sealed class CommunicationsAddressTests
 	public void Serializes_brigade_node_and_port_in_their_protocol_bit_ranges()
 	{
 		var address = CommunicationsAddress.FromValues(
-			Brigade.FromValue(26),
+			Brigade.FromValue(BrigadeOrAgencyIdentifier.FromValue(26)),
 			Node.FromValue(NodeIdentifier.FromValue(100)),
 			Port.FromValue(PortIdentifier.FromValue(25)));
 

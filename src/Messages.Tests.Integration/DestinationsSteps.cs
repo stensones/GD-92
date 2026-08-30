@@ -45,7 +45,7 @@ public sealed class DestinationsSteps
 	private static CommunicationsAddress CreateAddress(byte brigade, ushort node, byte port)
 	{
 		return CommunicationsAddress.FromValues(
-			Brigade.FromValue(brigade),
+			Brigade.FromValue(BrigadeOrAgencyIdentifier.FromValue(brigade)),
 			Node.FromValue(NodeIdentifier.FromValue(node)),
 			Port.FromValue(PortIdentifier.FromValue(port)));
 	}

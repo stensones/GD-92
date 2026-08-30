@@ -12,7 +12,7 @@ public sealed class EnvelopeTests
 		var response = Envelope.CreateAcknowledgement(
 			received,
 			CommunicationsAddress.FromValues(
-				Brigade.FromValue(26),
+				Brigade.FromValue(BrigadeOrAgencyIdentifier.FromValue(26)),
 				Node.FromValue(NodeIdentifier.FromValue(101)),
 				Port.FromValue(PortIdentifier.FromValue(26))),
 			ProtocolVersion.FromValue(ProtocolVersionNumber.FromValue(2)));
@@ -27,13 +27,13 @@ public sealed class EnvelopeTests
 		var response = Envelope.CreateNegativeAcknowledgement(
 			received,
 			CommunicationsAddress.FromValues(
-				Brigade.FromValue(26),
+				Brigade.FromValue(BrigadeOrAgencyIdentifier.FromValue(26)),
 				Node.FromValue(NodeIdentifier.FromValue(101)),
 				Port.FromValue(PortIdentifier.FromValue(26))),
 			ProtocolVersion.FromValue(ProtocolVersionNumber.FromValue(2)),
 			Destinations.FromAddresses(
 				CommunicationsAddress.FromValues(
-					Brigade.FromValue(26),
+					Brigade.FromValue(BrigadeOrAgencyIdentifier.FromValue(26)),
 					Node.FromValue(NodeIdentifier.FromValue(100)),
 					Port.FromValue(PortIdentifier.FromValue(25)))),
 			ReasonCode.FromGeneralReasonCode(GeneralReasonCode.InvalidMessage));
@@ -57,7 +57,7 @@ public sealed class EnvelopeTests
 	public void Rejects_a_parameter_request_without_an_acknowledgement_request()
 	{
 		var address = CommunicationsAddress.FromValues(
-			Brigade.FromValue(26),
+			Brigade.FromValue(BrigadeOrAgencyIdentifier.FromValue(26)),
 			Node.FromValue(NodeIdentifier.FromValue(100)),
 			Port.FromValue(PortIdentifier.FromValue(25)));
 		var createEnvelope = () => Envelope.FromValues(
@@ -101,7 +101,7 @@ public sealed class EnvelopeTests
 	public void Serializes_a_complete_text_message_envelope()
 	{
 		var address = CommunicationsAddress.FromValues(
-			Brigade.FromValue(26),
+			Brigade.FromValue(BrigadeOrAgencyIdentifier.FromValue(26)),
 			Node.FromValue(NodeIdentifier.FromValue(100)),
 			Port.FromValue(PortIdentifier.FromValue(25)));
 		var envelope = Envelope.FromValues(

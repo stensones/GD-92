@@ -15,7 +15,7 @@ public sealed class NegativeAcknowledgementSteps
 	public void GivenANegativeAcknowledgementDestination(byte brigade, ushort node, byte port)
 	{
 		var destination = CommunicationsAddress.FromValues(
-			Brigade.FromValue(brigade),
+			Brigade.FromValue(BrigadeOrAgencyIdentifier.FromValue(brigade)),
 			Node.FromValue(NodeIdentifier.FromValue(node)),
 			Port.FromValue(PortIdentifier.FromValue(port)));
 

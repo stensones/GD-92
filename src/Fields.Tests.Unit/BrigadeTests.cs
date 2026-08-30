@@ -5,10 +5,24 @@ namespace Stensones.GD92.Fields.Tests.Unit;
 public sealed class BrigadeTests
 {
 	[Fact]
-	public void Preserves_an_unsigned_eight_bit_value()
+	public void Preserves_a_brigade_or_agency_identifier()
 	{
-		var brigade = Brigade.FromValue(26);
+		var identifier = BrigadeOrAgencyIdentifier.FromValue(26);
+		var brigade = Brigade.FromValue(identifier);
 
-		brigade.Value.Should().Be((byte)26);
+		brigade.Value.Should().Be(identifier);
+	}
+
+	[Theory]
+	[InlineData((byte)0)]
+	[InlineData(byte.MaxValue)]
+	public void Serializes_the_full_brigade_or_agency_octet_range(byte value)
+	{
+		var address = CommunicationsAddress.FromValues(
+			Brigade.FromValue(BrigadeOrAgencyIdentifier.FromValue(value)),
+			Node.FromValue(NodeIdentifier.FromValue(0)),
+			Port.FromValue(PortIdentifier.FromValue(0)));
+
+		address.ToWireValue()[0].Should().Be(value);
 	}
 }
