@@ -1,27 +1,29 @@
 namespace Stensones.GD92.Fields;
 
-public sealed record MoreValues : Word8
+public sealed record MoreValues : IGD9Field
 {
 	private MoreValues(byte value)
-		: base(value)
 	{
+		this.Value = value;
 	}
 
-	public static MoreValues No { get; } = FromValue(0);
-	public static MoreValues Yes { get; } = FromValue(1);
+	public byte Value { get; }
 
-	public new static MoreValues FromValue(byte value)
+	public static MoreValues No { get; } = FromValue(ProtocolBoolean.False);
+	public static MoreValues Yes { get; } = FromValue(ProtocolBoolean.True);
+
+	public static MoreValues FromValue(ProtocolBoolean value)
 	{
-		if (value > 1)
-		{
-			throw new ArgumentOutOfRangeException(nameof(value));
-		}
-
-		return new MoreValues(value);
+		return new MoreValues(value.Value);
 	}
 
-	public new static MoreValues FromEncodedMessageBuffer(ref EncodedMessageBuffer buffer)
+	public static MoreValues FromEncodedMessageBuffer(ref EncodedMessageBuffer buffer)
 	{
-		return FromValue((byte)buffer.ReadUnsignedBits(8));
+		return FromValue(ProtocolBoolean.FromValue((byte)buffer.ReadUnsignedBits(8)));
+	}
+
+	public byte[] ToWireValue()
+	{
+		return [this.Value];
 	}
 }

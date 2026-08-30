@@ -7,6 +7,20 @@ public sealed class MoreValuesTests
 	[Fact]
 	public void Serializes_when_no_further_parameter_values_follow()
 	{
-		MoreValues.No.ToWireValue().Should().Equal(new byte[] { 0x00 });
+		MoreValues.FromValue(ProtocolBoolean.False).ToWireValue().Should().Equal(new byte[] { 0x00 });
+	}
+
+	[Fact]
+	public void Rejects_protocol_booleans_outside_the_defined_encodings()
+	{
+		Action createProtocolBoolean = () => ProtocolBoolean.FromValue(2);
+
+		createProtocolBoolean.Should().Throw<ArgumentOutOfRangeException>();
+	}
+
+	[Fact]
+	public void Does_not_expose_a_primitive_factory()
+	{
+		typeof(MoreValues).GetMethod("FromValue", [typeof(byte)]).Should().BeNull();
 	}
 }

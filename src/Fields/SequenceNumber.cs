@@ -9,13 +9,8 @@ public sealed record SequenceNumber
 
 	public ushort Value { get; }
 
-	public static SequenceNumber FromValue(ushort value)
+	public static SequenceNumber FromValue(MessageSequenceIdentifier value)
 	{
-		if (value > 32767)
-		{
-			throw new ArgumentOutOfRangeException(nameof(value));
-		}
-
-		return new SequenceNumber(value);
+		return new SequenceNumber(value.Value);
 	}
 }

@@ -1,28 +1,30 @@
 namespace Stensones.GD92.Fields;
 
-public sealed record ParameterTable : Word8
+public sealed record ParameterTable : IGD9Field
 {
 	private ParameterTable(byte value)
-		: base(value)
 	{
+		this.Value = value;
 	}
 
-	public static ParameterTable Permanent { get; } = FromValue(0);
-	public static ParameterTable NonVolatile { get; } = FromValue(1);
-	public static ParameterTable Current { get; } = FromValue(2);
+	public byte Value { get; }
 
-	public new static ParameterTable FromValue(byte value)
+	public static ParameterTable Permanent { get; } = FromValue(ParameterTableIdentifier.Permanent);
+	public static ParameterTable NonVolatile { get; } = FromValue(ParameterTableIdentifier.NonVolatile);
+	public static ParameterTable Current { get; } = FromValue(ParameterTableIdentifier.Current);
+
+	public static ParameterTable FromValue(ParameterTableIdentifier value)
 	{
-		if (value > 2)
-		{
-			throw new ArgumentOutOfRangeException(nameof(value));
-		}
-
-		return new ParameterTable(value);
+		return new ParameterTable(value.Value);
 	}
 
-	public new static ParameterTable FromEncodedMessageBuffer(ref EncodedMessageBuffer buffer)
+	public static ParameterTable FromEncodedMessageBuffer(ref EncodedMessageBuffer buffer)
 	{
-		return FromValue((byte)buffer.ReadUnsignedBits(8));
+		return FromValue(ParameterTableIdentifier.FromValue((byte)buffer.ReadUnsignedBits(8)));
+	}
+
+	public byte[] ToWireValue()
+	{
+		return [this.Value];
 	}
 }

@@ -26,7 +26,7 @@ public sealed record AcknowledgementAndSequence : IGD9Field
 		var value = (ushort)buffer.ReadUnsignedBits(16);
 
 		return FromValues(
-			SequenceNumber.FromValue((ushort)(value & 0x7FFF)),
+			SequenceNumber.FromValue(MessageSequenceIdentifier.FromValue((ushort)(value & 0x7FFF))),
 			(value & 0x8000) != 0
 				? AcknowledgementRequest.Requested
 				: AcknowledgementRequest.NotRequested);

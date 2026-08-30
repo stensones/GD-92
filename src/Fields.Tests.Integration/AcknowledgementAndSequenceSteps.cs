@@ -13,7 +13,8 @@ public sealed class AcknowledgementAndSequenceSteps
 	[Given(@"Sequence Number (.*) and an Acknowledgement Request")]
 	public void GivenSequenceNumberAndAnAcknowledgementRequest(ushort sequenceNumber)
 	{
-		this.sequenceNumber = SequenceNumber.FromValue(sequenceNumber);
+		this.sequenceNumber = SequenceNumber.FromValue(
+			MessageSequenceIdentifier.FromValue(sequenceNumber));
 		this.acknowledgementRequest = AcknowledgementRequest.Requested;
 	}
 

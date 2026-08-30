@@ -67,7 +67,7 @@ public sealed class EnvelopeTests
 				MessagePriority.FromValue(MessagePriorityLevel.FromValue(1)),
 				ProtocolVersion.FromValue(ProtocolVersionNumber.FromValue(2))),
 			AcknowledgementAndSequence.FromValues(
-				SequenceNumber.FromValue(31953),
+				SequenceNumber.FromValue(MessageSequenceIdentifier.FromValue(31953)),
 				AcknowledgementRequest.NotRequested),
 			ParameterRequest.FromFields(
 				ParameterTable.Current,
@@ -111,7 +111,7 @@ public sealed class EnvelopeTests
 				MessagePriority.FromValue(MessagePriorityLevel.FromValue(1)),
 				ProtocolVersion.FromValue(ProtocolVersionNumber.FromValue(2))),
 			AcknowledgementAndSequence.FromValues(
-				SequenceNumber.FromValue(31953),
+				SequenceNumber.FromValue(MessageSequenceIdentifier.FromValue(31953)),
 				AcknowledgementRequest.Requested),
 			Text.FromFields(
 				Block.FromValue(1),

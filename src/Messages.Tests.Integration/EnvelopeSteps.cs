@@ -43,7 +43,7 @@ public sealed class EnvelopeSteps
 	public void GivenAnEnvelopeSequenceNumberRequestingAcknowledgement(ushort sequenceNumber)
 	{
 		this.acknowledgementAndSequence = AcknowledgementAndSequence.FromValues(
-			SequenceNumber.FromValue(sequenceNumber),
+			SequenceNumber.FromValue(MessageSequenceIdentifier.FromValue(sequenceNumber)),
 			AcknowledgementRequest.Requested);
 	}
 
@@ -51,7 +51,7 @@ public sealed class EnvelopeSteps
 	public void GivenAnEnvelopeSequenceNumberWithoutRequestingAcknowledgement(ushort sequenceNumber)
 	{
 		this.acknowledgementAndSequence = AcknowledgementAndSequence.FromValues(
-			SequenceNumber.FromValue(sequenceNumber),
+			SequenceNumber.FromValue(MessageSequenceIdentifier.FromValue(sequenceNumber)),
 			AcknowledgementRequest.NotRequested);
 	}
 
