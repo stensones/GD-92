@@ -59,7 +59,7 @@ public sealed class Envelope
 		}
 
 		var countAndLength = CountAndLength.FromValues(
-			MessageLength.FromValue((ushort)contentsWireValue.Length),
+			MessageLength.FromValue(MessageByteLength.FromValue((ushort)contentsWireValue.Length)),
 			destinations.Count);
 
 		return new Envelope(

@@ -8,7 +8,10 @@ public sealed class NegativeAcknowledgementTests
 	[Fact]
 	public void Serializes_one_destination_and_the_general_invalid_message_reason()
 	{
-		var destination = CommunicationsAddress.FromValues(Brigade.FromValue(26), Node.FromValue(100), Port.FromValue(25));
+		var destination = CommunicationsAddress.FromValues(
+			Brigade.FromValue(26),
+			Node.FromValue(NodeIdentifier.FromValue(100)),
+			Port.FromValue(PortIdentifier.FromValue(25)));
 		var negativeAcknowledgement = NegativeAcknowledgement.FromValues(
 			Destinations.FromAddresses(destination),
 			ReasonCode.FromGeneralReasonCode(GeneralReasonCode.InvalidMessage));
@@ -27,8 +30,8 @@ public sealed class NegativeAcknowledgementTests
 		negativeAcknowledgement.Destinations.Addresses.Should().ContainSingle()
 			.Which.Should().Be(CommunicationsAddress.FromValues(
 				Brigade.FromValue(26),
-				Node.FromValue(100),
-				Port.FromValue(25)));
+				Node.FromValue(NodeIdentifier.FromValue(100)),
+				Port.FromValue(PortIdentifier.FromValue(25))));
 		negativeAcknowledgement.ReasonCode.GeneralReasonCode.Should().Be(GeneralReasonCode.InvalidMessage);
 		buffer.BitPosition.Should().Be(48);
 	}

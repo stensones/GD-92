@@ -9,13 +9,8 @@ public sealed record Node
 
 	public ushort Value { get; }
 
-	public static Node FromValue(ushort value)
+	public static Node FromValue(NodeIdentifier value)
 	{
-		if (value > 1023)
-		{
-			throw new ArgumentOutOfRangeException(nameof(value));
-		}
-
-		return new Node(value);
+		return new Node(value.Value);
 	}
 }

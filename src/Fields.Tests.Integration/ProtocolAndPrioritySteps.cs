@@ -13,8 +13,8 @@ public sealed class ProtocolAndPrioritySteps
 	[Given(@"valid Message Priority (.*) and Protocol Version (.*) values")]
 	public void GivenValidMessagePriorityAndProtocolVersionValues(byte priority, byte protocolVersion)
 	{
-		this.priority = MessagePriority.FromValue(priority);
-		this.protocolVersion = ProtocolVersion.FromValue(protocolVersion);
+		this.priority = MessagePriority.FromValue(MessagePriorityLevel.FromValue(priority));
+		this.protocolVersion = ProtocolVersion.FromValue(ProtocolVersionNumber.FromValue(protocolVersion));
 	}
 
 	[When(@"a ProtocolAndPriority field is created")]

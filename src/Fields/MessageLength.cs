@@ -9,13 +9,8 @@ public sealed record MessageLength
 
 	public ushort Value { get; }
 
-	public static MessageLength FromValue(ushort value)
+	public static MessageLength FromValue(MessageByteLength value)
 	{
-		if (value > 1023)
-		{
-			throw new ArgumentOutOfRangeException(nameof(value));
-		}
-
-		return new MessageLength(value);
+		return new MessageLength(value.Value);
 	}
 }

@@ -41,7 +41,7 @@ public sealed class DestinationsTests
 	{
 		return CommunicationsAddress.FromValues(
 			Brigade.FromValue(brigade),
-			Node.FromValue(node),
-			Port.FromValue(port));
+			Node.FromValue(NodeIdentifier.FromValue(node)),
+			Port.FromValue(PortIdentifier.FromValue(port)));
 	}
 }

@@ -22,8 +22,8 @@ public sealed record CommunicationsAddress : IGD9Field
 	{
 		return FromValues(
 			Brigade.FromValue((byte)buffer.ReadUnsignedBits(8)),
-			Node.FromValue((ushort)buffer.ReadUnsignedBits(10)),
-			Port.FromValue((byte)buffer.ReadUnsignedBits(6)));
+			Node.FromValue(NodeIdentifier.FromValue((ushort)buffer.ReadUnsignedBits(10))),
+			Port.FromValue(PortIdentifier.FromValue((byte)buffer.ReadUnsignedBits(6))));
 	}
 
 	public byte[] ToWireValue()

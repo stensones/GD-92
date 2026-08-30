@@ -9,8 +9,8 @@ public sealed class CommunicationsAddressTests
 	{
 		var address = CommunicationsAddress.FromValues(
 			Brigade.FromValue(26),
-			Node.FromValue(100),
-			Port.FromValue(25));
+			Node.FromValue(NodeIdentifier.FromValue(100)),
+			Port.FromValue(PortIdentifier.FromValue(25)));
 
 		address.ToWireValue().Should().Equal(new byte[] { 0x1A, 0x19, 0x19 });
 	}

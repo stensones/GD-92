@@ -9,13 +9,8 @@ public sealed record Port
 
 	public byte Value { get; }
 
-	public static Port FromValue(byte value)
+	public static Port FromValue(PortIdentifier value)
 	{
-		if (value > 63)
-		{
-			throw new ArgumentOutOfRangeException(nameof(value));
-		}
-
-		return new Port(value);
+		return new Port(value.Value);
 	}
 }

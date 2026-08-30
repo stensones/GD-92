@@ -24,8 +24,8 @@ public sealed record ProtocolAndPriority : IGD9Field
 		var value = (byte)buffer.ReadUnsignedBits(8);
 
 		return FromValues(
-			MessagePriority.FromValue((byte)(value >> 4)),
-			ProtocolVersion.FromValue((byte)(value & 0x0F)));
+			MessagePriority.FromValue(MessagePriorityLevel.FromValue((byte)(value >> 4))),
+			ProtocolVersion.FromValue(ProtocolVersionNumber.FromValue((byte)(value & 0x0F))));
 	}
 
 	public byte[] ToWireValue()

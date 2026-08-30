@@ -13,8 +13,9 @@ public sealed class CountAndLengthSteps
 	[Given(@"a message length of (.*) bytes and (.*) destination")]
 	public void GivenAMessageLengthOfBytesAndDestination(ushort messageLength, byte destinationCount)
 	{
-		this.messageLength = MessageLength.FromValue(messageLength);
-		this.destinationCount = DestinationCount.FromValue(destinationCount);
+		this.messageLength = MessageLength.FromValue(MessageByteLength.FromValue(messageLength));
+		this.destinationCount = DestinationCount.FromValue(
+			DestinationAddressCount.FromValue(destinationCount));
 	}
 
 	[When(@"a CountAndLength field is created")]

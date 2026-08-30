@@ -8,8 +8,8 @@ public sealed class CountAndLengthTests
 	public void Serializes_message_length_then_destination_count()
 	{
 		var field = CountAndLength.FromValues(
-			MessageLength.FromValue(8),
-			DestinationCount.FromValue(1));
+			MessageLength.FromValue(MessageByteLength.FromValue(8)),
+			DestinationCount.FromValue(DestinationAddressCount.FromValue(1)));
 
 		field.ToWireValue().Should().Equal(new byte[] { 0x02, 0x01 });
 	}

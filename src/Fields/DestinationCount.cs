@@ -9,13 +9,8 @@ public sealed record DestinationCount
 
 	public byte Value { get; }
 
-	public static DestinationCount FromValue(byte value)
+	public static DestinationCount FromValue(DestinationAddressCount value)
 	{
-		if (value is < 1 or > 63)
-		{
-			throw new ArgumentOutOfRangeException(nameof(value));
-		}
-
-		return new DestinationCount(value);
+		return new DestinationCount(value.Value);
 	}
 }

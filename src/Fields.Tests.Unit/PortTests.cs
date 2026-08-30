@@ -7,14 +7,14 @@ public sealed class PortTests
 	[Fact]
 	public void Accepts_the_highest_valid_port_value()
 	{
-		Port.FromValue(63).Value.Should().Be((byte)63);
+		Port.FromValue(PortIdentifier.FromValue(63)).Value.Should().Be((byte)63);
 	}
 
 	[Fact]
-	public void Rejects_values_above_the_port_range()
+	public void Rejects_port_identifiers_above_the_protocol_range()
 	{
-		Action createPort = () => Port.FromValue(64);
+		Action createPortIdentifier = () => PortIdentifier.FromValue(64);
 
-		createPort.Should().Throw<ArgumentOutOfRangeException>();
+		createPortIdentifier.Should().Throw<ArgumentOutOfRangeException>();
 	}
 }

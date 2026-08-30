@@ -9,7 +9,7 @@ public sealed class Destinations
 	private Destinations(IReadOnlyList<CommunicationsAddress> addresses)
 	{
 		this.addresses = addresses;
-		this.Count = DestinationCount.FromValue((byte)addresses.Count);
+		this.Count = DestinationCount.FromValue(DestinationAddressCount.FromValue((byte)addresses.Count));
 	}
 
 	public IReadOnlyList<CommunicationsAddress> Addresses => this.addresses;

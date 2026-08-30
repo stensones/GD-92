@@ -7,14 +7,14 @@ public sealed class NodeTests
 	[Fact]
 	public void Accepts_the_highest_valid_node_value()
 	{
-		Node.FromValue(1023).Value.Should().Be((ushort)1023);
+		Node.FromValue(NodeIdentifier.FromValue(1023)).Value.Should().Be((ushort)1023);
 	}
 
 	[Fact]
-	public void Rejects_values_above_the_node_range()
+	public void Rejects_node_identifiers_above_the_protocol_range()
 	{
-		Action createNode = () => Node.FromValue(1024);
+		Action createNodeIdentifier = () => NodeIdentifier.FromValue(1024);
 
-		createNode.Should().Throw<ArgumentOutOfRangeException>();
+		createNodeIdentifier.Should().Throw<ArgumentOutOfRangeException>();
 	}
 }

@@ -15,8 +15,8 @@ public sealed class CommunicationsAddressSteps
 	public void GivenBrigadeNodeAndPort(byte brigade, ushort node, byte port)
 	{
 		this.brigade = Brigade.FromValue(brigade);
-		this.node = Node.FromValue(node);
-		this.port = Port.FromValue(port);
+		this.node = Node.FromValue(NodeIdentifier.FromValue(node));
+		this.port = Port.FromValue(PortIdentifier.FromValue(port));
 	}
 
 	[When(@"a Communications Address is created")]

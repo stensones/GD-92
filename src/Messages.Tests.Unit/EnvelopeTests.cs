@@ -11,8 +11,11 @@ public sealed class EnvelopeTests
 		var received = DecodeEnvelope("1A191902011A195A12FCD11B010100044649524578");
 		var response = Envelope.CreateAcknowledgement(
 			received,
-			CommunicationsAddress.FromValues(Brigade.FromValue(26), Node.FromValue(101), Port.FromValue(26)),
-			ProtocolVersion.FromValue(2));
+			CommunicationsAddress.FromValues(
+				Brigade.FromValue(26),
+				Node.FromValue(NodeIdentifier.FromValue(101)),
+				Port.FromValue(PortIdentifier.FromValue(26))),
+			ProtocolVersion.FromValue(ProtocolVersionNumber.FromValue(2)));
 
 		response.ToWireValue().Should().Equal(Convert.FromHexString("1A195A00011A1919127CD132CF"));
 	}
@@ -23,10 +26,16 @@ public sealed class EnvelopeTests
 		var received = DecodeEnvelope("1A191902011A195A12FCD11B010100044649524578");
 		var response = Envelope.CreateNegativeAcknowledgement(
 			received,
-			CommunicationsAddress.FromValues(Brigade.FromValue(26), Node.FromValue(101), Port.FromValue(26)),
-			ProtocolVersion.FromValue(2),
+			CommunicationsAddress.FromValues(
+				Brigade.FromValue(26),
+				Node.FromValue(NodeIdentifier.FromValue(101)),
+				Port.FromValue(PortIdentifier.FromValue(26))),
+			ProtocolVersion.FromValue(ProtocolVersionNumber.FromValue(2)),
 			Destinations.FromAddresses(
-				CommunicationsAddress.FromValues(Brigade.FromValue(26), Node.FromValue(100), Port.FromValue(25))),
+				CommunicationsAddress.FromValues(
+					Brigade.FromValue(26),
+					Node.FromValue(NodeIdentifier.FromValue(100)),
+					Port.FromValue(PortIdentifier.FromValue(25)))),
 			ReasonCode.FromGeneralReasonCode(GeneralReasonCode.InvalidMessage));
 
 		response.ToWireValue().Should().Equal(Convert.FromHexString("1A195A01811A1919127CD133011A1919010356"));
@@ -49,14 +58,14 @@ public sealed class EnvelopeTests
 	{
 		var address = CommunicationsAddress.FromValues(
 			Brigade.FromValue(26),
-			Node.FromValue(100),
-			Port.FromValue(25));
+			Node.FromValue(NodeIdentifier.FromValue(100)),
+			Port.FromValue(PortIdentifier.FromValue(25)));
 		var createEnvelope = () => Envelope.FromValues(
 			address,
 			Destinations.FromAddresses(address),
 			ProtocolAndPriority.FromValues(
-				MessagePriority.FromValue(1),
-				ProtocolVersion.FromValue(2)),
+				MessagePriority.FromValue(MessagePriorityLevel.FromValue(1)),
+				ProtocolVersion.FromValue(ProtocolVersionNumber.FromValue(2))),
 			AcknowledgementAndSequence.FromValues(
 				SequenceNumber.FromValue(31953),
 				AcknowledgementRequest.NotRequested),
@@ -93,14 +102,14 @@ public sealed class EnvelopeTests
 	{
 		var address = CommunicationsAddress.FromValues(
 			Brigade.FromValue(26),
-			Node.FromValue(100),
-			Port.FromValue(25));
+			Node.FromValue(NodeIdentifier.FromValue(100)),
+			Port.FromValue(PortIdentifier.FromValue(25)));
 		var envelope = Envelope.FromValues(
 			address,
 			Destinations.FromAddresses(address),
 			ProtocolAndPriority.FromValues(
-				MessagePriority.FromValue(1),
-				ProtocolVersion.FromValue(2)),
+				MessagePriority.FromValue(MessagePriorityLevel.FromValue(1)),
+				ProtocolVersion.FromValue(ProtocolVersionNumber.FromValue(2))),
 			AcknowledgementAndSequence.FromValues(
 				SequenceNumber.FromValue(31953),
 				AcknowledgementRequest.Requested),

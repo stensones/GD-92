@@ -9,13 +9,8 @@ public sealed record MessagePriority
 
 	public byte Value { get; }
 
-	public static MessagePriority FromValue(byte value)
+	public static MessagePriority FromValue(MessagePriorityLevel value)
 	{
-		if (value is < 1 or > 9)
-		{
-			throw new ArgumentOutOfRangeException(nameof(value));
-		}
-
-		return new MessagePriority(value);
+		return new MessagePriority(value.Value);
 	}
 }

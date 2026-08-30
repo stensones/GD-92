@@ -8,8 +8,8 @@ public sealed class ProtocolAndPriorityTests
 	public void Serializes_priority_then_protocol_version()
 	{
 		var field = ProtocolAndPriority.FromValues(
-			MessagePriority.FromValue(1),
-			ProtocolVersion.FromValue(2));
+			MessagePriority.FromValue(MessagePriorityLevel.FromValue(1)),
+			ProtocolVersion.FromValue(ProtocolVersionNumber.FromValue(2)));
 
 		field.ToWireValue().Should().Equal(new byte[] { 0x12 });
 	}

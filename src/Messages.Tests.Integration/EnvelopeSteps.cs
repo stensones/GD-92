@@ -24,8 +24,8 @@ public sealed class EnvelopeSteps
 	{
 		var address = CommunicationsAddress.FromValues(
 			Brigade.FromValue(brigade),
-			Node.FromValue(node),
-			Port.FromValue(port));
+			Node.FromValue(NodeIdentifier.FromValue(node)),
+			Port.FromValue(PortIdentifier.FromValue(port)));
 
 		this.source = address;
 		this.destinations = Destinations.FromAddresses(address);
@@ -35,8 +35,8 @@ public sealed class EnvelopeSteps
 	public void GivenAnEnvelopePriorityAndProtocolVersion(byte priority, byte protocolVersion)
 	{
 		this.protocolAndPriority = ProtocolAndPriority.FromValues(
-			MessagePriority.FromValue(priority),
-			ProtocolVersion.FromValue(protocolVersion));
+			MessagePriority.FromValue(MessagePriorityLevel.FromValue(priority)),
+			ProtocolVersion.FromValue(ProtocolVersionNumber.FromValue(protocolVersion)));
 	}
 
 	[Given(@"an Envelope sequence number of (.*) requesting acknowledgement")]
@@ -145,8 +145,8 @@ public sealed class EnvelopeSteps
 	{
 		this.envelope!.Source.Should().Be(CommunicationsAddress.FromValues(
 			Brigade.FromValue(brigade),
-			Node.FromValue(node),
-			Port.FromValue(port)));
+			Node.FromValue(NodeIdentifier.FromValue(node)),
+			Port.FromValue(PortIdentifier.FromValue(port))));
 	}
 
 	[Then(@"it has (.*) decoded destination")]
@@ -202,7 +202,7 @@ public sealed class EnvelopeSteps
 		this.envelope = Envelope.CreateParameterResponse(
 			requestEnvelope,
 			CreateAddress(brigade, node, port),
-			ProtocolVersion.FromValue(protocolVersion),
+			ProtocolVersion.FromValue(ProtocolVersionNumber.FromValue(protocolVersion)),
 			Parameter.FromFields(
 				MoreValues.No,
 				ParameterValue.FromWireValue([returnedBrigadeNumber])));
@@ -345,7 +345,7 @@ public sealed class EnvelopeSteps
 		this.envelope = Envelope.CreateNegativeAcknowledgement(
 			receivedEnvelope,
 			CreateAddress(brigade, node, port),
-			ProtocolVersion.FromValue(protocolVersion),
+			ProtocolVersion.FromValue(ProtocolVersionNumber.FromValue(protocolVersion)),
 			this.affectedDestinations!,
 			ReasonCode.FromGeneralReasonCode(ParseGeneralReasonCode(reasonCode)));
 	}
@@ -363,7 +363,7 @@ public sealed class EnvelopeSteps
 		this.envelope = Envelope.CreateAcknowledgement(
 			receivedEnvelope,
 			CreateAddress(brigade, node, port),
-			ProtocolVersion.FromValue(protocolVersion));
+			ProtocolVersion.FromValue(ProtocolVersionNumber.FromValue(protocolVersion)));
 	}
 
 	[When(@"creating an Acknowledgement Envelope is attempted by Brigade (.*), Node (.*), Port (.*) using protocol version (.*)")]
@@ -381,7 +381,7 @@ public sealed class EnvelopeSteps
 			this.envelope = Envelope.CreateAcknowledgement(
 				receivedEnvelope,
 				CreateAddress(brigade, node, port),
-				ProtocolVersion.FromValue(protocolVersion));
+				ProtocolVersion.FromValue(ProtocolVersionNumber.FromValue(protocolVersion)));
 		}
 		catch (InvalidOperationException exception)
 		{
@@ -408,7 +408,7 @@ public sealed class EnvelopeSteps
 	{
 		return CommunicationsAddress.FromValues(
 			Brigade.FromValue(brigade),
-			Node.FromValue(node),
-			Port.FromValue(port));
+			Node.FromValue(NodeIdentifier.FromValue(node)),
+			Port.FromValue(PortIdentifier.FromValue(port)));
 	}
 }

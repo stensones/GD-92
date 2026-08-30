@@ -9,7 +9,7 @@ public sealed class MessagePriorityTests
 	[InlineData((byte)9)]
 	public void Accepts_valid_priorities(byte value)
 	{
-		MessagePriority.FromValue(value).Value.Should().Be(value);
+		MessagePriority.FromValue(MessagePriorityLevel.FromValue(value)).Value.Should().Be(value);
 	}
 
 	[Theory]
@@ -17,8 +17,8 @@ public sealed class MessagePriorityTests
 	[InlineData((byte)10)]
 	public void Rejects_invalid_priorities(byte value)
 	{
-		Action createPriority = () => MessagePriority.FromValue(value);
+		Action createPriorityLevel = () => MessagePriorityLevel.FromValue(value);
 
-		createPriority.Should().Throw<ArgumentOutOfRangeException>();
+		createPriorityLevel.Should().Throw<ArgumentOutOfRangeException>();
 	}
 }

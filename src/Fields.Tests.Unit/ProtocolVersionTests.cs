@@ -9,7 +9,7 @@ public sealed class ProtocolVersionTests
 	[InlineData((byte)15)]
 	public void Accepts_valid_protocol_versions(byte value)
 	{
-		ProtocolVersion.FromValue(value).Value.Should().Be(value);
+		ProtocolVersion.FromValue(ProtocolVersionNumber.FromValue(value)).Value.Should().Be(value);
 	}
 
 	[Theory]
@@ -17,8 +17,8 @@ public sealed class ProtocolVersionTests
 	[InlineData((byte)16)]
 	public void Rejects_invalid_protocol_versions(byte value)
 	{
-		Action createVersion = () => ProtocolVersion.FromValue(value);
+		Action createVersionNumber = () => ProtocolVersionNumber.FromValue(value);
 
-		createVersion.Should().Throw<ArgumentOutOfRangeException>();
+		createVersionNumber.Should().Throw<ArgumentOutOfRangeException>();
 	}
 }

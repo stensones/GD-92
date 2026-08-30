@@ -24,8 +24,8 @@ public sealed record CountAndLength : IGD9Field
 		var value = (ushort)buffer.ReadUnsignedBits(16);
 
 		return FromValues(
-			MessageLength.FromValue((ushort)(value >> 6)),
-			DestinationCount.FromValue((byte)(value & 0x3F)));
+			MessageLength.FromValue(MessageByteLength.FromValue((ushort)(value >> 6))),
+			DestinationCount.FromValue(DestinationAddressCount.FromValue((byte)(value & 0x3F))));
 	}
 
 	public byte[] ToWireValue()

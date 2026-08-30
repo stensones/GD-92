@@ -9,13 +9,8 @@ public sealed record ProtocolVersion
 
 	public byte Value { get; }
 
-	public static ProtocolVersion FromValue(byte value)
+	public static ProtocolVersion FromValue(ProtocolVersionNumber value)
 	{
-		if (value is < 1 or > 15)
-		{
-			throw new ArgumentOutOfRangeException(nameof(value));
-		}
-
-		return new ProtocolVersion(value);
+		return new ProtocolVersion(value.Value);
 	}
 }
