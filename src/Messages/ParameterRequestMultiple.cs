@@ -10,33 +10,28 @@ public sealed record ParameterRequestMultiple : IGD92MessageContents
 	private ParameterRequestMultiple(
 		ParameterTable parameterTable,
 		ParameterNumber parameterNumber,
-		ParameterEntryIndex firstEntry,
-		ParameterEntryIndex lastEntry)
+		ParameterEntrySelection entrySelection)
 	{
 		this.ParameterTable = parameterTable;
 		this.ParameterNumber = parameterNumber;
-		this.FirstEntry = firstEntry;
-		this.LastEntry = lastEntry;
+		this.EntrySelection = entrySelection;
 	}
 
 	public ParameterTable ParameterTable { get; }
 	public ParameterNumber ParameterNumber { get; }
-	public ParameterEntryIndex FirstEntry { get; }
-	public ParameterEntryIndex LastEntry { get; }
+	public ParameterEntrySelection EntrySelection { get; }
 	public MessageType Type => ParameterRequestMultipleMessageType;
 
 	public static ParameterRequestMultiple FromFields(
 		ParameterTable parameterTable,
 		ParameterNumber parameterNumber,
-		ParameterEntryIndex firstEntry,
-		ParameterEntryIndex lastEntry)
+		ParameterEntrySelection entrySelection)
 	{
 		ArgumentNullException.ThrowIfNull(parameterTable);
 		ArgumentNullException.ThrowIfNull(parameterNumber);
-		ArgumentNullException.ThrowIfNull(firstEntry);
-		ArgumentNullException.ThrowIfNull(lastEntry);
+		ArgumentNullException.ThrowIfNull(entrySelection);
 
-		return new ParameterRequestMultiple(parameterTable, parameterNumber, firstEntry, lastEntry);
+		return new ParameterRequestMultiple(parameterTable, parameterNumber, entrySelection);
 	}
 
 	public static ParameterRequestMultiple FromEncodedMessageBuffer(ref EncodedMessageBuffer buffer)
@@ -44,8 +39,7 @@ public sealed record ParameterRequestMultiple : IGD92MessageContents
 		return FromFields(
 			ParameterTable.FromEncodedMessageBuffer(ref buffer),
 			ParameterNumber.FromEncodedMessageBuffer(ref buffer),
-			ParameterEntryIndex.FromEncodedMessageBuffer(ref buffer),
-			ParameterEntryIndex.FromEncodedMessageBuffer(ref buffer));
+			ParameterEntrySelection.FromEncodedMessageBuffer(ref buffer));
 	}
 
 	public byte[] ToWireValue()
@@ -53,8 +47,7 @@ public sealed record ParameterRequestMultiple : IGD92MessageContents
 		return [
 			.. this.ParameterTable.ToWireValue(),
 			.. this.ParameterNumber.ToWireValue(),
-			.. this.FirstEntry.ToWireValue(),
-			.. this.LastEntry.ToWireValue()
+			.. this.EntrySelection.ToWireValue()
 		];
 	}
 }

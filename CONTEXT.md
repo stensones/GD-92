@@ -78,12 +78,20 @@ _Avoid_: Message Sequence Number, parameter value
 The sixteen-bit identifier of an entry within a table-valued Parameter.
 _Avoid_: Parameter Number, database row key
 
+**Parameter Entry Count**:
+The sixteen-bit requested-entry count encoded in a Parameter Request Multiple when the most recent entries are requested.
+_Avoid_: Parameter Entry Index, table capacity
+
+**Parameter Entry Selection**:
+The selection in a Parameter Request Multiple that is either an inclusive nonzero Parameter Entry Index range or a requested count of the most recent entries.
+_Avoid_: two interchangeable indexes, pagination token
+
 **Parameter Request**:
 The Message Type 61 Contents that requests the value of one Parameter by its Parameter Table and Parameter Number and requires acknowledgement.
 _Avoid_: Parameter value, Set Parameter
 
 **Parameter Request Multiple**:
-The Message Type 63 Contents that requests a range of entries from one table-valued Parameter.
+The Message Type 63 Contents that requests a Parameter Entry Selection from one table-valued Parameter.
 _Avoid_: Parameter Request, Parameter Message
 
 **More Values**:
@@ -355,9 +363,9 @@ _Avoid_: retransmission, duplicate Message
 - A **Parameter Request** identifies one **Parameter Table** and one **Parameter Number**.
 - A **Parameter Number** identifies one **Parameter** within its **Parameter Table**.
 - A **Parameter Request Envelope** always has its **Acknowledgement Request** set.
-- A **Parameter Request Multiple** identifies one **Parameter Table**, one **Parameter Number**, and first and last **Parameter Entry Indexes**.
+- A **Parameter Request Multiple** identifies one **Parameter Table**, one **Parameter Number**, and one **Parameter Entry Selection**.
 - A **Parameter Request Multiple Envelope** always has its **Acknowledgement Request** set.
-- In a **Parameter Request Multiple**, a first **Parameter Entry Index** of zero requests the most recent entry and interprets the last index as the requested entry count.
+- A **Parameter Entry Selection** is either a nonzero inclusive **Parameter Entry Index** range, or a request for the most recent entries whose encoded first index is zero and whose encoded last index is a **Parameter Entry Count**.
 - A **Parameter Message** contains one **Parameter Value** and one **More Values** field.
 - A **Parameter Message Envelope** responds to a **Parameter Request Envelope** using the request Envelope's source, Message Priority, and Sequence Number, with its **Acknowledgement Request** clear.
 - A **User Agent** accepts **Messages** at its current **Protocol Version** or below.

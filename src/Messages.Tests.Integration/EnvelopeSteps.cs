@@ -81,8 +81,20 @@ public sealed class EnvelopeSteps
 		this.contents = ParameterRequestMultiple.FromFields(
 			ParameterTable.Current,
 			ParameterNumber.FromValue(parameterNumber),
-			ParameterEntryIndex.FromValue(firstEntry),
-			ParameterEntryIndex.FromValue(lastEntry));
+			ParameterEntrySelection.Range(
+				ParameterEntryIndex.FromValue(firstEntry),
+				ParameterEntryIndex.FromValue(lastEntry)));
+	}
+
+	[Given(@"a Parameter Request Multiple for current-table parameter number (.*) requesting the (.*) most recent entries")]
+	public void GivenAParameterRequestMultipleForCurrentTableRequestingMostRecentEntries(
+		byte parameterNumber,
+		ushort entryCount)
+	{
+		this.contents = ParameterRequestMultiple.FromFields(
+			ParameterTable.Current,
+			ParameterNumber.FromValue(parameterNumber),
+			ParameterEntrySelection.MostRecent(ParameterEntryCount.FromValue(entryCount)));
 	}
 
 	[When(@"the Envelope is created")]
@@ -184,8 +196,18 @@ public sealed class EnvelopeSteps
 
 		contents.ParameterTable.Should().Be(ParameterTable.Current);
 		contents.ParameterNumber.Value.Should().Be(parameterNumber);
-		contents.FirstEntry.Value.Should().Be(firstEntry);
-		contents.LastEntry.Value.Should().Be(lastEntry);
+		contents.EntrySelection.Should().Be(ParameterEntrySelection.Range(
+			ParameterEntryIndex.FromValue(firstEntry),
+			ParameterEntryIndex.FromValue(lastEntry)));
+	}
+
+	[Then(@"its decoded Parameter Request Multiple requests the (.*) most recent entries")]
+	public void ThenItsDecodedParameterRequestMultipleRequestsMostRecentEntries(ushort entryCount)
+	{
+		var contents = this.envelope!.Contents.Should().BeOfType<ParameterRequestMultiple>().Which;
+
+		contents.EntrySelection.Should().Be(
+			ParameterEntrySelection.MostRecent(ParameterEntryCount.FromValue(entryCount)));
 	}
 
 	[When(@"a Parameter Envelope is created by Brigade (.*), Node (.*), Port (.*) using protocol version (.*) returning brigade number (.*)")]
