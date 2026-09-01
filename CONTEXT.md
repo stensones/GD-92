@@ -30,6 +30,14 @@ _Avoid_: user agent, endpoint
 A Communications Entity that orderly switches messages between User Agents and Message Transfer Agents within a Communications Node.
 _Avoid_: communications node, Message Transfer Agent
 
+**Router Ingress**:
+The submission of an outgoing Envelope from a User Agent to its local Router for routing.
+_Avoid_: final delivery, Message Transfer Agent Frame
+
+**User-Agent Ingress**:
+The delivery of an Envelope from a local Router to the addressed User Agent.
+_Avoid_: browser response, Message Transfer Agent Frame
+
 **Message Transfer Agent (MTA)**:
 A Communications Entity that operates with a paired MTA to transfer messages reliably across a communications bearer.
 _Avoid_: router, User Agent
@@ -163,6 +171,10 @@ _Avoid_: envelope, contents
 The complete serializable GD-92 `<envelope>` data entity, containing routing and integrity information, exactly one set of Contents, and its Block Check Character.
 _Avoid_: envelope header, Frame
 
+**Envelope Reception**:
+The validation of received encoded Envelope data into either a valid Envelope or a reported integrity failure.
+_Avoid_: RabbitMQ handler, Frame decoding
+
 **Contents**:
 The type-specific user information carried within an Envelope. `IGD92MessageContents` is the public contract for encoded Contents.
 _Avoid_: message, envelope, payload
@@ -276,6 +288,10 @@ _Avoid_: Envelope destination
 A value assigned by a Message originator to distinguish Messages sent to a destination.
 _Avoid_: message ID, ordering number
 
+**Message Originator**:
+The Communications Entity or User Agent that creates a Message and assigns its source Communications Address and Sequence Number.
+_Avoid_: UI controller, broker publisher
+
 **Unique System-Wide Reference (USWR)**:
 The unique identifier formed from one source Communications Address, one destination Communications Address, and one Sequence Number.
 _Avoid_: multicast message ID, correlation ID
@@ -303,8 +319,12 @@ A typed diagnostic, comprising a reason-code set and code, that explains a Negat
 _Avoid_: free-text error, delivery acknowledgement
 
 **General Reason Code**:
-A Reason Code in the General reason-code set (set 1), such as Invalid Message.
+A Reason Code in the General reason-code set (set 1), such as Check Error, Invalid Protocol, or Invalid Message.
 _Avoid_: arbitrary numeric error code, delivery acknowledgement
+
+**Parameter Reason Code**:
+A Reason Code in the Parameter reason-code set (set 4), such as Invalid Table or Invalid Parameter.
+_Avoid_: General Reason Code, transport error
 
 **Negative Acknowledgement (NAK)**:
 A response Message from a Router or User Agent that reports delivery failure, rejected processing, or deferred processing.
@@ -350,9 +370,12 @@ _Avoid_: retransmission, duplicate Message
 - An **Outstation** is a **Communications Node**.
 - A **Communications Node** belongs to one **Brigade or Agency** through its **Communications Address**.
 - A **Router** switches messages between the **User Agents** and **Message Transfer Agents** in its **Communications Node**.
+- A **User Agent** submits each outgoing **Envelope** to its local **Router** through **Router Ingress**.
+- A **Router** delivers an Envelope addressed to a local **User Agent** through **User-Agent Ingress**.
 - A **Message Transfer Agent** transfers messages only with its paired **Message Transfer Agent**.
 - A **Message Transfer Agent** transfers an encoded **Envelope** to its paired Message Transfer Agent in a **Frame**.
 - A **Router** and **User Agent** validate the **Block Check Character** of a received **Envelope**.
+- A Router or **User Agent** attempts a **Negative Acknowledgement** with a **General Reason Code** when a received Envelope's length, **Block Check Character**, or **Protocol Version** is invalid.
 - A **User Agent** has exactly one **Communications Address** and one or more **UA Capabilities**.
 - An **Alerter User Agent**, **Paging User Agent**, **Printer User Agent**, **Peripheral User Agent**, or **Resource User Agent** is a **User Agent** with the corresponding **UA Capabilities**.
 - Every **User Agent** supports the **Network Manager** and **Alternative Network Manager** addresses.
@@ -374,7 +397,9 @@ _Avoid_: retransmission, duplicate Message
 - A **Router** processes higher **Message Priorities** before lower ones and preserves arrival order within the same priority.
 - A **Message** is represented by an **Envelope** containing exactly one set of **Contents**.
 - An **Envelope** and **Contents** are composed of **Protocol Fields**.
+- A Router or **User Agent** performs **Envelope Reception** before processing a received **Envelope**.
 - An **Envelope** with a known but unimplemented **Message Type** preserves its **Unsupported Message Contents** without interpreting them.
+- A Router or **User Agent** responds to an acknowledgement-requested, unsupported **Message Type** with a **Negative Acknowledgement** using the General Reason Code `inv_mess`; otherwise it discards the Envelope.
 - An **Envelope** derives its CountAndLength, Message Type, and Block Check Character from its Destinations and Message Contents.
 - An **Envelope** validates its received Block Check Character against all preceding encoded Envelope and Contents bytes.
 - A **Message Type** determines the structure and handling constraints of a Message's **Contents**.
@@ -395,6 +420,8 @@ _Avoid_: retransmission, duplicate Message
 - A **Communications Address** identifies exactly one port within a **Communications Node**.
 - An **Address Range** identifies a set of destination Communications Nodes for routing or configuration.
 - A **Router** has a **Communications Address** whose Port number is 0.
+- A Router's current **Parameter Table** exposes its **Brigade or Agency** identifier as Parameter Number 1.
+- A **Message Originator** assigns an outgoing **Envelope** its source **Communications Address** and **Sequence Number**.
 - A **Unique System-Wide Reference** identifies one source-to-destination **Message** using its **Sequence Number**.
 - The **Message Transfer System** forwards a **Message** between **Communications Nodes** without interpreting its **Contents**.
 - A **Message** with an **Acknowledgement Request** results in either an **MTS Delivery Failure** or a **User-Agent Transaction Response**.
@@ -404,6 +431,7 @@ _Avoid_: retransmission, duplicate Message
 - A rejected **User-Agent Transaction Response** includes a **Reason Code**.
 - A **Negative Acknowledgement** identifies one or more affected destination **Communications Addresses** and a **Reason Code**.
 - A **General Reason Code** is a **Reason Code** from reason-code set 1.
+- A **Parameter Reason Code** is a **Reason Code** from reason-code set 4.
 - An **Acknowledgement** is a final **User-Agent Transaction Response** for one destination.
 - A **Negative Acknowledgement Envelope** responding to an acknowledgement-requested **Envelope** targets the received Envelope's source, preserves its Message Priority and Sequence Number, and does not request an acknowledgement.
 - A **Manual Acknowledgement** causes the relevant local **User Agent** to send a final **Acknowledgement**.
@@ -422,6 +450,7 @@ _Avoid_: retransmission, duplicate Message
 - A NAK does not always reject a transaction — resolved: `wait_ack` is a **Deferred Transaction Response** that requires a later final response.
 - The specification sometimes calls a Callsign's owner a "user" — resolved: a **Callsign** identifies the acting **Resource**; no separate User concept is defined.
 - Mobilisation can imply a business workflow across messages — resolved: Volume A defines no correlation between Mobilise_command and Mobilise_message, so they remain independent **Message Types**.
+- A browser login can be confused with a **Node Login** — resolved: browser credentials are not a GD-92 concept, and read-only Parameter Requests do not require a **Node Login**.
 
 ## Example dialogue
 

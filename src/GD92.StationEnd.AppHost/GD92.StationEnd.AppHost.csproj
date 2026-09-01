@@ -1,0 +1,26 @@
+<Project Sdk="Aspire.AppHost.Sdk/13.5.3">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <AspireUseCliBundle>true</AspireUseCliBundle>
+    <UserSecretsId>58881ace-b609-4158-8c5f-bf2e51194ab9</UserSecretsId>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Aspire.Hosting.RabbitMQ" />
+    <PackageReference Include="Aspire.Hosting.SqlServer" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\BusMTA\BusMTA.csproj" />
+    <ProjectReference Include="..\IOUA\IOUA.csproj" />
+    <ProjectReference Include="..\LANMTA\LANMTA.csproj" />
+    <ProjectReference Include="..\NodeManager\NodeManager.csproj" />
+    <ProjectReference Include="..\PrinterUA\PrinterUA.csproj" />
+    <ProjectReference Include="..\Router\Router.csproj" />
+  </ItemGroup>
+
+</Project>

@@ -1,0 +1,3 @@
+# Route local GD-92 Envelopes through RabbitMQ ingress
+
+User Agents submit each outgoing GD-92 Envelope to their local Router through point-to-point Router Ingress, and Routers deliver locally addressed response Envelopes through User-Agent Ingress. The shared RabbitMQ transport adapter carries encoded Envelope bytes rather than serialized domain aggregates and derives durable endpoints from Communications Addresses: `gd92.router.{brigade}.{node}` for Router Ingress and `gd92.ua.{brigade}.{node}.{port}` for User-Agent Ingress. This keeps GD-92 routing, integrity validation, and response correlation independent of RabbitMQ while preventing a User Agent from selecting a final routing path.
