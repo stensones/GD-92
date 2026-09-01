@@ -46,9 +46,16 @@ public sealed class RouterParameterRequestSteps
 	}
 
 	[Then(@"I am redirected to the pending Parameter Request status")]
-	public void ThenIAmRedirectedToThePendingParameterRequestStatus()
+	public async Task ThenIAmRedirectedToThePendingParameterRequestStatus()
 	{
-		this.response!.StatusCode.Should().Be(HttpStatusCode.SeeOther);
+		if (this.response!.StatusCode != HttpStatusCode.SeeOther)
+		{
+			var error = await this.response.Content.ReadAsStringAsync();
+
+			throw new Xunit.Sdk.XunitException(
+				$"Expected HTTP {HttpStatusCode.SeeOther}, received {this.response.StatusCode}: {error}");
+		}
+
 		this.response.Headers.Location.Should().NotBeNull();
 	}
 

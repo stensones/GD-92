@@ -27,11 +27,11 @@ builder.Services.AddWolverine(options =>
 
 builder.Services.AddSingleton(requestSettings);
 builder.Services.AddSingleton<IPendingDeliveryRegistry, InMemoryPendingDeliveryRegistry>();
-builder.Services.AddSingleton<IRouterIngress>(serviceProvider =>
+builder.Services.AddScoped<IRouterIngress>(serviceProvider =>
 	new RabbitMqRouterIngress(
 		serviceProvider.GetRequiredService<IMessageBus>(),
 		requestSettings.LocalRouter));
-builder.Services.AddSingleton<IRouterParameterRequestService, RouterParameterRequestService>();
+builder.Services.AddScoped<IRouterParameterRequestService, RouterParameterRequestService>();
 
 var app = builder.Build();
 
