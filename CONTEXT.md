@@ -95,7 +95,7 @@ The selection in a Parameter Request Multiple that is either an inclusive nonzer
 _Avoid_: two interchangeable indexes, pagination token
 
 **Parameter Request**:
-The Message Type 61 Contents that requests the value of one Parameter by its Parameter Table and Parameter Number and requires acknowledgement.
+The Message Type 61 Contents that requests the value of one Parameter by its Parameter Table and Parameter Number and requires an application response.
 _Avoid_: Parameter value, Set Parameter
 
 **Parameter Request Multiple**:
@@ -385,7 +385,7 @@ _Avoid_: retransmission, duplicate Message
 - A **Node Login** at a **Communications Node** authorizes Parameter modification according to each **Parameter**'s **Password Level**.
 - A **Parameter Request** identifies one **Parameter Table** and one **Parameter Number**.
 - A **Parameter Number** identifies one **Parameter** within its **Parameter Table**.
-- A **Parameter Request Envelope** always has its **Acknowledgement Request** set.
+- A **Message Originator** normally sets an **Acknowledgement Request** on a **Parameter Request Envelope**, while the recipient always returns a **Parameter Message** or **Negative Acknowledgement**.
 - A **Parameter Request Multiple** identifies one **Parameter Table**, one **Parameter Number**, and one **Parameter Entry Selection**.
 - A **Parameter Request Multiple Envelope** always has its **Acknowledgement Request** set.
 - A **Parameter Entry Selection** is either a nonzero inclusive **Parameter Entry Index** range, or a request for the most recent entries whose encoded first index is zero and whose encoded last index is a **Parameter Entry Count**.
