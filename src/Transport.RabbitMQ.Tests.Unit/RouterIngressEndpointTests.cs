@@ -6,6 +6,19 @@ namespace Stensones.GD92.Transport.RabbitMQ.Tests.Unit;
 public sealed class RouterIngressEndpointTests
 {
 	[Fact]
+	public void Derives_a_listener_queue_name_from_the_router_communications_node()
+	{
+		var routerAddress = CommunicationsAddress.FromValues(
+			Brigade.FromValue(BrigadeOrAgencyIdentifier.FromValue(26)),
+			Node.FromValue(NodeIdentifier.FromValue(100)),
+			Port.FromValue(PortIdentifier.FromValue(0)));
+
+		var queueName = RouterIngressEndpoint.QueueNameFrom(routerAddress);
+
+		queueName.Should().Be("gd92.router.26.100");
+	}
+
+	[Fact]
 	public void Derives_a_queue_URI_from_the_router_communications_node()
 	{
 		var routerAddress = CommunicationsAddress.FromValues(
