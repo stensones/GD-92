@@ -22,6 +22,10 @@ _Avoid_: control-room subsystem, all Communications Nodes
 The organization namespace identified by the first component of a Communications Address.
 _Avoid_: organizational aggregate, Communications Node
 
+**Brigade or Agency Identifier**:
+The full-octet protocol identity of a Brigade or Agency.
+_Avoid_: arbitrary byte, router queue name
+
 **Communications Entity (CE)**:
 A Router or Message Transfer Agent that transfers messages across the communications network without interpreting ordinary message contents.
 _Avoid_: user agent, endpoint

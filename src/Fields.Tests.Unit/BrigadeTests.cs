@@ -13,6 +13,14 @@ public sealed class BrigadeTests
 		brigade.Value.Should().Be(identifier);
 	}
 
+	[Fact]
+	public void Renders_a_brigade_or_agency_identifier_as_invariant_text()
+	{
+		var identifier = BrigadeOrAgencyIdentifier.FromValue(26);
+
+		identifier.ToString().Should().Be("26");
+	}
+
 	[Theory]
 	[InlineData((byte)0)]
 	[InlineData(byte.MaxValue)]
