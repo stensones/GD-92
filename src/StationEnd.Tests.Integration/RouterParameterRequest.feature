@@ -5,3 +5,4 @@ Feature: Router Parameter Request
     And its local Router is at Brigade 26, Node 100, and Port 0
     When I request the local Router brigade or agency number
     Then I am redirected to the pending Parameter Request status
+    And the Parameter Request status eventually shows brigade or agency number 26

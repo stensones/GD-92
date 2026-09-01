@@ -10,6 +10,7 @@ namespace Stensones.GD92.StationEnd.Tests.Integration;
 public sealed class RouterParameterRequestSteps
 {
 	private DistributedApplication? application;
+	private HttpClient? client;
 	private HttpResponseMessage? response;
 
 	[Given(@"NodeManager is the User Agent at Brigade (.*), Node (.*), and Port (.*)")]
@@ -33,12 +34,15 @@ public sealed class RouterParameterRequestSteps
 		this.application = await appHost.BuildAsync();
 		await this.application.StartAsync();
 
-		var client = new HttpClient
+		this.client = new HttpClient(new HttpClientHandler
+		{
+			AllowAutoRedirect = false
+		})
 		{
 			BaseAddress = this.application.GetEndpoint("Node-Manager-UA")
 		};
 
-		this.response = await client.PostAsync("/router/parameters/brigade-or-agency-number", null);
+		this.response = await this.client.PostAsync("/router/parameters/brigade-or-agency-number", null);
 	}
 
 	[Then(@"I am redirected to the pending Parameter Request status")]
@@ -48,9 +52,34 @@ public sealed class RouterParameterRequestSteps
 		this.response.Headers.Location.Should().NotBeNull();
 	}
 
+	[Then(@"the Parameter Request status eventually shows brigade or agency number (.*)")]
+	public async Task ThenTheParameterRequestStatusEventuallyShowsBrigadeOrAgencyNumber(byte brigadeOrAgencyNumber)
+	{
+		var statusAddress = this.response!.Headers.Location!;
+
+		for (var attempt = 0; attempt < 30; attempt++)
+		{
+			var status = await this.client!.GetAsync(statusAddress);
+			var content = await status.Content.ReadAsStringAsync();
+
+			if (status.StatusCode == HttpStatusCode.OK &&
+				content.Contains(brigadeOrAgencyNumber.ToString(), StringComparison.Ordinal))
+			{
+				return;
+			}
+
+			await Task.Delay(TimeSpan.FromSeconds(1));
+		}
+
+		throw new Xunit.Sdk.XunitException(
+			$"The Parameter Request status did not show brigade or agency number {brigadeOrAgencyNumber}.");
+	}
+
 	[AfterScenario]
 	public async Task DisposeApplication()
 	{
+		this.client?.Dispose();
+
 		if (this.application is not null)
 		{
 			await this.application.DisposeAsync();
