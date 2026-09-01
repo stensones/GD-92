@@ -15,6 +15,9 @@ builder.Services.AddWolverine(options =>
 });
 
 builder.Services.AddSingleton(routerSettings);
+builder.Services.AddSingleton(new RouterParameterRequestHandler(
+	routerSettings.LocalAddress,
+	routerSettings.ProtocolVersion));
 builder.Services.AddSingleton<IRouterIngressReceiver, RouterIngressReceiver>();
 
 await builder.Build().RunAsync();

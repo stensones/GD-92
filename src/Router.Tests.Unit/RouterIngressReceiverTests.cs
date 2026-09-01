@@ -9,25 +9,28 @@ namespace Router.Tests.Unit;
 public sealed class RouterIngressReceiverTests
 {
 	[Fact]
-	public async Task Accepts_a_received_Envelope_without_yet_creating_a_Router_response()
+	public async Task Retains_the_Router_response_for_a_received_Envelope()
 	{
-		IRouterIngressReceiver receiver = new RouterIngressReceiver();
+		var routerAddress = CreateAddress(26, 100, 0);
+		var receiver = new RouterIngressReceiver(new RouterParameterRequestHandler(
+			routerAddress,
+			ProtocolVersion.FromValue(ProtocolVersionNumber.FromValue(2))));
 
-		Func<Task> receive = () => receiver.ReceiveAsync(CreateEnvelope(), CancellationToken.None);
+		await receiver.ReceiveAsync(CreateEnvelope(routerAddress), CancellationToken.None);
 
-		await receive.Should().NotThrowAsync();
+		receiver.Response.Should().NotBeNull();
 	}
 
-	private static Envelope CreateEnvelope()
+	private static Envelope CreateEnvelope(CommunicationsAddress routerAddress)
 	{
-		var address = CommunicationsAddress.FromValues(
+		var source = CommunicationsAddress.FromValues(
 			Brigade.FromValue(BrigadeOrAgencyIdentifier.FromValue(26)),
 			Node.FromValue(NodeIdentifier.FromValue(100)),
-			Port.FromValue(PortIdentifier.FromValue(0)));
+			Port.FromValue(PortIdentifier.FromValue(25)));
 
 		return Envelope.FromValues(
-			address,
-			Destinations.FromAddresses(address),
+			source,
+			Destinations.FromAddresses(routerAddress),
 			ProtocolAndPriority.FromValues(
 				MessagePriority.FromValue(MessagePriorityLevel.FromValue(3)),
 				ProtocolVersion.FromValue(ProtocolVersionNumber.FromValue(2))),
@@ -35,5 +38,13 @@ public sealed class RouterIngressReceiverTests
 				SequenceNumber.FromValue(MessageSequenceIdentifier.FromValue(7)),
 				AcknowledgementRequest.Requested),
 			ParameterRequest.FromFields(ParameterTable.Current, ParameterNumber.FromValue(1)));
+	}
+
+	private static CommunicationsAddress CreateAddress(byte brigade, ushort node, byte port)
+	{
+		return CommunicationsAddress.FromValues(
+			Brigade.FromValue(BrigadeOrAgencyIdentifier.FromValue(brigade)),
+			Node.FromValue(NodeIdentifier.FromValue(node)),
+			Port.FromValue(PortIdentifier.FromValue(port)));
 	}
 }

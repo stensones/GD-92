@@ -1,0 +1,92 @@
+using Stensones.GD92.Fields;
+using Stensones.GD92.Messages;
+
+namespace Router;
+
+internal sealed class RouterParameterRequestHandler
+{
+	private readonly CommunicationsAddress localAddress;
+	private readonly ProtocolVersion protocolVersion;
+
+	public RouterParameterRequestHandler(
+		CommunicationsAddress localAddress,
+		ProtocolVersion protocolVersion)
+	{
+		this.localAddress = localAddress ?? throw new ArgumentNullException(nameof(localAddress));
+		this.protocolVersion = protocolVersion ?? throw new ArgumentNullException(nameof(protocolVersion));
+	}
+
+	public RouterEnvelopeHandlingResult Handle(Envelope envelope)
+	{
+		ArgumentNullException.ThrowIfNull(envelope);
+
+		if (envelope.Contents is not ParameterRequest parameterRequest)
+		{
+			return RouterEnvelopeHandlingResult.NotHandled(
+				RouterEnvelopeHandlingStatus.MessageTypeNotHandled);
+		}
+
+		if (envelope.Destinations.Addresses.Count != 1 ||
+			envelope.Destinations.Addresses[0] != this.localAddress)
+		{
+			return RouterEnvelopeHandlingResult.NotHandled(
+				RouterEnvelopeHandlingStatus.DestinationNotHandled);
+		}
+
+		if (parameterRequest.ParameterTable != ParameterTable.Current ||
+			parameterRequest.ParameterNumber.Value != 1)
+		{
+			return RouterEnvelopeHandlingResult.NotHandled(
+				RouterEnvelopeHandlingStatus.ParameterNotHandled);
+		}
+
+		var response = Envelope.CreateParameterResponse(
+			envelope,
+			this.localAddress,
+			this.protocolVersion,
+			Parameter.FromFields(
+				MoreValues.No,
+				ParameterValue.FromWireValue([this.localAddress.ToWireValue()[0]])));
+
+		return RouterEnvelopeHandlingResult.Responded(response);
+	}
+}
+
+internal enum RouterEnvelopeHandlingStatus
+{
+	Responded,
+	MessageTypeNotHandled,
+	DestinationNotHandled,
+	ParameterNotHandled
+}
+
+internal sealed class RouterEnvelopeHandlingResult
+{
+	private RouterEnvelopeHandlingResult(
+		RouterEnvelopeHandlingStatus status,
+		Envelope? response)
+	{
+		this.Status = status;
+		this.Response = response;
+	}
+
+	public RouterEnvelopeHandlingStatus Status { get; }
+	public Envelope? Response { get; }
+
+	public static RouterEnvelopeHandlingResult Responded(Envelope response)
+	{
+		ArgumentNullException.ThrowIfNull(response);
+
+		return new RouterEnvelopeHandlingResult(RouterEnvelopeHandlingStatus.Responded, response);
+	}
+
+	public static RouterEnvelopeHandlingResult NotHandled(RouterEnvelopeHandlingStatus status)
+	{
+		if (status == RouterEnvelopeHandlingStatus.Responded)
+		{
+			throw new ArgumentOutOfRangeException(nameof(status));
+		}
+
+		return new RouterEnvelopeHandlingResult(status, null);
+	}
+}
