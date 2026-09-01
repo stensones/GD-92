@@ -1,7 +1,11 @@
-﻿var builder = WebApplication.CreateBuilder(args);
+﻿using NodeManager.Router.Parameters;
+using Stensones.GD92.Fields;
+using Stensones.GD92.Transport.RabbitMQ;
+using Wolverine;
+using Wolverine.RabbitMQ;
 
-//builder.Services.AddControllersWithViews();
-// Add MVC services with Razor views support
+var builder = WebApplication.CreateBuilder(args);
+
 builder.Services
 	.AddControllersWithViews()
 	.AddRazorRuntimeCompilation()
@@ -12,15 +16,37 @@ builder.Services
 		options.ViewLocationFormats.Add("/SharedViews/{0}.cshtml"); // For shared views
 	});
 
+var requestSettings = new RouterParameterRequestSettings(
+	CreateAddress(builder.Configuration.GetRequiredSection("RouterParameterRequest:MessageOriginator")),
+	CreateAddress(builder.Configuration.GetRequiredSection("RouterParameterRequest:LocalRouter")));
+
+builder.Services.AddWolverine(options =>
+{
+	options.UseRabbitMqUsingNamedConnection("RabbitMQ").AutoProvision();
+});
+
+builder.Services.AddSingleton(requestSettings);
+builder.Services.AddSingleton<IPendingDeliveryRegistry, InMemoryPendingDeliveryRegistry>();
+builder.Services.AddSingleton<IRouterIngress>(serviceProvider =>
+	new RabbitMqRouterIngress(
+		serviceProvider.GetRequiredService<IMessageBus>(),
+		requestSettings.LocalRouter));
+builder.Services.AddSingleton<IRouterParameterRequestService, RouterParameterRequestService>();
+
 var app = builder.Build();
 
 app.UseStaticFiles(); // Enables serving static files from wwwroot
 
-//app.MapGet("/", () => "Hello, World! - Node Manager UA");
-
-// co-locate a controllers views with the controller class itself, rather than in a separate Views folder
 app.MapControllerRoute(
 	name: "default",
 	pattern: "{controller=Home}/{action=Index}/{id?}");
 
 app.Run();
+
+static CommunicationsAddress CreateAddress(IConfigurationSection configuration)
+{
+	return CommunicationsAddress.FromValues(
+		Brigade.FromValue(BrigadeOrAgencyIdentifier.FromValue(configuration.GetValue<byte>("Brigade"))),
+		Node.FromValue(NodeIdentifier.FromValue(configuration.GetValue<ushort>("Node"))),
+		Port.FromValue(PortIdentifier.FromValue(configuration.GetValue<byte>("Port"))));
+}

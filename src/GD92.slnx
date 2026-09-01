@@ -24,6 +24,7 @@
     <Project Path="IOUA/IOUA.csproj" Id="17afdc39-c7ee-4499-9368-1d4ca0ce833b" />
     <Project Path="LANMTA/LANMTA.csproj" Id="97113a1c-92b4-4d89-b8f9-fb5f45ce307b" />
     <Project Path="NodeManager/NodeManager.csproj" Id="4cfad056-9e2d-4941-a750-ae916aac48cd" />
+    <Project Path="NodeManager.Tests.Unit/NodeManager.Tests.Unit.csproj" />
     <Project Path="PrinterUA/PrinterUA.csproj" Id="1c6d715a-5884-4e66-b76e-ca3156e4cfdf" />
     <Project Path="Router/Router.csproj" Id="a692da3f-4f08-4a81-bcc5-e8756aca82be" />
     <Project Path="StationEnd.Tests.Integration/StationEnd.Tests.Integration.csproj" />

@@ -19,7 +19,9 @@ builder.AddProject<Projects.IOUA>("IO-UA");
 
 builder.AddProject<Projects.LANMTA>("LAN-MTA");
 
-builder.AddProject<Projects.NodeManager>("Node-Manager-UA");
+builder.AddProject<Projects.NodeManager>("Node-Manager-UA")
+	.WithReference(rabbitMq)
+	.WaitFor(rabbitMq);
 
 builder.AddProject<Projects.PrinterUA>("Printer-UA");
 

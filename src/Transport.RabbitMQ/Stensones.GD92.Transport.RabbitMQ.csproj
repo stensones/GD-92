@@ -7,7 +7,12 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <PackageReference Include="WolverineFx.RabbitMQ" />
+  </ItemGroup>
+
+  <ItemGroup>
     <ProjectReference Include="..\Fields\Stensones.GD92.Fields.csproj" />
+    <ProjectReference Include="..\Messages\Stensones.GD92.Messages.csproj" />
   </ItemGroup>
 
 </Project>
