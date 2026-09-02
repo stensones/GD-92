@@ -1,4 +1,5 @@
 using Stensones.GD92.Fields;
+using Stensones.GD92.Messages;
 
 namespace NodeManager.Router.Parameters;
 
@@ -9,4 +10,9 @@ public interface IPendingDeliveryRegistry
 		CommunicationsAddress destination);
 
 	bool IsPending(RouterParameterRequestStatusIdentifier statusIdentifier);
+
+	RouterParameterRequestStatus? GetStatus(
+		RouterParameterRequestStatusIdentifier statusIdentifier);
+
+	bool TryCompleteParameterResponse(Envelope envelope);
 }

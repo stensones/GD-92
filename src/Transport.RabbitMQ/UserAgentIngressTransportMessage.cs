@@ -2,11 +2,11 @@ using Wolverine;
 
 namespace Stensones.GD92.Transport.RabbitMQ;
 
-public sealed class RouterIngressTransportMessage : ISerializable
+public sealed class UserAgentIngressTransportMessage : ISerializable
 {
 	private readonly byte[] envelopeWireValue;
 
-	public RouterIngressTransportMessage(byte[] envelopeWireValue)
+	public UserAgentIngressTransportMessage(byte[] envelopeWireValue)
 	{
 		ArgumentNullException.ThrowIfNull(envelopeWireValue);
 
@@ -22,6 +22,6 @@ public sealed class RouterIngressTransportMessage : ISerializable
 
 	public static object Read(byte[] data)
 	{
-		return new RouterIngressTransportMessage(data);
+		return new UserAgentIngressTransportMessage(data);
 	}
 }

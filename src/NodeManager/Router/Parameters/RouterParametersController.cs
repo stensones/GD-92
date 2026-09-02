@@ -19,12 +19,40 @@ public sealed class RouterParametersController(
 	[HttpGet("status/{identifier}")]
 	public IActionResult Status(string identifier)
 	{
-		if (!RouterParameterRequestStatusIdentifier.TryParse(identifier, out var statusIdentifier) ||
-			!pendingDeliveries.IsPending(statusIdentifier))
+		if (!RouterParameterRequestStatusIdentifier.TryParse(identifier, out var statusIdentifier))
 		{
 			return this.NotFound();
 		}
 
-		return this.Ok(new PendingRouterParameterRequestStatus(statusIdentifier));
+		var status = pendingDeliveries.GetStatus(statusIdentifier);
+
+		if (status is null)
+		{
+			return this.NotFound();
+		}
+
+		return this.Ok(ToResponse(status));
+	}
+
+	private static RouterParameterRequestStatusResponse ToResponse(
+		RouterParameterRequestStatus status)
+	{
+		byte? brigadeOrAgencyNumber = status is ReceivedRouterParameterRequestStatus receivedStatus
+			? receivedStatus.ParameterValue.ToWireValue() switch
+			{
+				[var value] => value,
+				_ => null
+			}
+			: null;
+
+		return new RouterParameterRequestStatusResponse(
+			status.Identifier.ToString(),
+			status switch
+			{
+				PendingRouterParameterRequestStatus pending => pending.State,
+				ReceivedRouterParameterRequestStatus received => received.State,
+				_ => throw new InvalidOperationException("The Router Parameter Request status is unknown.")
+			},
+			brigadeOrAgencyNumber);
 	}
 }

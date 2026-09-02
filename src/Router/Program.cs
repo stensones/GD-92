@@ -18,6 +18,7 @@ builder.Services.AddSingleton(routerSettings);
 builder.Services.AddSingleton(new RouterParameterRequestHandler(
 	routerSettings.LocalAddress,
 	routerSettings.ProtocolVersion));
-builder.Services.AddSingleton<IRouterIngressReceiver, RouterIngressReceiver>();
+builder.Services.AddScoped<IUserAgentIngress, RabbitMqUserAgentIngress>();
+builder.Services.AddScoped<IRouterIngressReceiver, RouterIngressReceiver>();
 
 await builder.Build().RunAsync();

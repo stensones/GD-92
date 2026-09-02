@@ -23,10 +23,12 @@ var requestSettings = new RouterParameterRequestSettings(
 builder.Services.AddWolverine(options =>
 {
 	options.UseRabbitMqUsingNamedConnection("RabbitMQ").AutoProvision();
+	options.ListenForUserAgentIngress(requestSettings.MessageOriginator);
 });
 
 builder.Services.AddSingleton(requestSettings);
 builder.Services.AddSingleton<IPendingDeliveryRegistry, InMemoryPendingDeliveryRegistry>();
+builder.Services.AddSingleton<IUserAgentIngressReceiver, RouterParameterResponseReceiver>();
 builder.Services.AddScoped<IRouterIngress>(serviceProvider =>
 	new RabbitMqRouterIngress(
 		serviceProvider.GetRequiredService<IMessageBus>(),

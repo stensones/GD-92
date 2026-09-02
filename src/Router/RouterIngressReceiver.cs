@@ -6,22 +6,28 @@ namespace Router;
 internal sealed class RouterIngressReceiver : IRouterIngressReceiver
 {
 	private readonly RouterParameterRequestHandler parameterRequestHandler;
+	private readonly IUserAgentIngress userAgentIngress;
 
-	public RouterIngressReceiver(RouterParameterRequestHandler parameterRequestHandler)
+	public RouterIngressReceiver(
+		RouterParameterRequestHandler parameterRequestHandler,
+		IUserAgentIngress userAgentIngress)
 	{
 		this.parameterRequestHandler = parameterRequestHandler ??
 			throw new ArgumentNullException(nameof(parameterRequestHandler));
+		this.userAgentIngress = userAgentIngress ??
+			throw new ArgumentNullException(nameof(userAgentIngress));
 	}
 
-	internal Envelope? Response { get; private set; }
-
-	public Task ReceiveAsync(Envelope envelope, CancellationToken cancellationToken)
+	public async Task ReceiveAsync(Envelope envelope, CancellationToken cancellationToken)
 	{
 		ArgumentNullException.ThrowIfNull(envelope);
 		cancellationToken.ThrowIfCancellationRequested();
 
-		this.Response = this.parameterRequestHandler.Handle(envelope).Response;
+		var response = this.parameterRequestHandler.Handle(envelope).Response;
 
-		return Task.CompletedTask;
+		if (response is not null)
+		{
+			await this.userAgentIngress.DeliverAsync(response, cancellationToken);
+		}
 	}
 }

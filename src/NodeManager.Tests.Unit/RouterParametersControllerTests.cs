@@ -74,6 +74,35 @@ public sealed class RouterParametersControllerTests
 		statuses.Select(status => status.USWR.SequenceNumber.Value).Distinct().Should().HaveCount(32);
 	}
 
+	[Fact]
+	public void Returns_a_public_received_status_with_the_local_Router_brigade_number()
+	{
+		var userAgent = Address(brigade: 26, node: 100, port: 25);
+		var router = Address(brigade: 26, node: 100, port: 0);
+		var pendingDeliveries = new InMemoryPendingDeliveryRegistry();
+		var identifier = pendingDeliveries.Reserve(userAgent, router);
+		pendingDeliveries.TryCompleteParameterResponse(Envelope.FromValues(
+			router,
+			Destinations.FromAddresses(userAgent),
+			ProtocolAndPriority.FromValues(
+				MessagePriority.FromValue(MessagePriorityLevel.FromValue(3)),
+				ProtocolVersion.FromValue(ProtocolVersionNumber.FromValue(2))),
+			AcknowledgementAndSequence.FromValues(
+				identifier.USWR.SequenceNumber,
+				AcknowledgementRequest.NotRequested),
+			Parameter.FromFields(MoreValues.No, ParameterValue.FromWireValue([26]))));
+		var controller = new RouterParametersController(
+			new ReturningRouterParameterRequestService(identifier),
+			pendingDeliveries);
+
+		var result = controller.Status(identifier.ToString());
+
+		var response = result.Should().BeOfType<OkObjectResult>().Which.Value
+			.Should().BeOfType<RouterParameterRequestStatusResponse>().Which;
+		response.State.Should().Be("received");
+		response.BrigadeOrAgencyNumber.Should().Be(26);
+	}
+
 	private static CommunicationsAddress Address(byte brigade, ushort node, byte port)
 	{
 		return CommunicationsAddress.FromValues(

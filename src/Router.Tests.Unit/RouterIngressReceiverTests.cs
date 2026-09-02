@@ -9,16 +9,25 @@ namespace Router.Tests.Unit;
 public sealed class RouterIngressReceiverTests
 {
 	[Fact]
-	public async Task Retains_the_Router_response_for_a_received_Envelope()
+	public async Task Delivers_the_Router_response_to_User_Agent_ingress_before_completing()
 	{
 		var routerAddress = CreateAddress(26, 100, 0);
-		var receiver = new RouterIngressReceiver(new RouterParameterRequestHandler(
-			routerAddress,
-			ProtocolVersion.FromValue(ProtocolVersionNumber.FromValue(2))));
+		var ingress = new BlockingUserAgentIngress();
+		var receiver = new RouterIngressReceiver(
+			new RouterParameterRequestHandler(
+				routerAddress,
+				ProtocolVersion.FromValue(ProtocolVersionNumber.FromValue(2))),
+			ingress);
 
-		await receiver.ReceiveAsync(CreateEnvelope(routerAddress), CancellationToken.None);
+		var receive = receiver.ReceiveAsync(CreateEnvelope(routerAddress), CancellationToken.None);
 
-		receiver.Response.Should().NotBeNull();
+		await ingress.Delivered.Task;
+		receive.IsCompleted.Should().BeFalse();
+		ingress.Envelope.Should().NotBeNull();
+		ingress.Envelope!.Contents.Should().BeOfType<Parameter>();
+
+		ingress.CompleteDelivery();
+		await receive;
 	}
 
 	private static Envelope CreateEnvelope(CommunicationsAddress routerAddress)
@@ -46,5 +55,25 @@ public sealed class RouterIngressReceiverTests
 			Brigade.FromValue(BrigadeOrAgencyIdentifier.FromValue(brigade)),
 			Node.FromValue(NodeIdentifier.FromValue(node)),
 			Port.FromValue(PortIdentifier.FromValue(port)));
+	}
+
+	private sealed class BlockingUserAgentIngress : IUserAgentIngress
+	{
+		private readonly TaskCompletionSource deliveryCompleted = new();
+
+		public TaskCompletionSource Delivered { get; } = new();
+		public Envelope? Envelope { get; private set; }
+
+		public Task DeliverAsync(Envelope envelope, CancellationToken cancellationToken)
+		{
+			this.Envelope = envelope;
+			this.Delivered.TrySetResult();
+			return this.deliveryCompleted.Task.WaitAsync(cancellationToken);
+		}
+
+		public void CompleteDelivery()
+		{
+			this.deliveryCompleted.TrySetResult();
+		}
 	}
 }

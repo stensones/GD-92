@@ -4,11 +4,11 @@ using Envelope = Stensones.GD92.Messages.Envelope;
 
 namespace Stensones.GD92.Transport.RabbitMQ;
 
-public sealed class RouterIngressTransportMessageHandler
+public sealed class UserAgentIngressTransportMessageHandler
 {
 	public Task HandleAsync(
-		RouterIngressTransportMessage message,
-		IRouterIngressReceiver receiver,
+		UserAgentIngressTransportMessage message,
+		IUserAgentIngressReceiver receiver,
 		CancellationToken cancellationToken)
 	{
 		ArgumentNullException.ThrowIfNull(message);
@@ -20,7 +20,7 @@ public sealed class RouterIngressTransportMessageHandler
 
 		if (buffer.RemainingBitCount != 0)
 		{
-			throw new InvalidOperationException("The encoded Router ingress Envelope contains trailing bytes.");
+			throw new InvalidOperationException("The encoded User-Agent ingress Envelope contains trailing bytes.");
 		}
 
 		return receiver.ReceiveAsync(envelope, cancellationToken);
