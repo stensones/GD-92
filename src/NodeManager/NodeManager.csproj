@@ -15,6 +15,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\Fields\Stensones.GD92.Fields.csproj" />
+    <ProjectReference Include="..\GD92.StationEnd.ServiceDefaults\GD92.StationEnd.ServiceDefaults.csproj" />
     <ProjectReference Include="..\Messages\Stensones.GD92.Messages.csproj" />
     <ProjectReference Include="..\Transport.RabbitMQ\Stensones.GD92.Transport.RabbitMQ.csproj" />
   </ItemGroup>

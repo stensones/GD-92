@@ -5,6 +5,7 @@ using Wolverine;
 using Wolverine.RabbitMQ;
 
 var builder = WebApplication.CreateBuilder(args);
+builder.AddServiceDefaults();
 
 builder.Services
 	.AddControllersWithViews()
@@ -38,6 +39,7 @@ builder.Services.AddScoped<IRouterParameterRequestService, RouterParameterReques
 var app = builder.Build();
 
 app.UseStaticFiles(); // Enables serving static files from wwwroot
+app.MapDefaultEndpoints();
 
 app.MapControllerRoute(
 	name: "default",

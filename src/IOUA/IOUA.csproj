@@ -13,4 +13,8 @@
     <PackageReference Include="WolverineFx.RuntimeCompilation" />
   </ItemGroup>
 
+  <ItemGroup>
+    <ProjectReference Include="..\GD92.StationEnd.ServiceDefaults\GD92.StationEnd.ServiceDefaults.csproj" />
+  </ItemGroup>
+
 </Project>

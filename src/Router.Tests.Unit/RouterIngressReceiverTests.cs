@@ -1,4 +1,5 @@
 using AwesomeAssertions;
+using Microsoft.Extensions.Logging.Abstractions;
 using Stensones.GD92.Fields;
 using Stensones.GD92.Messages;
 using Stensones.GD92.Transport.RabbitMQ;
@@ -17,7 +18,8 @@ public sealed class RouterIngressReceiverTests
 			new RouterParameterRequestHandler(
 				routerAddress,
 				ProtocolVersion.FromValue(ProtocolVersionNumber.FromValue(2))),
-			ingress);
+			ingress,
+			NullLogger<RouterIngressReceiver>.Instance);
 
 		var receive = receiver.ReceiveAsync(CreateEnvelope(routerAddress), CancellationToken.None);
 

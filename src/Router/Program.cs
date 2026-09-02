@@ -6,6 +6,7 @@ using Wolverine;
 using Wolverine.RabbitMQ;
 
 var builder = Host.CreateApplicationBuilder(args);
+builder.AddServiceDefaults();
 var routerSettings = RouterSettings.FromConfiguration(builder.Configuration);
 
 builder.Services.AddWolverine(options =>

@@ -3,7 +3,7 @@ using Stensones.GD92.Messages;
 
 namespace Router;
 
-internal sealed class RouterParameterRequestHandler
+public sealed class RouterParameterRequestHandler
 {
 	private readonly CommunicationsAddress localAddress;
 	private readonly ProtocolVersion protocolVersion;
@@ -16,7 +16,7 @@ internal sealed class RouterParameterRequestHandler
 		this.protocolVersion = protocolVersion ?? throw new ArgumentNullException(nameof(protocolVersion));
 	}
 
-	public RouterEnvelopeHandlingResult Handle(Envelope envelope)
+	internal RouterEnvelopeHandlingResult Handle(Envelope envelope)
 	{
 		ArgumentNullException.ThrowIfNull(envelope);
 

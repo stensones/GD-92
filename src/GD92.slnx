@@ -29,6 +29,7 @@
     <Project Path="Router/Router.csproj" Id="a692da3f-4f08-4a81-bcc5-e8756aca82be" />
     <Project Path="Router.Tests.Unit/Router.Tests.Unit.csproj" />
     <Project Path="StationEnd.Tests.Integration/StationEnd.Tests.Integration.csproj" />
+    <Project Path="StationEnd.Tests.Architecture/StationEnd.Tests.Architecture.csproj" />
   </Folder>
   <Folder Name="/Transport/">
     <Project Path="Transport.RabbitMQ/Stensones.GD92.Transport.RabbitMQ.csproj" />

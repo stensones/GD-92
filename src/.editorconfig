@@ -5,6 +5,8 @@ indent_style = tab
 
 [*.cs]
 indent_size = 4
+csharp_using_directive_placement = outside_namespace:error
+dotnet_diagnostic.IDE0065.severity = error
 # this. preferences
 dotnet_style_qualification_for_field = true:error
 dotnet_style_qualification_for_property = true:error

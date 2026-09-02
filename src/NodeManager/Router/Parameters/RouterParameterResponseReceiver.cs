@@ -3,7 +3,7 @@ using Stensones.GD92.Transport.RabbitMQ;
 
 namespace NodeManager.Router.Parameters;
 
-internal sealed class RouterParameterResponseReceiver(
+public sealed class RouterParameterResponseReceiver(
 	IPendingDeliveryRegistry pendingDeliveries) : IUserAgentIngressReceiver
 {
 	private readonly IPendingDeliveryRegistry pendingDeliveries = pendingDeliveries ??
