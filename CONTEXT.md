@@ -82,6 +82,10 @@ _Avoid_: application setting, global configuration
 The permanent, non-volatile, or current table that contains a protocol Parameter.
 _Avoid_: database table, arbitrary collection
 
+**Node Parameter Set**:
+The complete coordinated set of Router, Message Transfer Agent, and User Agent Parameters maintained at one Communications Node.
+_Avoid_: application configuration, Router-only settings
+
 **Parameter Number**:
 The eight-bit identifier of a Parameter within a Parameter Table.
 _Avoid_: Message Sequence Number, parameter value
@@ -386,6 +390,7 @@ _Avoid_: retransmission, duplicate Message
 - An **External System** may present one or more addressed **User Agents** through a combined **Message Transfer Agent** and User Agent interface.
 - An **External Bearer** carries **Messages** but has no **Communications Address**.
 - A **Router**, **Message Transfer Agent**, or **User Agent** owns zero or more **Parameters**.
+- A **Communications Node** has one **Node Parameter Set** maintained through its **Router**.
 - A **Node Login** at a **Communications Node** authorizes Parameter modification according to each **Parameter**'s **Password Level**.
 - A **Parameter Request** identifies one **Parameter Table** and one **Parameter Number**.
 - A **Parameter Number** identifies one **Parameter** within its **Parameter Table**.

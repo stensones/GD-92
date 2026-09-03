@@ -8,9 +8,16 @@ var rabbitMq = builder.AddRabbitMQ("RabbitMQ")
 	.WithLifetime(ContainerLifetime.Persistent)
 	;
 
+var postgres = builder.AddPostgres("postgres")
+	.WithDataVolume()
+	.WithLifetime(ContainerLifetime.Persistent);
+var routerDatabase = postgres.AddDatabase("router");
+
 builder.AddProject<Projects.Router>("Router")
 	.WithReference(rabbitMq)
 	.WaitFor(rabbitMq)
+	.WithReference(routerDatabase)
+	.WaitFor(postgres)
 	;
 
 builder.AddProject<Projects.BusMTA>("bus-MTA");
