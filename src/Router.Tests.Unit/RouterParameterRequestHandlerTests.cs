@@ -1,4 +1,5 @@
 using AwesomeAssertions;
+using Router.Persistence;
 using Stensones.GD92.Fields;
 using Stensones.GD92.Messages;
 using Envelope = Stensones.GD92.Messages.Envelope;
@@ -52,6 +53,25 @@ public sealed class RouterParameterRequestHandlerTests
 		var response = result.Response!;
 		var parameter = response.Contents.Should().BeOfType<Parameter>().Subject;
 		parameter.ParameterValue.ToWireValue().Should().Equal(new byte[] { 42 });
+	}
+
+	[Fact]
+	public void Returns_current_parameter_one_from_the_projection_published_at_startup()
+	{
+		var routerAddress = CreateAddress(26, 100, 0);
+		var currentParameters = new RouterCurrentParameterProjectionSource();
+		currentParameters.Publish(Router.Persistence.RouterCurrentParameterProjection.FromParameterOneValue(
+			ParameterValue.FromWireValue([42])));
+		var handler = new RouterParameterRequestHandler(
+			routerAddress,
+			ProtocolVersion.FromValue(ProtocolVersionNumber.FromValue(2)),
+			currentParameters);
+
+		var result = handler.Handle(CreateParameterRequest(CreateAddress(26, 100, 25), routerAddress));
+
+		result.Response.Should().NotBeNull();
+		var parameter = result.Response!.Contents.Should().BeOfType<Parameter>().Subject;
+		parameter.ParameterValue.ToWireValue().Should().Equal([42]);
 	}
 
 	[Fact]

@@ -1,5 +1,6 @@
 using Stensones.GD92.Fields;
 using Stensones.GD92.Messages;
+using Router.Persistence;
 
 namespace Router;
 
@@ -7,7 +8,8 @@ public sealed class RouterParameterRequestHandler
 {
 	private readonly CommunicationsAddress localAddress;
 	private readonly ProtocolVersion protocolVersion;
-	private readonly RouterCurrentParameterProjection currentParameters;
+	private readonly RouterCurrentParameterProjection? currentParameters;
+	private readonly RouterCurrentParameterProjectionSource? currentParameterSource;
 
 	public RouterParameterRequestHandler(
 		CommunicationsAddress localAddress,
@@ -28,6 +30,17 @@ public sealed class RouterParameterRequestHandler
 		this.localAddress = localAddress ?? throw new ArgumentNullException(nameof(localAddress));
 		this.protocolVersion = protocolVersion ?? throw new ArgumentNullException(nameof(protocolVersion));
 		this.currentParameters = currentParameters ?? throw new ArgumentNullException(nameof(currentParameters));
+	}
+
+	public RouterParameterRequestHandler(
+		CommunicationsAddress localAddress,
+		ProtocolVersion protocolVersion,
+		RouterCurrentParameterProjectionSource currentParameterSource)
+	{
+		this.localAddress = localAddress ?? throw new ArgumentNullException(nameof(localAddress));
+		this.protocolVersion = protocolVersion ?? throw new ArgumentNullException(nameof(protocolVersion));
+		this.currentParameterSource = currentParameterSource ??
+			throw new ArgumentNullException(nameof(currentParameterSource));
 	}
 
 	internal RouterEnvelopeHandlingResult Handle(Envelope envelope)
@@ -61,7 +74,9 @@ public sealed class RouterParameterRequestHandler
 			Parameter.FromFields(
 				MoreValues.No,
 				ParameterValue.FromWireValue(
-					this.currentParameters.BrigadeOrAgencyIdentifier.ToWireValue())));
+					(this.currentParameterSource?.GetCurrent() ?? this.currentParameters ??
+						throw new InvalidOperationException("Router current Parameters have not been loaded."))
+						.BrigadeOrAgencyIdentifier.ToWireValue())));
 
 		return RouterEnvelopeHandlingResult.Responded(response);
 	}
