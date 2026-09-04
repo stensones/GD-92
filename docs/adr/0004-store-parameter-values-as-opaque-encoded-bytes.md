@@ -1,0 +1,3 @@
+# Store Parameter Values as opaque encoded bytes
+
+The Router-owned database persists the permanent and non-volatile GD-92 Parameter Tables as validated, canonical encoded Parameter Value bytes, located by managed entity, Parameter Table, Parameter Number, and, where applicable, Parameter Entry Index. Router code owns the versioned Parameter catalogue and builds typed in-memory projections for routing and component behaviour; password values are instead stored as salted verifiers, and current Parameter values and Node Login remain volatile. This avoids a large protocol-shaped EF Core mapping while retaining exact GD-92 values and allowing reserved user-defined Parameters to remain opaque.

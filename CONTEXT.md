@@ -82,6 +82,15 @@ _Avoid_: application setting, global configuration
 The permanent, non-volatile, or current table that contains a protocol Parameter.
 _Avoid_: database table, arbitrary collection
 
+**Permanent Parameter Table**:
+The immutable Parameter Table that supplies installed baseline values and fallback configuration.
+
+**Non-Volatile Parameter Table**:
+The modifiable Parameter Table whose values survive a Communications Node power-down.
+
+**Current Parameter Table**:
+The volatile Parameter Table containing the values presently used by a Communications Node.
+
 **Node Parameter Set**:
 The complete coordinated set of Router, Message Transfer Agent, and User Agent Parameters maintained at one Communications Node.
 _Avoid_: application configuration, Router-only settings
@@ -391,6 +400,8 @@ _Avoid_: retransmission, duplicate Message
 - An **External Bearer** carries **Messages** but has no **Communications Address**.
 - A **Router**, **Message Transfer Agent**, or **User Agent** owns zero or more **Parameters**.
 - A **Communications Node** has one **Node Parameter Set** maintained through its **Router**.
+- A **Current Parameter Table** is initialized from its **Non-Volatile Parameter Table** on normal startup.
+- A **Permanent Parameter Table** supplies fallback Parameter values when a **Non-Volatile Parameter Table** is corrupted.
 - A **Node Login** at a **Communications Node** authorizes Parameter modification according to each **Parameter**'s **Password Level**.
 - A **Parameter Request** identifies one **Parameter Table** and one **Parameter Number**.
 - A **Parameter Number** identifies one **Parameter** within its **Parameter Table**.

@@ -36,6 +36,25 @@ public sealed class RouterParameterRequestHandlerTests
 	}
 
 	[Fact]
+	public void Returns_current_parameter_one_from_its_current_parameter_projection()
+	{
+		var routerAddress = CreateAddress(26, 100, 0);
+		var requestSource = CreateAddress(26, 100, 25);
+		var handler = new RouterParameterRequestHandler(
+			routerAddress,
+			ProtocolVersion.FromValue(ProtocolVersionNumber.FromValue(2)),
+			RouterCurrentParameterProjection.FromBrigadeOrAgencyIdentifier(
+				BrigadeOrAgencyIdentifier.FromValue(42)));
+
+		var result = handler.Handle(CreateParameterRequest(requestSource, routerAddress));
+
+		result.Response.Should().NotBeNull();
+		var response = result.Response!;
+		var parameter = response.Contents.Should().BeOfType<Parameter>().Subject;
+		parameter.ParameterValue.ToWireValue().Should().Equal(new byte[] { 42 });
+	}
+
+	[Fact]
 	public void Does_not_respond_to_a_Parameter_Request_addressed_outside_the_local_Router()
 	{
 		var routerAddress = CreateAddress(26, 100, 0);

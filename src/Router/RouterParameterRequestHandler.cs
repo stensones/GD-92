@@ -7,13 +7,27 @@ public sealed class RouterParameterRequestHandler
 {
 	private readonly CommunicationsAddress localAddress;
 	private readonly ProtocolVersion protocolVersion;
+	private readonly RouterCurrentParameterProjection currentParameters;
 
 	public RouterParameterRequestHandler(
 		CommunicationsAddress localAddress,
 		ProtocolVersion protocolVersion)
+		: this(
+			localAddress,
+			protocolVersion,
+			RouterCurrentParameterProjection.FromBrigadeOrAgencyIdentifier(
+				BrigadeOrAgencyIdentifier.FromValue(localAddress.ToWireValue()[0])))
+	{
+	}
+
+	public RouterParameterRequestHandler(
+		CommunicationsAddress localAddress,
+		ProtocolVersion protocolVersion,
+		RouterCurrentParameterProjection currentParameters)
 	{
 		this.localAddress = localAddress ?? throw new ArgumentNullException(nameof(localAddress));
 		this.protocolVersion = protocolVersion ?? throw new ArgumentNullException(nameof(protocolVersion));
+		this.currentParameters = currentParameters ?? throw new ArgumentNullException(nameof(currentParameters));
 	}
 
 	internal RouterEnvelopeHandlingResult Handle(Envelope envelope)
@@ -46,7 +60,8 @@ public sealed class RouterParameterRequestHandler
 			this.protocolVersion,
 			Parameter.FromFields(
 				MoreValues.No,
-				ParameterValue.FromWireValue([this.localAddress.ToWireValue()[0]])));
+				ParameterValue.FromWireValue(
+					this.currentParameters.BrigadeOrAgencyIdentifier.ToWireValue())));
 
 		return RouterEnvelopeHandlingResult.Responded(response);
 	}

@@ -14,6 +14,11 @@ public readonly record struct BrigadeOrAgencyIdentifier
 		return new BrigadeOrAgencyIdentifier(value);
 	}
 
+	public byte[] ToWireValue()
+	{
+		return [this.EncodedOctet];
+	}
+
 	public override string ToString()
 	{
 		return this.EncodedOctet.ToString(System.Globalization.CultureInfo.InvariantCulture);
