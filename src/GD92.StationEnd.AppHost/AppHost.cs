@@ -41,7 +41,8 @@ builder.AddProject<Projects.LANMTA>("LAN-MTA");
 
 builder.AddProject<Projects.NodeManager>("Node-Manager-UA")
 	.WithReference(rabbitMq)
-	.WaitFor(rabbitMq);
+	.WaitFor(rabbitMq)
+	.WithExternalHttpEndpoints();
 
 builder.AddProject<Projects.PrinterUA>("Printer-UA");
 
