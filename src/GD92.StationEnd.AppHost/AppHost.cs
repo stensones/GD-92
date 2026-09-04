@@ -1,3 +1,5 @@
+using Microsoft.Extensions.Configuration;
+
 var builder = DistributedApplication.CreateBuilder(args);
 
 //var sql = builder.AddSqlServer("sql")
@@ -8,10 +10,21 @@ var rabbitMq = builder.AddRabbitMQ("RabbitMQ")
 	.WithLifetime(ContainerLifetime.Persistent)
 	;
 
-var postgres = builder.AddPostgres("postgres")
-	.WithDataVolume()
-	.WithLifetime(ContainerLifetime.Persistent);
-var routerDatabase = postgres.AddDatabase("router");
+var usePersistentPostgres = builder.Configuration.GetValue(
+	"Persistence:UsePersistentPostgres",
+	true);
+var postgres = builder.AddPostgres("postgres");
+if (usePersistentPostgres)
+{
+	postgres.WithDataVolume()
+		.WithLifetime(ContainerLifetime.Persistent);
+}
+else
+{
+	postgres.WithLifetime(ContainerLifetime.Session);
+}
+
+var routerDatabase = postgres.AddDatabase("router-database", "router");
 
 builder.AddProject<Projects.Router>("Router")
 	.WithReference(rabbitMq)

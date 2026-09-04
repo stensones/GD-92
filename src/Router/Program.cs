@@ -18,7 +18,7 @@ builder.Services.AddWolverine(options =>
 });
 
 builder.Services.AddSingleton(routerSettings);
-builder.AddNpgsqlDbContext<RouterDbContext>("router");
+builder.AddNpgsqlDbContext<RouterDbContext>("router-database");
 builder.Services.AddScoped<IRouterParameterStore, EfRouterParameterStore>();
 builder.Services.AddScoped<RouterParameterBootstrapper>();
 builder.Services.AddSingleton<RouterCurrentParameterProjectionSource>();

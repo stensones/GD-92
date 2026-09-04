@@ -1,6 +1,7 @@
 using Aspire.Hosting;
 using Aspire.Hosting.Testing;
 using AwesomeAssertions;
+using Npgsql;
 using Reqnroll;
 using System.Net;
 
@@ -28,21 +29,18 @@ public sealed class RouterParameterRequestSteps
 	[When(@"I request the local Router brigade or agency number")]
 	public async Task WhenIRequestTheLocalRouterBrigadeOrAgencyNumber()
 	{
-		var appHost = await DistributedApplicationTestingBuilder
-			.CreateAsync<Projects.GD92_StationEnd_AppHost>();
-
-		this.application = await appHost.BuildAsync();
-		await this.application.StartAsync();
-
-		this.client = new HttpClient(new HttpClientHandler
+		if (this.application is null)
 		{
-			AllowAutoRedirect = false
-		})
-		{
-			BaseAddress = this.application.GetEndpoint("Node-Manager-UA")
-		};
+			await this.StartApplicationAsync();
+		}
 
-		this.response = await this.client.PostAsync("/router/parameters/brigade-or-agency-number", null);
+		this.response = await this.client!.PostAsync("/router/parameters/brigade-or-agency-number", null);
+	}
+
+	[Given(@"the Router persistent Parameter Tables are empty")]
+	public async Task GivenTheRouterPersistentParameterTablesAreEmpty()
+	{
+		await this.StartApplicationAsync();
 	}
 
 	[Then(@"I am redirected to the pending Parameter Request status")]
@@ -82,6 +80,29 @@ public sealed class RouterParameterRequestSteps
 			$"The Parameter Request status did not show brigade or agency number {brigadeOrAgencyNumber}.");
 	}
 
+	[Then(@"the Router retains brigade or agency number (.*) in its permanent and non-volatile Parameter Tables")]
+	public async Task ThenTheRouterRetainsBrigadeOrAgencyNumberInItsPersistentParameterTables(
+		byte brigadeOrAgencyNumber)
+	{
+		var connectionString = await this.application!.GetConnectionStringAsync("router-database");
+		await using var connection = new NpgsqlConnection(connectionString);
+		await connection.OpenAsync();
+		await using var command = new NpgsqlCommand(
+			"""
+			SELECT COUNT(*)
+			FROM node.parameter_value AS parameter_value
+			INNER JOIN node.parameter_set AS parameter_set
+				ON parameter_set."Id" = parameter_value."ParameterSetId"
+			WHERE parameter_value."ParameterNumber" = 1
+				AND parameter_set."Kind" IN (0, 1)
+				AND parameter_value."EncodedValue" = @encodedValue;
+			""",
+			connection);
+		command.Parameters.AddWithValue("encodedValue", new byte[] { brigadeOrAgencyNumber });
+
+		(await command.ExecuteScalarAsync()).Should().Be(2L);
+	}
+
 	[AfterScenario]
 	public async Task DisposeApplication()
 	{
@@ -91,5 +112,27 @@ public sealed class RouterParameterRequestSteps
 		{
 			await this.application.DisposeAsync();
 		}
+	}
+
+	private async Task StartApplicationAsync()
+	{
+		var appHost = await DistributedApplicationTestingBuilder
+			.CreateAsync<Projects.GD92_StationEnd_AppHost>();
+		appHost.Configuration["Persistence:UsePersistentPostgres"] = "false";
+
+		this.application = await appHost.BuildAsync();
+		await this.application.StartAsync();
+		this.client = CreateClient(this.application);
+	}
+
+	private static HttpClient CreateClient(DistributedApplication application)
+	{
+		return new HttpClient(new HttpClientHandler
+		{
+			AllowAutoRedirect = false
+		})
+		{
+			BaseAddress = application.GetEndpoint("Node-Manager-UA")
+		};
 	}
 }
