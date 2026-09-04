@@ -22,7 +22,11 @@ builder.AddNpgsqlDbContext<RouterDbContext>("router-database");
 builder.Services.AddScoped<IRouterParameterStore, EfRouterParameterStore>();
 builder.Services.AddScoped<RouterParameterBootstrapper>();
 builder.Services.AddSingleton<RouterCurrentParameterProjectionSource>();
-builder.Services.AddSingleton<RouterParameterRequestHandler>();
+builder.Services.AddSingleton(serviceProvider =>
+	new RouterParameterRequestHandler(
+		routerSettings.LocalAddress,
+		routerSettings.ProtocolVersion,
+		serviceProvider.GetRequiredService<RouterCurrentParameterProjectionSource>()));
 builder.Services.AddScoped<IUserAgentIngress, RabbitMqUserAgentIngress>();
 builder.Services.AddScoped<IRouterIngressReceiver, RouterIngressReceiver>();
 
