@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 using Router.Persistence;
@@ -11,9 +12,11 @@ using Router.Persistence;
 namespace Router.Persistence.Migrations
 {
     [DbContext(typeof(RouterDbContext))]
-    partial class RouterDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260905122854_AddRouterPasswordVerifierPersistence")]
+    partial class AddRouterPasswordVerifierPersistence
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder

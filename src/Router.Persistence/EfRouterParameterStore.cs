@@ -67,12 +67,10 @@ public sealed class EfRouterParameterStore : IRouterParameterStore
 		ParameterTable parameterTable,
 		CancellationToken cancellationToken)
 	{
-		var kind = ToPersistedKind(parameterTable);
-		return await (
-			from managedEntity in this.context.ManagedEntities
-			join parameterSet in this.context.ParameterSets on managedEntity.Id equals parameterSet.ManagedEntityId
-			where managedEntity.Kind == ManagedEntityKind.Router && parameterSet.Kind == kind
-			select parameterSet).SingleOrDefaultAsync(cancellationToken);
+		return await PersistentRouterParameterSets.FindAsync(
+			this.context,
+			parameterTable,
+			cancellationToken);
 	}
 
 	private async Task<ParameterSetRecord> CreateRouterParameterSetsAsync(
@@ -106,16 +104,4 @@ public sealed class EfRouterParameterStore : IRouterParameterStore
 		return permanent;
 	}
 
-	private static PersistedParameterTableKind ToPersistedKind(ParameterTable parameterTable)
-	{
-		ArgumentNullException.ThrowIfNull(parameterTable);
-
-		return parameterTable == ParameterTable.Permanent
-			? PersistedParameterTableKind.Permanent
-			: parameterTable == ParameterTable.NonVolatile
-				? PersistedParameterTableKind.NonVolatile
-				: throw new ArgumentOutOfRangeException(
-					nameof(parameterTable),
-					"Only permanent and non-volatile Parameter Tables are persisted.");
-	}
 }

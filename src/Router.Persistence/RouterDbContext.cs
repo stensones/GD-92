@@ -8,6 +8,7 @@ public sealed class RouterDbContext : DbContext
 	internal DbSet<ManagedEntityRecord> ManagedEntities => this.Set<ManagedEntityRecord>();
 	internal DbSet<ParameterSetRecord> ParameterSets => this.Set<ParameterSetRecord>();
 	internal DbSet<PersistedParameterValueRecord> ParameterValues => this.Set<PersistedParameterValueRecord>();
+	internal DbSet<PasswordVerifierRecord> PasswordVerifiers => this.Set<PasswordVerifierRecord>();
 
 	public RouterDbContext(DbContextOptions<RouterDbContext> options)
 		: base(options)
@@ -61,6 +62,27 @@ public sealed class RouterDbContext : DbContext
 				.HasForeignKey(parameterValue => parameterValue.ParameterSetId)
 				.OnDelete(DeleteBehavior.Cascade);
 		});
+
+		modelBuilder.Entity<PasswordVerifierRecord>(entity =>
+		{
+			entity.ToTable(
+				"password_verifier",
+				"security",
+				table => table.HasCheckConstraint(
+					"CK_password_verifier_ParameterNumber",
+					"\"ParameterNumber\" = 5"));
+			entity.HasKey(passwordVerifier => new
+			{
+				passwordVerifier.ParameterSetId,
+				passwordVerifier.ParameterNumber
+			});
+			entity.Property(passwordVerifier => passwordVerifier.Salt).HasColumnType("bytea");
+			entity.Property(passwordVerifier => passwordVerifier.Hash).HasColumnType("bytea");
+			entity.HasOne<ParameterSetRecord>()
+				.WithMany()
+				.HasForeignKey(passwordVerifier => passwordVerifier.ParameterSetId)
+				.OnDelete(DeleteBehavior.Cascade);
+		});
 	}
 }
 
@@ -100,4 +122,14 @@ internal sealed class PersistedParameterValueRecord
 	public Guid ParameterSetId { get; set; }
 	public byte ParameterNumber { get; set; }
 	public byte[] EncodedValue { get; set; } = [];
+}
+
+internal sealed class PasswordVerifierRecord
+{
+	public Guid ParameterSetId { get; set; }
+	public byte ParameterNumber { get; set; }
+	public int Version { get; set; }
+	public int WorkFactor { get; set; }
+	public byte[] Salt { get; set; } = [];
+	public byte[] Hash { get; set; } = [];
 }
