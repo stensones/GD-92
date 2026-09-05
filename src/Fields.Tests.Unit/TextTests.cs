@@ -22,6 +22,12 @@ public sealed class TextTests
 	}
 
 	[Fact]
+	public void Decompresses_a_compressed_run_when_its_value_is_read()
+	{
+		Text.FromValue("AAAAA").Value.Should().Be("AAAAA");
+	}
+
+	[Fact]
 	public void Escapes_a_literal_escape_character()
 	{
 		var text = Text.FromValue("\x1B");

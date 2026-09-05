@@ -171,11 +171,48 @@ public sealed class EnvelopeTests
 		createEnvelope.Should().Throw<ArgumentOutOfRangeException>();
 	}
 
+	[Fact]
+	public void Rejects_a_negative_acknowledgement_for_an_unacknowledged_Envelope()
+	{
+		var received = DecodeEnvelope("1A191902011A195A127CD11B0101000446495245F8");
+
+		Action createNegativeAcknowledgement = () => Envelope.CreateNegativeAcknowledgement(
+			received,
+			CreateAddress(26, 101, 26),
+			ProtocolVersion.FromValue(ProtocolVersionNumber.FromValue(2)),
+			Destinations.FromAddresses(CreateAddress(26, 100, 25)),
+			ReasonCode.FromGeneralReasonCode(GeneralReasonCode.InvalidMessage));
+
+		createNegativeAcknowledgement.Should().Throw<InvalidOperationException>();
+	}
+
+	[Fact]
+	public void Rejects_a_Parameter_response_for_a_non_Parameter_Request_Envelope()
+	{
+		var received = DecodeEnvelope("1A191902011A195A12FCD11B010100044649524578");
+
+		Action createParameterResponse = () => Envelope.CreateParameterResponse(
+			received,
+			CreateAddress(26, 101, 26),
+			ProtocolVersion.FromValue(ProtocolVersionNumber.FromValue(2)),
+			Parameter.FromFields(MoreValues.No, ParameterValue.FromWireValue([26])));
+
+		createParameterResponse.Should().Throw<InvalidOperationException>();
+	}
+
 	private static Envelope DecodeEnvelope(string encodedEnvelope)
 	{
 		var buffer = new EncodedMessageBuffer(Convert.FromHexString(encodedEnvelope));
 
 		return Envelope.FromEncodedMessageBuffer(ref buffer);
+	}
+
+	private static CommunicationsAddress CreateAddress(byte brigade, ushort node, byte port)
+	{
+		return CommunicationsAddress.FromValues(
+			Brigade.FromValue(BrigadeOrAgencyIdentifier.FromValue(brigade)),
+			Node.FromValue(NodeIdentifier.FromValue(node)),
+			Port.FromValue(PortIdentifier.FromValue(port)));
 	}
 
 	private sealed class SizedMessageContents : IGD92MessageContents

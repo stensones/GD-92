@@ -21,6 +21,12 @@ public sealed class BrigadeTests
 		identifier.ToString().Should().Be("26");
 	}
 
+	[Fact]
+	public void Serializes_a_brigade_or_agency_identifier_as_one_octet()
+	{
+		BrigadeOrAgencyIdentifier.FromValue(26).ToWireValue().Should().Equal([26]);
+	}
+
 	[Theory]
 	[InlineData((byte)0)]
 	[InlineData(byte.MaxValue)]
