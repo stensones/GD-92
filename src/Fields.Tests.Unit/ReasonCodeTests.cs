@@ -39,6 +39,26 @@ public sealed class ReasonCodeTests
 		decodeReasonCode.Should().Throw<ArgumentOutOfRangeException>();
 	}
 
+	[Fact]
+	public void Decodes_a_parameter_invalid_table_reason_code()
+	{
+		var buffer = new EncodedMessageBuffer([0x04, 0x05]);
+
+		var reasonCode = ReasonCode.FromEncodedMessageBuffer(ref buffer);
+
+		reasonCode.ParameterReasonCode.Should().Be(ParameterReasonCode.InvalidTable);
+		reasonCode.GeneralReasonCode.Should().BeNull();
+		reasonCode.ToWireValue().Should().Equal([0x04, 0x05]);
+	}
+
+	[Fact]
+	public void Rejects_an_undefined_encoded_parameter_reason_code()
+	{
+		Action decodeReasonCode = () => DecodeReasonCode(0x04, 0x00);
+
+		decodeReasonCode.Should().Throw<ArgumentOutOfRangeException>();
+	}
+
 	private static void DecodeReasonCode(byte reasonCodeSet, byte reasonCodeValue)
 	{
 		var buffer = new EncodedMessageBuffer(new byte[] { reasonCodeSet, reasonCodeValue });

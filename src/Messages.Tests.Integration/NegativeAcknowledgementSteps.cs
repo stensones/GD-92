@@ -33,6 +33,17 @@ public sealed class NegativeAcknowledgementSteps
 			});
 	}
 
+	[Given(@"the Parameter Reason Code ""(.*)""")]
+	public void GivenTheParameterReasonCode(string reasonCode)
+	{
+			this.reasonCode = ReasonCode.FromParameterReasonCode(
+				reasonCode switch
+				{
+					"invalid_table" => ParameterReasonCode.InvalidTable,
+					_ => throw new ArgumentOutOfRangeException(nameof(reasonCode))
+				});
+	}
+
 	[When(@"a Negative Acknowledgement is created")]
 	public void WhenANegativeAcknowledgementIsCreated()
 	{
