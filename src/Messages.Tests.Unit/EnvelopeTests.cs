@@ -149,10 +149,48 @@ public sealed class EnvelopeTests
 			Convert.FromHexString("1A191902011A191912FCD11B01010004464952453B"));
 	}
 
+	[Fact]
+	public void Rejects_contents_larger_than_the_protocol_maximum()
+	{
+		var address = CommunicationsAddress.FromValues(
+			Brigade.FromValue(BrigadeOrAgencyIdentifier.FromValue(26)),
+			Node.FromValue(NodeIdentifier.FromValue(100)),
+			Port.FromValue(PortIdentifier.FromValue(25)));
+
+		Action createEnvelope = () => Envelope.FromValues(
+			address,
+			Destinations.FromAddresses(address),
+			ProtocolAndPriority.FromValues(
+				MessagePriority.FromValue(MessagePriorityLevel.FromValue(1)),
+				ProtocolVersion.FromValue(ProtocolVersionNumber.FromValue(2))),
+			AcknowledgementAndSequence.FromValues(
+				SequenceNumber.FromValue(MessageSequenceIdentifier.FromValue(31953)),
+				AcknowledgementRequest.Requested),
+			new SizedMessageContents(1024));
+
+		createEnvelope.Should().Throw<ArgumentOutOfRangeException>();
+	}
+
 	private static Envelope DecodeEnvelope(string encodedEnvelope)
 	{
 		var buffer = new EncodedMessageBuffer(Convert.FromHexString(encodedEnvelope));
 
 		return Envelope.FromEncodedMessageBuffer(ref buffer);
+	}
+
+	private sealed class SizedMessageContents : IGD92MessageContents
+	{
+		public SizedMessageContents(int length)
+		{
+			this.Contents = new byte[length];
+		}
+
+		public byte[] Contents { get; }
+		public MessageType Type => MessageType.FromValue(GD92MessageType.Text);
+
+		public byte[] ToWireValue()
+		{
+			return this.Contents;
+		}
 	}
 }

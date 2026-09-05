@@ -36,6 +36,14 @@ Feature: Envelopes
     When decoding the Envelope is attempted
     Then the non-empty Acknowledgement Contents are rejected
 
+  Scenario: Rejecting an Envelope whose Contents exceed the protocol maximum
+    Given an Envelope source and destination of Brigade 26, Node 100, and Port 25
+    And an Envelope priority of 1 and protocol version of 2
+    And an Envelope sequence number of 31953 requesting acknowledgement
+    And Message Contents containing 1024 bytes
+    When creation of the oversized Envelope is attempted
+    Then the oversized Envelope is rejected
+
   Scenario: Decoding a Set Parameter Envelope
     Given encoded Envelope bytes "1A191902011A191912FCD13C01010004464952451C"
     When the Envelope is decoded

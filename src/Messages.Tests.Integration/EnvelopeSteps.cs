@@ -18,6 +18,7 @@ public sealed class EnvelopeSteps
 	private InvalidOperationException? decodingException;
 	private InvalidOperationException? acknowledgementException;
 	private InvalidOperationException? envelopeCreationException;
+	private ArgumentOutOfRangeException? oversizedEnvelopeException;
 
 	[Given(@"an Envelope source and destination of Brigade (.*), Node (.*), and Port (.*)")]
 	public void GivenAnEnvelopeSourceAndDestination(byte brigade, ushort node, byte port)
@@ -126,10 +127,40 @@ public sealed class EnvelopeSteps
 		}
 	}
 
+	[Given(@"Message Contents containing (.*) bytes")]
+	public void GivenMessageContentsContainingBytes(int length)
+	{
+		this.contents = new SizedMessageContents(length);
+	}
+
+	[When(@"creation of the oversized Envelope is attempted")]
+	public void WhenCreationOfTheOversizedEnvelopeIsAttempted()
+	{
+		try
+		{
+			this.envelope = Envelope.FromValues(
+				this.source!,
+				this.destinations!,
+				this.protocolAndPriority!,
+				this.acknowledgementAndSequence!,
+				this.contents!);
+		}
+		catch (ArgumentOutOfRangeException exception)
+		{
+			this.oversizedEnvelopeException = exception;
+		}
+	}
+
 	[Then(@"the Parameter Request Envelope creation is rejected")]
 	public void ThenTheParameterRequestEnvelopeCreationIsRejected()
 	{
 		this.envelopeCreationException.Should().NotBeNull();
+	}
+
+	[Then(@"the oversized Envelope is rejected")]
+	public void ThenTheOversizedEnvelopeIsRejected()
+	{
+		this.oversizedEnvelopeException.Should().NotBeNull();
 	}
 
 	[Then(@"its complete Envelope bytes are ""(.*)""")]
@@ -369,6 +400,22 @@ public sealed class EnvelopeSteps
 
 		unsupportedContents.Type.Value.Should().Be(messageType);
 		unsupportedContents.ToWireValue().Should().Equal(Convert.FromHexString(contents));
+	}
+
+	private sealed class SizedMessageContents : IGD92MessageContents
+	{
+		public SizedMessageContents(int length)
+		{
+			this.Contents = new byte[length];
+		}
+
+		public byte[] Contents { get; }
+		public MessageType Type => MessageType.FromValue(GD92MessageType.Text);
+
+		public byte[] ToWireValue()
+		{
+			return this.Contents;
+		}
 	}
 
 	[Given(@"the affected destination is Brigade (.*), Node (.*), Port (.*)")]

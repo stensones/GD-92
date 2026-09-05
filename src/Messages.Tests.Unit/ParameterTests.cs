@@ -15,4 +15,20 @@ public sealed class ParameterTests
 		parameter.Type.ToWireValue().Should().Equal(new byte[] { 0x3E });
 		parameter.ToWireValue().Should().Equal(new byte[] { 0x00, 0x1A });
 	}
+
+	[Fact]
+	public void Rejects_a_Parameter_Value_that_is_not_byte_aligned_during_decoding()
+	{
+		Action decodeParameter = () => DecodeParameter([0x00, 0x00], 7);
+
+		decodeParameter.Should().Throw<InvalidOperationException>()
+			.WithMessage("*byte-aligned*");
+	}
+
+	private static Parameter DecodeParameter(byte[] contents, int bitPosition)
+	{
+		var buffer = new EncodedMessageBuffer(contents, bitPosition);
+
+		return Parameter.FromEncodedMessageBuffer(ref buffer);
+	}
 }
