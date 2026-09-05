@@ -1,3 +1,4 @@
+using Microsoft.Extensions.DependencyInjection;
 using Stensones.GD92.Fields;
 using Stensones.GD92.Messages;
 using Envelope = Stensones.GD92.Messages.Envelope;
@@ -6,13 +7,13 @@ namespace Stensones.GD92.Transport.RabbitMQ;
 
 public sealed class RouterIngressTransportMessageHandler
 {
-	public Task HandleAsync(
+	public async Task HandleAsync(
 		RouterIngressTransportMessage message,
-		IRouterIngressReceiver receiver,
+		IServiceScopeFactory serviceScopeFactory,
 		CancellationToken cancellationToken)
 	{
 		ArgumentNullException.ThrowIfNull(message);
-		ArgumentNullException.ThrowIfNull(receiver);
+		ArgumentNullException.ThrowIfNull(serviceScopeFactory);
 		cancellationToken.ThrowIfCancellationRequested();
 
 		var buffer = new EncodedMessageBuffer(message.EnvelopeWireValue);
@@ -23,6 +24,8 @@ public sealed class RouterIngressTransportMessageHandler
 			throw new InvalidOperationException("The encoded Router ingress Envelope contains trailing bytes.");
 		}
 
-		return receiver.ReceiveAsync(envelope, cancellationToken);
+		using var scope = serviceScopeFactory.CreateScope();
+		var receiver = scope.ServiceProvider.GetRequiredService<IRouterIngressReceiver>();
+		await receiver.ReceiveAsync(envelope, cancellationToken);
 	}
 }

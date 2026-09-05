@@ -181,12 +181,12 @@ public sealed class InMemoryPendingDeliveryRegistry : IPendingDeliveryRegistry
 		}
 	}
 
-	public bool TryCompleteInvalidPasswordNegativeAcknowledgement(Envelope envelope)
+	public bool TryCompleteNegativeAcknowledgement(Envelope envelope)
 	{
 		ArgumentNullException.ThrowIfNull(envelope);
 
 		if (envelope.Contents is not NegativeAcknowledgement negativeAcknowledgement ||
-			negativeAcknowledgement.ReasonCode.ParameterReasonCode != ParameterReasonCode.InvalidPassword ||
+			envelope.AcknowledgementAndSequence.AcknowledgementRequest.IsRequested ||
 			envelope.Destinations.Addresses.Count != 1)
 		{
 			return false;
@@ -211,10 +211,37 @@ public sealed class InMemoryPendingDeliveryRegistry : IPendingDeliveryRegistry
 				return false;
 			}
 
-			this.deliveries[uswr] = new InvalidPasswordNodeLoginStatus(
-				new RouterParameterRequestStatusIdentifier(uswr),
-				pendingNodeLogin.UserAgentAddress);
+			this.deliveries[uswr] =
+				negativeAcknowledgement.ReasonCode.ParameterReasonCode == ParameterReasonCode.InvalidPassword
+					? new InvalidPasswordNodeLoginStatus(
+						new RouterParameterRequestStatusIdentifier(uswr),
+						pendingNodeLogin.UserAgentAddress)
+					: new RejectedNodeLoginStatus(
+						new RouterParameterRequestStatusIdentifier(uswr),
+						pendingNodeLogin.UserAgentAddress);
 			this.GetPendingSequences(uswr.Destination).Remove(uswr.SequenceNumber.Value);
+
+			return true;
+		}
+	}
+
+	public bool TryTimeoutNodeLogin(RouterParameterRequestStatusIdentifier statusIdentifier)
+	{
+		ArgumentNullException.ThrowIfNull(statusIdentifier);
+
+		lock (this.synchronizationLock)
+		{
+			if (!this.deliveries.TryGetValue(statusIdentifier.USWR, out var status) ||
+				status is not PendingNodeLoginStatus pendingNodeLogin)
+			{
+				return false;
+			}
+
+			this.deliveries[statusIdentifier.USWR] = new TimedOutNodeLoginStatus(
+				statusIdentifier,
+				pendingNodeLogin.UserAgentAddress);
+			this.GetPendingSequences(statusIdentifier.USWR.Destination)
+				.Remove(statusIdentifier.USWR.SequenceNumber.Value);
 
 			return true;
 		}

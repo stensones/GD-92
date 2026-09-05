@@ -24,7 +24,8 @@ public sealed class RouterParametersControllerTests
 		IRouterParameterRequestService service = new RouterParameterRequestService(
 			new RouterParameterRequestSettings(messageOriginator, localRouter),
 			pendingDeliveries,
-			ingress);
+			ingress,
+			NoOpNodeLoginRetryScheduler.Instance);
 
 		var statusIdentifier = await service.RequestLocalRouterBrigadeOrAgencyNumber(CancellationToken.None);
 
@@ -55,7 +56,8 @@ public sealed class RouterParametersControllerTests
 		var service = new RouterParameterRequestService(
 			new RouterParameterRequestSettings(messageOriginator, localRouter),
 			pendingDeliveries,
-			ingress);
+			ingress,
+			NoOpNodeLoginRetryScheduler.Instance);
 
 		var statusIdentifier = await service.RequestLocalRouterLogon(
 			suppliedUserAgent,
@@ -95,7 +97,8 @@ public sealed class RouterParametersControllerTests
 		var service = new RouterParameterRequestService(
 			new RouterParameterRequestSettings(messageOriginator, localRouter),
 			pendingDeliveries,
-			ingress);
+			ingress,
+			NoOpNodeLoginRetryScheduler.Instance);
 
 		var statusIdentifier = await service.RequestLocalRouterLogoff(CancellationToken.None);
 
@@ -202,7 +205,8 @@ public sealed class RouterParametersControllerTests
 		IRouterParameterRequestService service = new RouterParameterRequestService(
 			new RouterParameterRequestSettings(messageOriginator, localRouter),
 			new InMemoryPendingDeliveryRegistry(),
-			new RecordingRouterIngress());
+			new RecordingRouterIngress(),
+			NoOpNodeLoginRetryScheduler.Instance);
 
 		var statuses = await Task.WhenAll(
 			Enumerable.Range(0, 32).Select(_ =>
@@ -250,7 +254,8 @@ public sealed class RouterParametersControllerTests
 		var service = new RouterParameterRequestService(
 			new RouterParameterRequestSettings(userAgent, router),
 			pendingDeliveries,
-			ingress);
+			ingress,
+			NoOpNodeLoginRetryScheduler.Instance);
 		var identifier = await service.RequestLocalRouterLogon(
 			userAgent,
 			PasswordValue.FromValue(SevenBitAsciiString.FromValue("FIRE1")),
@@ -289,7 +294,8 @@ public sealed class RouterParametersControllerTests
 		var service = new RouterParameterRequestService(
 			new RouterParameterRequestSettings(userAgent, router),
 			pendingDeliveries,
-			ingress);
+			ingress,
+			NoOpNodeLoginRetryScheduler.Instance);
 		var identifier = await service.RequestLocalRouterLogoff(CancellationToken.None);
 		var receiver = new RouterParameterResponseReceiver(pendingDeliveries);
 
@@ -350,6 +356,26 @@ public sealed class RouterParametersControllerTests
 		JsonSerializer.Serialize(response).Should().Contain("invalid_password");
 	}
 
+	[Fact]
+	public void Returns_a_timed_out_status_after_a_Node_Login_exhausts_its_sends()
+	{
+		var userAgent = Address(brigade: 26, node: 100, port: 25);
+		var router = Address(brigade: 26, node: 100, port: 0);
+		var pendingDeliveries = new InMemoryPendingDeliveryRegistry();
+		var identifier = pendingDeliveries.ReserveNodeLogin(userAgent, router, userAgent);
+		pendingDeliveries.TryTimeoutNodeLogin(identifier).Should().BeTrue();
+		var controller = new RouterParametersController(
+			new ReturningRouterParameterRequestService(identifier),
+			pendingDeliveries);
+
+		var result = controller.Status(identifier.ToString());
+
+		var response = result.Should().BeOfType<OkObjectResult>().Which.Value
+			.Should().BeOfType<RouterParameterRequestStatusResponse>().Which;
+		response.State.Should().Be("timed-out");
+		response.UserAgentAddress.Should().Be("26.100.25");
+	}
+
 	private static CommunicationsAddress Address(byte brigade, ushort node, byte port)
 	{
 		return CommunicationsAddress.FromValues(
@@ -390,6 +416,17 @@ public sealed class RouterParametersControllerTests
 			CancellationToken cancellationToken)
 		{
 			return Task.FromResult(statusIdentifier);
+		}
+	}
+
+	private sealed class NoOpNodeLoginRetryScheduler : INodeLoginRetryScheduler
+	{
+		public static NoOpNodeLoginRetryScheduler Instance { get; } = new();
+
+		public void Schedule(
+			RouterParameterRequestStatusIdentifier statusIdentifier,
+			Envelope envelope)
+		{
 		}
 	}
 }

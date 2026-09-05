@@ -39,3 +39,19 @@ public sealed record InvalidPasswordNodeLoginStatus(
 {
 	public string State { get; } = "invalid_password";
 }
+
+public sealed record RejectedNodeLoginStatus(
+	RouterParameterRequestStatusIdentifier Identifier,
+	CommunicationsAddress UserAgentAddress) :
+	RouterParameterRequestStatus(Identifier)
+{
+	public string State { get; } = "rejected";
+}
+
+public sealed record TimedOutNodeLoginStatus(
+	RouterParameterRequestStatusIdentifier Identifier,
+	CommunicationsAddress UserAgentAddress) :
+	RouterParameterRequestStatus(Identifier)
+{
+	public string State { get; } = "timed-out";
+}

@@ -7,7 +7,8 @@ namespace NodeManager.Router.Parameters;
 public sealed class RouterParameterRequestService(
 	RouterParameterRequestSettings settings,
 	IPendingDeliveryRegistry pendingDeliveries,
-	IRouterIngress routerIngress) : IRouterParameterRequestService
+	IRouterIngress routerIngress,
+	INodeLoginRetryScheduler nodeLoginRetryScheduler) : IRouterParameterRequestService
 {
 	public async Task<RouterParameterRequestStatusIdentifier> RequestLocalRouterBrigadeOrAgencyNumber(
 		CancellationToken cancellationToken)
@@ -62,6 +63,7 @@ public sealed class RouterParameterRequestService(
 						communicationsAddress).ToWireValue())));
 
 		await routerIngress.SubmitAsync(envelope, cancellationToken);
+		nodeLoginRetryScheduler.Schedule(statusIdentifier, envelope);
 		return statusIdentifier;
 	}
 

@@ -18,7 +18,7 @@ public sealed class RouterParameterResponseReceiver(
 		{
 			if (!this.pendingDeliveries.TryCompleteAcknowledgement(envelope))
 			{
-				this.pendingDeliveries.TryCompleteInvalidPasswordNegativeAcknowledgement(envelope);
+				this.pendingDeliveries.TryCompleteNegativeAcknowledgement(envelope);
 			}
 		}
 

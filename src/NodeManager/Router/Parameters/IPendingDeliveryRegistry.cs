@@ -27,5 +27,7 @@ public interface IPendingDeliveryRegistry
 
 	bool TryCompleteAcknowledgement(Envelope envelope);
 
-	bool TryCompleteInvalidPasswordNegativeAcknowledgement(Envelope envelope);
+	bool TryCompleteNegativeAcknowledgement(Envelope envelope);
+
+	bool TryTimeoutNodeLogin(RouterParameterRequestStatusIdentifier statusIdentifier);
 }

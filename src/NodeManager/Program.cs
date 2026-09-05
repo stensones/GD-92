@@ -1,5 +1,4 @@
 ﻿using NodeManager.Router.Parameters;
-using Stensones.GD92.Fields;
 using Stensones.GD92.Transport.RabbitMQ;
 using Wolverine;
 using Wolverine.RabbitMQ;
@@ -17,9 +16,7 @@ builder.Services
 		options.ViewLocationFormats.Add("/SharedViews/{0}.cshtml"); // For shared views
 	});
 
-var requestSettings = new RouterParameterRequestSettings(
-	CreateAddress(builder.Configuration.GetRequiredSection("RouterParameterRequest:MessageOriginator")),
-	CreateAddress(builder.Configuration.GetRequiredSection("RouterParameterRequest:LocalRouter")));
+var requestSettings = RouterParameterRequestSettings.FromConfiguration(builder.Configuration);
 
 builder.Services.AddWolverine(options =>
 {
@@ -34,6 +31,14 @@ builder.Services.AddScoped<IRouterIngress>(serviceProvider =>
 	new RabbitMqRouterIngress(
 		serviceProvider.GetRequiredService<IMessageBus>(),
 		requestSettings.LocalRouter));
+builder.Services.AddSingleton<INodeLoginRetryDelay, NodeLoginRetryDelay>();
+builder.Services.AddSingleton<INodeLoginRetryScheduler>(serviceProvider =>
+	new NodeLoginRetryScheduler(
+		requestSettings.NodeLoginRetryPolicy,
+		serviceProvider.GetRequiredService<IPendingDeliveryRegistry>(),
+		serviceProvider.GetRequiredService<IServiceScopeFactory>(),
+		serviceProvider.GetRequiredService<INodeLoginRetryDelay>(),
+		serviceProvider.GetRequiredService<IHostApplicationLifetime>().ApplicationStopping));
 builder.Services.AddScoped<IRouterParameterRequestService, RouterParameterRequestService>();
 
 var app = builder.Build();
@@ -46,11 +51,3 @@ app.MapControllerRoute(
 	pattern: "{controller=Home}/{action=Index}/{id?}");
 
 app.Run();
-
-static CommunicationsAddress CreateAddress(IConfigurationSection configuration)
-{
-	return CommunicationsAddress.FromValues(
-		Brigade.FromValue(BrigadeOrAgencyIdentifier.FromValue(configuration.GetValue<byte>("Brigade"))),
-		Node.FromValue(NodeIdentifier.FromValue(configuration.GetValue<ushort>("Node"))),
-		Port.FromValue(PortIdentifier.FromValue(configuration.GetValue<byte>("Port"))));
-}
