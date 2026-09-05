@@ -14,7 +14,11 @@ public sealed class RouterParameterResponseReceiver(
 		ArgumentNullException.ThrowIfNull(envelope);
 		cancellationToken.ThrowIfCancellationRequested();
 
-		this.pendingDeliveries.TryCompleteParameterResponse(envelope);
+		if (!this.pendingDeliveries.TryCompleteParameterResponse(envelope))
+		{
+			this.pendingDeliveries.TryCompleteAcknowledgement(envelope);
+		}
+
 		return Task.CompletedTask;
 	}
 }

@@ -24,6 +24,35 @@ public sealed class RouterParameterResponseReceiverTests
 		status.ParameterValue.ToWireValue().Should().Equal([26]);
 	}
 
+	[Fact]
+	public async Task Completes_a_matching_logon_with_its_supplied_User_Agent_address()
+	{
+		var userAgent = Address(brigade: 26, node: 100, port: 25);
+		var router = Address(brigade: 26, node: 100, port: 0);
+		var pendingDeliveries = new InMemoryPendingDeliveryRegistry();
+		var identifier = pendingDeliveries.ReserveNodeLogin(userAgent, router, userAgent);
+		var receiver = new RouterParameterResponseReceiver(pendingDeliveries);
+
+		await receiver.ReceiveAsync(
+			Envelope.FromValues(
+				router,
+				Destinations.FromAddresses(userAgent),
+				ProtocolAndPriority.FromValues(
+					MessagePriority.FromValue(MessagePriorityLevel.FromValue(3)),
+					ProtocolVersion.FromValue(ProtocolVersionNumber.FromValue(2))),
+				AcknowledgementAndSequence.FromValues(
+					identifier.USWR.SequenceNumber,
+					AcknowledgementRequest.NotRequested),
+				Acknowledgement.Create()),
+			CancellationToken.None);
+
+		pendingDeliveries.IsPending(identifier).Should().BeFalse();
+		var status = pendingDeliveries.GetStatus(identifier)
+			.Should().BeOfType<LoggedOnNodeLoginStatus>().Which;
+		status.UserAgentAddress.Should().Be(userAgent);
+		status.State.Should().Be("logged-on");
+	}
+
 	[Theory]
 	[InlineData(true, false, false)]
 	[InlineData(false, true, false)]

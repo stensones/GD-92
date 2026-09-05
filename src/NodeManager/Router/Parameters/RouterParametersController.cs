@@ -1,4 +1,6 @@
+using System.Globalization;
 using Microsoft.AspNetCore.Mvc;
+using Stensones.GD92.Fields;
 
 namespace NodeManager.Router.Parameters;
 
@@ -16,7 +18,29 @@ public sealed class RouterParametersController(
 		return new SeeOtherRedirectResult($"/router/parameters/status/{statusIdentifier}");
 	}
 
+	[HttpPost("logon")]
+	[RequireHttps]
+	public async Task<IActionResult> LogOn(
+		[FromForm(Name = "password")] string password,
+		[FromForm(Name = "brigade")] byte brigade,
+		[FromForm(Name = "node")] ushort node,
+		[FromForm(Name = "port")] byte port,
+		CancellationToken cancellationToken)
+	{
+		var communicationsAddress = CommunicationsAddress.FromValues(
+			Brigade.FromValue(BrigadeOrAgencyIdentifier.FromValue(brigade)),
+			Node.FromValue(NodeIdentifier.FromValue(node)),
+			Port.FromValue(PortIdentifier.FromValue(port)));
+		var statusIdentifier = await routerParameterRequests.RequestLocalRouterLogon(
+			communicationsAddress,
+			PasswordValue.FromValue(SevenBitAsciiString.FromValue(password)),
+			cancellationToken);
+
+		return new SeeOtherRedirectResult($"/router/parameters/logon/status/{statusIdentifier}");
+	}
+
 	[HttpGet("status/{identifier}")]
+	[HttpGet("logon/status/{identifier}")]
 	public IActionResult Status(string identifier)
 	{
 		if (!RouterParameterRequestStatusIdentifier.TryParse(identifier, out var statusIdentifier))
@@ -44,6 +68,14 @@ public sealed class RouterParametersController(
 				_ => null
 			}
 			: null;
+		string? userAgentAddress = status switch
+		{
+			PendingNodeLoginStatus pendingNodeLogin =>
+				Format(pendingNodeLogin.UserAgentAddress),
+			LoggedOnNodeLoginStatus loggedOnNodeLogin =>
+				Format(loggedOnNodeLogin.UserAgentAddress),
+			_ => null
+		};
 
 		return new RouterParameterRequestStatusResponse(
 			status.Identifier.ToString(),
@@ -51,8 +83,20 @@ public sealed class RouterParametersController(
 			{
 				PendingRouterParameterRequestStatus pending => pending.State,
 				ReceivedRouterParameterRequestStatus received => received.State,
+				PendingNodeLoginStatus pending => pending.State,
+				LoggedOnNodeLoginStatus loggedOn => loggedOn.State,
 				_ => throw new InvalidOperationException("The Router Parameter Request status is unknown.")
 			},
-			brigadeOrAgencyNumber);
+			brigadeOrAgencyNumber,
+			userAgentAddress);
+	}
+
+	private static string Format(CommunicationsAddress communicationsAddress)
+	{
+		return string.Join(
+			'.',
+			communicationsAddress.Brigade.Value.ToString(),
+			communicationsAddress.Node.Value.ToString(CultureInfo.InvariantCulture),
+			communicationsAddress.Port.Value.ToString(CultureInfo.InvariantCulture));
 	}
 }
