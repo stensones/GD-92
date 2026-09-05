@@ -16,6 +16,10 @@ Feature: Router Parameter Request
     And the Parameter Request status eventually shows brigade or agency number 26
     And the Router retains brigade or agency number 26 in its permanent and non-volatile Parameter Tables
 
+  Scenario: Presenting a Node Login form
+    When I open NodeManager
+    Then NodeManager presents a Node Login form that securely submits password, brigade, node, and port
+
   Scenario: Logging on a User-Agent at the local Router
     Given NodeManager is the User Agent at Brigade 26, Node 100, and Port 25
     And its local Router is at Brigade 26, Node 100, and Port 0

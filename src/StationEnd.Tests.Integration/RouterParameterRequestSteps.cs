@@ -14,6 +14,7 @@ public sealed class RouterParameterRequestSteps
 	private HttpClient? client;
 	private HttpResponseMessage? response;
 	private string? level1Password;
+	private string? pageContent;
 
 	[Given(@"NodeManager is the User Agent at Brigade (.*), Node (.*), and Port (.*)")]
 	public void GivenNodeManagerIsTheUserAgentAt(byte brigade, ushort node, byte port)
@@ -36,6 +37,30 @@ public sealed class RouterParameterRequestSteps
 		}
 
 		this.response = await this.client!.PostAsync("/router/parameters/brigade-or-agency-number", null);
+	}
+
+	[When(@"I open NodeManager")]
+	public async Task WhenIOpenNodeManager()
+	{
+		if (this.application is null)
+		{
+			await this.StartApplicationAsync();
+		}
+
+		this.response = await this.client!.GetAsync("/");
+		this.response.EnsureSuccessStatusCode();
+		this.pageContent = await this.response.Content.ReadAsStringAsync();
+	}
+
+	[Then(@"NodeManager presents a Node Login form that securely submits password, brigade, node, and port")]
+	public void ThenNodeManagerPresentsANodeLoginForm()
+	{
+		this.pageContent.Should().Contain("""<form id="router-logon" action="/router/parameters/logon" method="post">""");
+		this.pageContent.Should().Contain("""type="password" name="password" required""");
+		this.pageContent.Should().Contain("""type="number" name="brigade" required""");
+		this.pageContent.Should().Contain("""type="number" name="node" required""");
+		this.pageContent.Should().Contain("""type="number" name="port" required""");
+		this.pageContent.Should().Contain("""type="submit">Log on</button>""");
 	}
 
 	[When(@"I log on User-Agent address Brigade (.*), Node (.*), and Port (.*) with the Level 1 password")]
