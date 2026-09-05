@@ -37,4 +37,20 @@ public sealed class SetParameterTests
 		setParameter.ParameterValue.ToWireValue().Should().Equal(Convert.FromHexString("0446495245"));
 		buffer.BitPosition.Should().Be(56);
 	}
+
+	[Fact]
+	public void Rejects_a_Set_Parameter_Value_that_is_not_byte_aligned_during_decoding()
+	{
+		Action decodeSetParameter = () => DecodeSetParameter([0x00, 0x04, 0x0A], 7);
+
+		decodeSetParameter.Should().Throw<InvalidOperationException>()
+			.WithMessage("*byte-aligned*");
+	}
+
+	private static SetParameter DecodeSetParameter(byte[] contents, int bitPosition)
+	{
+		var buffer = new EncodedMessageBuffer(contents, bitPosition);
+
+		return SetParameter.FromEncodedMessageBuffer(ref buffer);
+	}
 }
