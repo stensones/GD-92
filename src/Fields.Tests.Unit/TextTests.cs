@@ -82,6 +82,15 @@ public sealed class TextTests
 			.WithMessage("*incomplete escape sequence*");
 	}
 
+	[Fact]
+	public void Rejects_an_invalid_compressed_run_length_during_decoding()
+	{
+		Action decodeText = () => DecodeText([0x00, 0x03, 0x1B, 0x41, 0x03]);
+
+		decodeText.Should().Throw<InvalidOperationException>()
+			.WithMessage("*invalid run length*");
+	}
+
 	private static Text DecodeText(byte[] wireValue)
 	{
 		var buffer = new EncodedMessageBuffer(wireValue);
