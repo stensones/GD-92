@@ -42,4 +42,12 @@ public sealed class ParameterRequestMultipleTests
 
 		createRange.Should().Throw<ArgumentException>();
 	}
+
+	[Fact]
+	public void Rejects_a_request_for_zero_most_recent_Parameter_entries()
+	{
+		Action createEntryCount = () => ParameterEntryCount.FromValue(0);
+
+		createEntryCount.Should().Throw<ArgumentOutOfRangeException>();
+	}
 }

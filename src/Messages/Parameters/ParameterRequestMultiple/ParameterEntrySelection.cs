@@ -21,6 +21,8 @@ public interface ParameterEntrySelection
 
 	static ParameterEntrySelection MostRecent(ParameterEntryCount count)
 	{
+		ArgumentNullException.ThrowIfNull(count);
+
 		return new MostRecentParameterEntries(count);
 	}
 
