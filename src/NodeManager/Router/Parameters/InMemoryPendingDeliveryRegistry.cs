@@ -34,6 +34,16 @@ public sealed class InMemoryPendingDeliveryRegistry : IPendingDeliveryRegistry
 			identifier => new PendingNodeLoginStatus(identifier, userAgentAddress));
 	}
 
+	public RouterParameterRequestStatusIdentifier ReserveNodeLogoff(
+		CommunicationsAddress source,
+		CommunicationsAddress destination)
+	{
+		return this.Reserve(
+			source,
+			destination,
+			static identifier => new PendingNodeLogoffStatus(identifier));
+	}
+
 	private RouterParameterRequestStatusIdentifier Reserve(
 		CommunicationsAddress source,
 		CommunicationsAddress destination,
@@ -80,7 +90,7 @@ public sealed class InMemoryPendingDeliveryRegistry : IPendingDeliveryRegistry
 		lock (this.synchronizationLock)
 		{
 			return this.deliveries.TryGetValue(statusIdentifier.USWR, out var status) &&
-				status is PendingRouterParameterRequestStatus or PendingNodeLoginStatus;
+				status is PendingRouterParameterRequestStatus or PendingNodeLoginStatus or PendingNodeLogoffStatus;
 		}
 	}
 
@@ -145,15 +155,26 @@ public sealed class InMemoryPendingDeliveryRegistry : IPendingDeliveryRegistry
 
 		lock (this.synchronizationLock)
 		{
-			if (!this.deliveries.TryGetValue(uswr, out var status) ||
-				status is not PendingNodeLoginStatus pendingNodeLogin)
+			if (!this.deliveries.TryGetValue(uswr, out var status))
 			{
 				return false;
 			}
 
-			this.deliveries[uswr] = new LoggedOnNodeLoginStatus(
-				new RouterParameterRequestStatusIdentifier(uswr),
-				pendingNodeLogin.UserAgentAddress);
+			switch (status)
+			{
+				case PendingNodeLoginStatus pendingNodeLogin:
+					this.deliveries[uswr] = new LoggedOnNodeLoginStatus(
+						new RouterParameterRequestStatusIdentifier(uswr),
+						pendingNodeLogin.UserAgentAddress);
+					break;
+				case PendingNodeLogoffStatus:
+					this.deliveries[uswr] = new LoggedOffNodeLoginStatus(
+						new RouterParameterRequestStatusIdentifier(uswr));
+					break;
+				default:
+					return false;
+			}
+
 			this.GetPendingSequences(uswr.Destination).Remove(uswr.SequenceNumber.Value);
 
 			return true;

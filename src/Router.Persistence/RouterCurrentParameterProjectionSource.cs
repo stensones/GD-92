@@ -49,4 +49,24 @@ public sealed class RouterCurrentParameterProjectionSource
 			}
 		}
 	}
+
+	public bool TryLogOffAtLevelZero(
+		CommunicationsAddress localAddress)
+	{
+		ArgumentNullException.ThrowIfNull(localAddress);
+
+		while (true)
+		{
+			var current = this.GetCurrent();
+			if (ReferenceEquals(
+				Interlocked.CompareExchange(
+					ref this.currentParameters,
+					current.LogOffAtLevelZero(localAddress),
+					current),
+				current))
+			{
+				return true;
+			}
+		}
+	}
 }

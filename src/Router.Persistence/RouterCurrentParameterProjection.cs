@@ -5,6 +5,8 @@ namespace Router.Persistence;
 
 public sealed class RouterCurrentParameterProjection
 {
+	private static readonly PasswordLevel LevelZero =
+		PasswordLevel.FromValue(PasswordLevelNumber.Unauthenticated);
 	private static readonly PasswordLevel LevelOne =
 		PasswordLevel.FromValue(PasswordLevelNumber.Level1);
 	private static readonly Password EmptyPassword = Password.FromValue(
@@ -38,6 +40,19 @@ public sealed class RouterCurrentParameterProjection
 		return new RouterCurrentParameterProjection(
 			this.BrigadeOrAgencyIdentifier,
 			PasswordParameter.FromFields(LevelOne, EmptyPassword, communicationsAddress),
+			this.Level1PasswordVerifier,
+			this.NoAcknowledgementTimeout,
+			this.Retries);
+	}
+
+	public RouterCurrentParameterProjection LogOffAtLevelZero(
+		CommunicationsAddress localAddress)
+	{
+		ArgumentNullException.ThrowIfNull(localAddress);
+
+		return new RouterCurrentParameterProjection(
+			this.BrigadeOrAgencyIdentifier,
+			PasswordParameter.FromFields(LevelZero, EmptyPassword, localAddress),
 			this.Level1PasswordVerifier,
 			this.NoAcknowledgementTimeout,
 			this.Retries);

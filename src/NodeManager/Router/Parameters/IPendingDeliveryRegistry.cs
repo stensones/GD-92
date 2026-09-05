@@ -14,6 +14,10 @@ public interface IPendingDeliveryRegistry
 		CommunicationsAddress destination,
 		CommunicationsAddress userAgentAddress);
 
+	RouterParameterRequestStatusIdentifier ReserveNodeLogoff(
+		CommunicationsAddress source,
+		CommunicationsAddress destination);
+
 	bool IsPending(RouterParameterRequestStatusIdentifier statusIdentifier);
 
 	RouterParameterRequestStatus? GetStatus(

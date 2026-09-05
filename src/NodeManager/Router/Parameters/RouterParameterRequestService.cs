@@ -64,4 +64,33 @@ public sealed class RouterParameterRequestService(
 		await routerIngress.SubmitAsync(envelope, cancellationToken);
 		return statusIdentifier;
 	}
+
+	public async Task<RouterParameterRequestStatusIdentifier> RequestLocalRouterLogoff(
+		CancellationToken cancellationToken)
+	{
+		var statusIdentifier = pendingDeliveries.ReserveNodeLogoff(
+			settings.MessageOriginator,
+			settings.LocalRouter);
+		var envelope = Envelope.FromValues(
+			settings.MessageOriginator,
+			Destinations.FromAddresses(settings.LocalRouter),
+			ProtocolAndPriority.FromValues(
+				MessagePriority.FromValue(MessagePriorityLevel.FromValue(3)),
+				ProtocolVersion.FromValue(ProtocolVersionNumber.FromValue(2))),
+			AcknowledgementAndSequence.FromValues(
+				statusIdentifier.USWR.SequenceNumber,
+				AcknowledgementRequest.Requested),
+			SetParameter.FromFields(
+				ParameterTable.Current,
+				ParameterNumber.FromValue(4),
+				ParameterValue.FromWireValue(
+					PasswordParameter.FromFields(
+						PasswordLevel.FromValue(PasswordLevelNumber.Unauthenticated),
+						Password.FromValue(
+							PasswordValue.FromValue(SevenBitAsciiString.FromValue(string.Empty))),
+						settings.MessageOriginator).ToWireValue())));
+
+		await routerIngress.SubmitAsync(envelope, cancellationToken);
+		return statusIdentifier;
+	}
 }

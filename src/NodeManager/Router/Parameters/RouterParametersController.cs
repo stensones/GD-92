@@ -39,8 +39,19 @@ public sealed class RouterParametersController(
 		return new SeeOtherRedirectResult($"/router/parameters/logon/status/{statusIdentifier}");
 	}
 
+	[HttpPost("logoff")]
+	[RequireHttps]
+	public async Task<IActionResult> LogOff(CancellationToken cancellationToken)
+	{
+		var statusIdentifier = await routerParameterRequests
+			.RequestLocalRouterLogoff(cancellationToken);
+
+		return new SeeOtherRedirectResult($"/router/parameters/logoff/status/{statusIdentifier}");
+	}
+
 	[HttpGet("status/{identifier}")]
 	[HttpGet("logon/status/{identifier}")]
+	[HttpGet("logoff/status/{identifier}")]
 	public IActionResult Status(string identifier)
 	{
 		if (!RouterParameterRequestStatusIdentifier.TryParse(identifier, out var statusIdentifier))
@@ -86,7 +97,9 @@ public sealed class RouterParametersController(
 				PendingRouterParameterRequestStatus pending => pending.State,
 				ReceivedRouterParameterRequestStatus received => received.State,
 				PendingNodeLoginStatus pending => pending.State,
+				PendingNodeLogoffStatus pending => pending.State,
 				LoggedOnNodeLoginStatus loggedOn => loggedOn.State,
+				LoggedOffNodeLoginStatus loggedOff => loggedOff.State,
 				InvalidPasswordNodeLoginStatus invalidPassword => invalidPassword.State,
 				_ => throw new InvalidOperationException("The Router Parameter Request status is unknown.")
 			},

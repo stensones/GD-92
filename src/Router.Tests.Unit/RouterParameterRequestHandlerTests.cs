@@ -118,6 +118,55 @@ public sealed class RouterParameterRequestHandlerTests
 	}
 
 	[Fact]
+	public void Acknowledges_a_level_zero_current_password_and_clears_the_active_Node_Login()
+	{
+		var routerAddress = CreateAddress(26, 100, 0);
+		var source = new RouterCurrentParameterProjectionSource();
+		source.Publish(CreateCurrentParameterProjection(
+			26,
+			PasswordValue.FromValue(SevenBitAsciiString.FromValue("FIRE1"))));
+		var handler = new RouterParameterRequestHandler(
+			routerAddress,
+			ProtocolVersion.FromValue(ProtocolVersionNumber.FromValue(2)),
+			source);
+		var requestSource = CreateAddress(26, 100, 25);
+		source.TryLogOnAtLevelOne(PasswordParameter.FromFields(
+			PasswordLevel.FromValue(PasswordLevelNumber.Level1),
+			Password.FromValue(
+				PasswordValue.FromValue(SevenBitAsciiString.FromValue("FIRE1"))),
+			requestSource)).Should().BeTrue();
+		var ignoredAddress = CreateAddress(42, 200, 7);
+		var request = Envelope.FromValues(
+			requestSource,
+			Destinations.FromAddresses(routerAddress),
+			ProtocolAndPriority.FromValues(
+				MessagePriority.FromValue(MessagePriorityLevel.FromValue(3)),
+				ProtocolVersion.FromValue(ProtocolVersionNumber.FromValue(2))),
+			AcknowledgementAndSequence.FromValues(
+				SequenceNumber.FromValue(MessageSequenceIdentifier.FromValue(7)),
+				AcknowledgementRequest.Requested),
+			SetParameter.FromFields(
+				ParameterTable.Current,
+				ParameterNumber.FromValue(4),
+				ParameterValue.FromWireValue(
+					PasswordParameter.FromFields(
+						PasswordLevel.FromValue(PasswordLevelNumber.Unauthenticated),
+						Password.FromValue(
+							PasswordValue.FromValue(SevenBitAsciiString.FromValue("ignored"))),
+						ignoredAddress).ToWireValue())));
+
+		var result = handler.Handle(request);
+
+		result.Status.Should().Be(RouterEnvelopeHandlingStatus.Responded);
+		result.Response!.Contents.Should().BeOfType<Acknowledgement>();
+		var currentPassword = source.GetCurrent().CurrentPassword;
+		currentPassword.Level.Should().Be(
+			PasswordLevel.FromValue(PasswordLevelNumber.Unauthenticated));
+		currentPassword.Password.Value.Value.Value.Should().BeEmpty();
+		currentPassword.CommunicationsAddress.Should().Be(routerAddress);
+	}
+
+	[Fact]
 	public void Does_not_respond_to_a_Parameter_Request_addressed_outside_the_local_Router()
 	{
 		var routerAddress = CreateAddress(26, 100, 0);

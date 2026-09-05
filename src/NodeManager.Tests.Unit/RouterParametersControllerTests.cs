@@ -86,6 +86,36 @@ public sealed class RouterParametersControllerTests
 	}
 
 	[Fact]
+	public async Task Submits_a_level_zero_logoff_from_the_NodeManager_address_to_the_local_Router()
+	{
+		var messageOriginator = Address(brigade: 26, node: 100, port: 25);
+		var localRouter = Address(brigade: 26, node: 100, port: 0);
+		var ingress = new RecordingRouterIngress();
+		var pendingDeliveries = new InMemoryPendingDeliveryRegistry();
+		var service = new RouterParameterRequestService(
+			new RouterParameterRequestSettings(messageOriginator, localRouter),
+			pendingDeliveries,
+			ingress);
+
+		var statusIdentifier = await service.RequestLocalRouterLogoff(CancellationToken.None);
+
+		ingress.SubmittedEnvelope.Should().NotBeNull();
+		var submittedEnvelope = ingress.SubmittedEnvelope!;
+		submittedEnvelope.Source.Should().Be(messageOriginator);
+		submittedEnvelope.Destinations.Addresses.Should().ContainSingle().Which.Should().Be(localRouter);
+		var logoff = submittedEnvelope.Contents.Should().BeOfType<SetParameter>().Which;
+		logoff.ParameterTable.Should().Be(ParameterTable.Current);
+		logoff.ParameterNumber.Value.Should().Be(4);
+		var passwordBuffer = new EncodedMessageBuffer(logoff.ParameterValue.ToWireValue());
+		var passwordParameter = PasswordParameter.FromEncodedMessageBuffer(ref passwordBuffer);
+		passwordParameter.Level.Should().Be(
+			PasswordLevel.FromValue(PasswordLevelNumber.Unauthenticated));
+		passwordParameter.Password.Value.Value.Value.Should().BeEmpty();
+		passwordParameter.CommunicationsAddress.Should().Be(messageOriginator);
+		pendingDeliveries.IsPending(statusIdentifier).Should().BeTrue();
+	}
+
+	[Fact]
 	public async Task Redirects_a_router_brigade_request_to_its_pending_status()
 	{
 		var statusIdentifier = new RouterParameterRequestStatusIdentifier(new UniqueSystemWideReference(
@@ -119,6 +149,29 @@ public sealed class RouterParametersControllerTests
 		var redirect = result.Should().BeOfType<SeeOtherRedirectResult>().Which;
 		redirect.Location.Should().Be($"/router/parameters/logon/status/{statusIdentifier}");
 		redirect.StatusCode.Should().Be(303);
+	}
+
+	[Fact]
+	public async Task Redirects_an_HTTPS_local_Router_logoff_to_its_pending_Node_Login_status()
+	{
+		var statusIdentifier = new RouterParameterRequestStatusIdentifier(new UniqueSystemWideReference(
+			Address(brigade: 26, node: 100, port: 25),
+			Address(brigade: 26, node: 100, port: 0),
+			SequenceNumber.FromValue(MessageSequenceIdentifier.FromValue(7))));
+		var controller = new RouterParametersController(
+			new ReturningRouterParameterRequestService(statusIdentifier),
+			new InMemoryPendingDeliveryRegistry());
+
+		var result = await controller.LogOff(CancellationToken.None);
+
+		var redirect = result.Should().BeOfType<SeeOtherRedirectResult>().Which;
+		redirect.Location.Should().Be($"/router/parameters/logoff/status/{statusIdentifier}");
+		redirect.StatusCode.Should().Be(303);
+		var action = typeof(RouterParametersController)
+			.GetMethod(nameof(RouterParametersController.LogOff))!;
+		action.GetCustomAttributes(inherit: true)
+			.OfType<RequireHttpsAttribute>()
+			.Should().ContainSingle();
 	}
 
 	[Fact]
@@ -227,6 +280,42 @@ public sealed class RouterParametersControllerTests
 	}
 
 	[Fact]
+	public async Task Returns_a_public_logged_off_status_after_correlating_the_local_Router_ACK()
+	{
+		var userAgent = Address(brigade: 26, node: 100, port: 25);
+		var router = Address(brigade: 26, node: 100, port: 0);
+		var ingress = new RecordingRouterIngress();
+		var pendingDeliveries = new InMemoryPendingDeliveryRegistry();
+		var service = new RouterParameterRequestService(
+			new RouterParameterRequestSettings(userAgent, router),
+			pendingDeliveries,
+			ingress);
+		var identifier = await service.RequestLocalRouterLogoff(CancellationToken.None);
+		var receiver = new RouterParameterResponseReceiver(pendingDeliveries);
+
+		await receiver.ReceiveAsync(
+			Envelope.FromValues(
+				router,
+				Destinations.FromAddresses(userAgent),
+				ProtocolAndPriority.FromValues(
+					MessagePriority.FromValue(MessagePriorityLevel.FromValue(3)),
+					ProtocolVersion.FromValue(ProtocolVersionNumber.FromValue(2))),
+				AcknowledgementAndSequence.FromValues(
+					identifier.USWR.SequenceNumber,
+					AcknowledgementRequest.NotRequested),
+				Acknowledgement.Create()),
+			CancellationToken.None);
+		var controller = new RouterParametersController(service, pendingDeliveries);
+
+		var result = controller.Status(identifier.ToString());
+
+		var response = result.Should().BeOfType<OkObjectResult>().Which.Value
+			.Should().BeOfType<RouterParameterRequestStatusResponse>().Which;
+		response.State.Should().Be("logged-off");
+		JsonSerializer.Serialize(response).Should().Contain("logged-off");
+	}
+
+	[Fact]
 	public async Task Returns_an_invalid_password_status_after_the_User_Agent_receiver_correlates_the_local_Router_NAK()
 	{
 		var userAgent = Address(brigade: 26, node: 100, port: 25);
@@ -292,6 +381,12 @@ public sealed class RouterParametersControllerTests
 		public Task<RouterParameterRequestStatusIdentifier> RequestLocalRouterLogon(
 			CommunicationsAddress communicationsAddress,
 			PasswordValue password,
+			CancellationToken cancellationToken)
+		{
+			return Task.FromResult(statusIdentifier);
+		}
+
+		public Task<RouterParameterRequestStatusIdentifier> RequestLocalRouterLogoff(
 			CancellationToken cancellationToken)
 		{
 			return Task.FromResult(statusIdentifier);
