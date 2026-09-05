@@ -10,10 +10,17 @@ public sealed class RouterParameterRequestHandler
 	private readonly ProtocolVersion protocolVersion;
 	private readonly RouterCurrentParameterProjection? currentParameters;
 	private readonly RouterCurrentParameterProjectionSource? currentParameterSource;
+	private readonly IRouterPasswordVerifierStore? passwordVerifierStore;
 	private static readonly PasswordLevel LevelZero =
 		PasswordLevel.FromValue(PasswordLevelNumber.Unauthenticated);
 	private static readonly PasswordLevel LevelOne =
 		PasswordLevel.FromValue(PasswordLevelNumber.Level1);
+	private static readonly ParameterNumber BrigadeOrAgencyNumber =
+		ParameterNumber.FromValue(1);
+	private static readonly ParameterNumber CurrentPasswordParameterNumber =
+		ParameterNumber.FromValue(4);
+	private static readonly ParameterNumber Level1PasswordParameterNumber =
+		ParameterNumber.FromValue(5);
 
 	public RouterParameterRequestHandler(
 		CommunicationsAddress localAddress,
@@ -44,6 +51,20 @@ public sealed class RouterParameterRequestHandler
 			throw new ArgumentNullException(nameof(currentParameterSource));
 	}
 
+	public RouterParameterRequestHandler(
+		CommunicationsAddress localAddress,
+		ProtocolVersion protocolVersion,
+		RouterCurrentParameterProjectionSource currentParameterSource,
+		IRouterPasswordVerifierStore passwordVerifierStore)
+	{
+		this.localAddress = localAddress ?? throw new ArgumentNullException(nameof(localAddress));
+		this.protocolVersion = protocolVersion ?? throw new ArgumentNullException(nameof(protocolVersion));
+		this.currentParameterSource = currentParameterSource ??
+			throw new ArgumentNullException(nameof(currentParameterSource));
+		this.passwordVerifierStore = passwordVerifierStore ??
+			throw new ArgumentNullException(nameof(passwordVerifierStore));
+	}
+
 	internal RouterEnvelopeHandlingResult Handle(Envelope envelope)
 	{
 		ArgumentNullException.ThrowIfNull(envelope);
@@ -62,6 +83,24 @@ public sealed class RouterParameterRequestHandler
 			RouterEnvelopeHandlingStatus.MessageTypeNotHandled);
 	}
 
+	internal async ValueTask<RouterEnvelopeHandlingResult> HandleAsync(
+		Envelope envelope,
+		CancellationToken cancellationToken)
+	{
+		ArgumentNullException.ThrowIfNull(envelope);
+
+		if (envelope.Contents is SetParameter setParameter &&
+			setParameter.ParameterNumber == Level1PasswordParameterNumber)
+		{
+			return await this.HandleLevel1PasswordChangeAsync(
+				envelope,
+				setParameter,
+				cancellationToken);
+		}
+
+		return this.Handle(envelope);
+	}
+
 	private RouterEnvelopeHandlingResult HandleParameterRequest(
 		Envelope envelope,
 		ParameterRequest parameterRequest)
@@ -74,7 +113,7 @@ public sealed class RouterParameterRequestHandler
 		}
 
 		if (parameterRequest.ParameterTable != ParameterTable.Current ||
-			parameterRequest.ParameterNumber.Value != 1)
+			parameterRequest.ParameterNumber != BrigadeOrAgencyNumber)
 		{
 			return RouterEnvelopeHandlingResult.NotHandled(
 				RouterEnvelopeHandlingStatus.ParameterNotHandled);
@@ -107,7 +146,7 @@ public sealed class RouterParameterRequestHandler
 		}
 
 		if (setParameter.ParameterTable != ParameterTable.Current ||
-			setParameter.ParameterNumber.Value != 4)
+			setParameter.ParameterNumber != CurrentPasswordParameterNumber)
 		{
 			return RouterEnvelopeHandlingResult.NotHandled(
 				RouterEnvelopeHandlingStatus.ParameterNotHandled);
@@ -152,6 +191,88 @@ public sealed class RouterParameterRequestHandler
 			envelope,
 			this.localAddress,
 			this.protocolVersion));
+	}
+
+	private async ValueTask<RouterEnvelopeHandlingResult> HandleLevel1PasswordChangeAsync(
+		Envelope envelope,
+		SetParameter setParameter,
+		CancellationToken cancellationToken)
+	{
+		if (envelope.Destinations.Addresses.Count != 1 ||
+			envelope.Destinations.Addresses[0] != this.localAddress)
+		{
+			return RouterEnvelopeHandlingResult.NotHandled(
+				RouterEnvelopeHandlingStatus.DestinationNotHandled);
+		}
+
+		if (setParameter.ParameterTable == ParameterTable.Permanent)
+		{
+			return this.CreateParameterNegativeAcknowledgement(
+				envelope,
+				ParameterReasonCode.NoModificationAccess);
+		}
+
+		if (setParameter.ParameterTable != ParameterTable.Current &&
+			setParameter.ParameterTable != ParameterTable.NonVolatile)
+		{
+			return RouterEnvelopeHandlingResult.NotHandled(
+				RouterEnvelopeHandlingStatus.ParameterNotHandled);
+		}
+
+		if (this.currentParameterSource is null ||
+			this.passwordVerifierStore is null ||
+			!this.currentParameterSource.HasActiveNodeLoginAtLevelOne())
+		{
+			return this.CreateParameterNegativeAcknowledgement(
+				envelope,
+				ParameterReasonCode.NoModificationAccess);
+		}
+
+		var valueBuffer = new EncodedMessageBuffer(setParameter.ParameterValue.ToWireValue());
+		var password = Password.FromEncodedMessageBuffer(ref valueBuffer);
+		if (valueBuffer.RemainingBitCount != 0)
+		{
+			return this.CreateParameterNegativeAcknowledgement(
+				envelope,
+				ParameterReasonCode.InvalidSyntax);
+		}
+
+		var passwordVerifier = PasswordVerifier.Create(
+			password.Value,
+			PasswordVerifierWorkFactor.Default);
+		if (setParameter.ParameterTable == ParameterTable.NonVolatile)
+		{
+			await this.passwordVerifierStore.StoreAsync(
+				ParameterTable.NonVolatile,
+				setParameter.ParameterNumber,
+				passwordVerifier,
+				cancellationToken);
+		}
+
+		if (setParameter.ParameterTable == ParameterTable.Current &&
+			!this.currentParameterSource.TryChangeLevel1Password(passwordVerifier))
+		{
+			return this.CreateParameterNegativeAcknowledgement(
+				envelope,
+				ParameterReasonCode.NoModificationAccess);
+		}
+
+		return RouterEnvelopeHandlingResult.Responded(Envelope.CreateAcknowledgement(
+			envelope,
+			this.localAddress,
+			this.protocolVersion));
+	}
+
+	private RouterEnvelopeHandlingResult CreateParameterNegativeAcknowledgement(
+		Envelope envelope,
+		ParameterReasonCode reasonCode)
+	{
+		return RouterEnvelopeHandlingResult.Responded(Envelope.CreateNegativeAcknowledgement(
+			envelope,
+			this.localAddress,
+			this.protocolVersion,
+			envelope.Destinations,
+			ReasonCode.FromParameterReasonCode(reasonCode)));
 	}
 }
 

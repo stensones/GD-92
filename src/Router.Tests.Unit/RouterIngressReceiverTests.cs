@@ -55,6 +55,174 @@ public sealed class RouterIngressReceiverTests
 	}
 
 	[Fact]
+	public async Task An_active_level_one_Node_Login_can_change_the_current_Level1_password()
+	{
+		var routerAddress = CreateAddress(26, 100, 0);
+		var requestSource = CreateAddress(26, 100, 25);
+		var currentParameters = new RouterCurrentParameterProjectionSource();
+		currentParameters.Publish(CreateCurrentParameterProjection(routerAddress));
+		currentParameters.TryLogOnAtLevelOne(CreatePasswordParameter(
+			PasswordLevelNumber.Level1,
+			"FIRE",
+			requestSource)).Should().BeTrue();
+		var passwordVerifierStore = new CapturingPasswordVerifierStore();
+		var ingress = new CapturingUserAgentIngress();
+		var receiver = new RouterIngressReceiver(
+			new RouterParameterRequestHandler(
+				routerAddress,
+				ProtocolVersion.FromValue(ProtocolVersionNumber.FromValue(2)),
+				currentParameters,
+				passwordVerifierStore),
+			ingress,
+			NullLogger<RouterIngressReceiver>.Instance);
+
+		await receiver.ReceiveAsync(
+			CreateLevel1PasswordChange(
+				requestSource,
+				routerAddress,
+				ParameterTable.Current,
+				"WATER"),
+			CancellationToken.None);
+
+		ingress.Envelope!.Contents.Should().BeOfType<Acknowledgement>();
+		currentParameters.GetCurrent().Level1PasswordVerifier.Verifies(
+			PasswordValue.FromValue(SevenBitAsciiString.FromValue("WATER"))).Should().BeTrue();
+		currentParameters.GetCurrent().Level1PasswordVerifier.Verifies(
+			PasswordValue.FromValue(SevenBitAsciiString.FromValue("FIRE"))).Should().BeFalse();
+		currentParameters.GetCurrent().CurrentPassword.Level.Should().Be(
+			PasswordLevel.FromValue(PasswordLevelNumber.Level1));
+		currentParameters.GetCurrent().CurrentPassword.CommunicationsAddress.Should().Be(requestSource);
+		currentParameters.GetCurrent().CurrentPassword.Password.Value.Value.Value.Should().BeEmpty();
+		passwordVerifierStore.StoredValues.Should().BeEmpty();
+	}
+
+	[Fact]
+	public async Task An_active_level_one_Node_Login_stores_a_non_volatile_Level1_password_for_the_next_restart()
+	{
+		var routerAddress = CreateAddress(26, 100, 0);
+		var passwordVerifierStore = new CapturingPasswordVerifierStore();
+		var bootstrapper = new RouterParameterBootstrapper(
+			new InMemoryRouterParameterStore(),
+			passwordVerifierStore);
+		var initialPassword = PasswordValue.FromValue(SevenBitAsciiString.FromValue("FIRE"));
+		var currentParameters = new RouterCurrentParameterProjectionSource();
+		currentParameters.Publish(await bootstrapper.LoadCurrentParameterProjectionAsync(
+			RouterParameterBootstrapConfiguration.FromValues(
+				routerAddress,
+				initialPassword,
+				NoAcknowledgementTimeout.FromValue(Word8.FromValue(5)),
+				Retries.FromValue(Word8.FromValue(3)))));
+		var requestSource = CreateAddress(26, 100, 25);
+		currentParameters.TryLogOnAtLevelOne(CreatePasswordParameter(
+			PasswordLevelNumber.Level1,
+			"FIRE",
+			requestSource)).Should().BeTrue();
+		var ingress = new CapturingUserAgentIngress();
+		var receiver = new RouterIngressReceiver(
+			new RouterParameterRequestHandler(
+				routerAddress,
+				ProtocolVersion.FromValue(ProtocolVersionNumber.FromValue(2)),
+				currentParameters,
+				passwordVerifierStore),
+			ingress,
+			NullLogger<RouterIngressReceiver>.Instance);
+
+		await receiver.ReceiveAsync(
+			CreateLevel1PasswordChange(
+				requestSource,
+				routerAddress,
+				ParameterTable.NonVolatile,
+				"WATER"),
+			CancellationToken.None);
+
+		ingress.Envelope!.Contents.Should().BeOfType<Acknowledgement>();
+		currentParameters.GetCurrent().Level1PasswordVerifier.Verifies(initialPassword).Should().BeTrue();
+		currentParameters.GetCurrent().Level1PasswordVerifier.Verifies(
+			PasswordValue.FromValue(SevenBitAsciiString.FromValue("WATER"))).Should().BeFalse();
+		(await bootstrapper.LoadCurrentParameterProjectionAsync(
+			RouterParameterBootstrapConfiguration.FromValues(
+				routerAddress,
+				PasswordValue.FromValue(SevenBitAsciiString.FromValue("INITIAL")),
+				NoAcknowledgementTimeout.FromValue(Word8.FromValue(5)),
+				Retries.FromValue(Word8.FromValue(3)))))
+			.Level1PasswordVerifier.Verifies(
+				PasswordValue.FromValue(SevenBitAsciiString.FromValue("WATER"))).Should().BeTrue();
+	}
+
+	[Fact]
+	public async Task A_permanent_Level1_password_change_is_rejected_with_no_modification_access()
+	{
+		var routerAddress = CreateAddress(26, 100, 0);
+		var requestSource = CreateAddress(26, 100, 25);
+		var currentParameters = new RouterCurrentParameterProjectionSource();
+		currentParameters.Publish(CreateCurrentParameterProjection(routerAddress));
+		currentParameters.TryLogOnAtLevelOne(CreatePasswordParameter(
+			PasswordLevelNumber.Level1,
+			"FIRE",
+			requestSource)).Should().BeTrue();
+		var passwordVerifierStore = new CapturingPasswordVerifierStore();
+		var ingress = new CapturingUserAgentIngress();
+		var receiver = new RouterIngressReceiver(
+			new RouterParameterRequestHandler(
+				routerAddress,
+				ProtocolVersion.FromValue(ProtocolVersionNumber.FromValue(2)),
+				currentParameters,
+				passwordVerifierStore),
+			ingress,
+			NullLogger<RouterIngressReceiver>.Instance);
+
+		await receiver.ReceiveAsync(
+			CreateLevel1PasswordChange(
+				requestSource,
+				routerAddress,
+				ParameterTable.Permanent,
+				"WATER"),
+			CancellationToken.None);
+
+		var negativeAcknowledgement = ingress.Envelope!.Contents
+			.Should().BeOfType<NegativeAcknowledgement>().Subject;
+		negativeAcknowledgement.ReasonCode.ParameterReasonCode.Should().Be(
+			ParameterReasonCode.NoModificationAccess);
+		currentParameters.GetCurrent().Level1PasswordVerifier.Verifies(
+			PasswordValue.FromValue(SevenBitAsciiString.FromValue("FIRE"))).Should().BeTrue();
+		passwordVerifierStore.StoredValues.Should().BeEmpty();
+	}
+
+	[Fact]
+	public async Task A_Level1_password_change_requires_an_active_Level1_Node_Login()
+	{
+		var routerAddress = CreateAddress(26, 100, 0);
+		var currentParameters = new RouterCurrentParameterProjectionSource();
+		currentParameters.Publish(CreateCurrentParameterProjection(routerAddress));
+		var passwordVerifierStore = new CapturingPasswordVerifierStore();
+		var ingress = new CapturingUserAgentIngress();
+		var receiver = new RouterIngressReceiver(
+			new RouterParameterRequestHandler(
+				routerAddress,
+				ProtocolVersion.FromValue(ProtocolVersionNumber.FromValue(2)),
+				currentParameters,
+				passwordVerifierStore),
+			ingress,
+			NullLogger<RouterIngressReceiver>.Instance);
+
+		await receiver.ReceiveAsync(
+			CreateLevel1PasswordChange(
+				CreateAddress(26, 100, 25),
+				routerAddress,
+				ParameterTable.Current,
+				"WATER"),
+			CancellationToken.None);
+
+		var negativeAcknowledgement = ingress.Envelope!.Contents
+			.Should().BeOfType<NegativeAcknowledgement>().Subject;
+		negativeAcknowledgement.ReasonCode.ParameterReasonCode.Should().Be(
+			ParameterReasonCode.NoModificationAccess);
+		currentParameters.GetCurrent().Level1PasswordVerifier.Verifies(
+			PasswordValue.FromValue(SevenBitAsciiString.FromValue("FIRE"))).Should().BeTrue();
+		passwordVerifierStore.StoredValues.Should().BeEmpty();
+	}
+
+	[Fact]
 	public async Task Delivers_the_Router_response_to_User_Agent_ingress_before_completing()
 	{
 		var routerAddress = CreateAddress(26, 100, 0);
@@ -148,6 +316,42 @@ public sealed class RouterIngressReceiverTests
 			ParameterValue.FromWireValue([3]));
 	}
 
+	private static PasswordParameter CreatePasswordParameter(
+		PasswordLevelNumber level,
+		string password,
+		CommunicationsAddress communicationsAddress)
+	{
+		return PasswordParameter.FromFields(
+			PasswordLevel.FromValue(level),
+			Password.FromValue(
+				PasswordValue.FromValue(SevenBitAsciiString.FromValue(password))),
+			communicationsAddress);
+	}
+
+	private static Envelope CreateLevel1PasswordChange(
+		CommunicationsAddress source,
+		CommunicationsAddress routerAddress,
+		ParameterTable parameterTable,
+		string newPassword)
+	{
+		return Envelope.FromValues(
+			source,
+			Destinations.FromAddresses(routerAddress),
+			ProtocolAndPriority.FromValues(
+				MessagePriority.FromValue(MessagePriorityLevel.FromValue(2)),
+				ProtocolVersion.FromValue(ProtocolVersionNumber.FromValue(2))),
+			AcknowledgementAndSequence.FromValues(
+				SequenceNumber.FromValue(MessageSequenceIdentifier.FromValue(9)),
+				AcknowledgementRequest.Requested),
+			SetParameter.FromFields(
+				parameterTable,
+				ParameterNumber.FromValue(5),
+				ParameterValue.FromWireValue(
+					Password.FromValue(
+						PasswordValue.FromValue(SevenBitAsciiString.FromValue(newPassword)))
+						.ToWireValue())));
+	}
+
 	private sealed class CapturingUserAgentIngress : IUserAgentIngress
 	{
 		public Envelope? Envelope { get; private set; }
@@ -176,6 +380,54 @@ public sealed class RouterIngressReceiverTests
 		public void CompleteDelivery()
 		{
 			this.deliveryCompleted.TrySetResult();
+		}
+	}
+
+	private sealed class CapturingPasswordVerifierStore : IRouterPasswordVerifierStore
+	{
+		public Dictionary<(ParameterTable Table, ParameterNumber Number), PasswordVerifier> StoredValues { get; } = [];
+
+		public ValueTask<PasswordVerifier?> GetAsync(
+			ParameterTable parameterTable,
+			ParameterNumber parameterNumber,
+			CancellationToken cancellationToken = default)
+		{
+			this.StoredValues.TryGetValue((parameterTable, parameterNumber), out var value);
+			return ValueTask.FromResult(value);
+		}
+
+		public ValueTask StoreAsync(
+			ParameterTable parameterTable,
+			ParameterNumber parameterNumber,
+			PasswordVerifier passwordVerifier,
+			CancellationToken cancellationToken = default)
+		{
+			this.StoredValues[(parameterTable, parameterNumber)] = passwordVerifier;
+			return ValueTask.CompletedTask;
+		}
+	}
+
+	private sealed class InMemoryRouterParameterStore : IRouterParameterStore
+	{
+		private readonly Dictionary<(ParameterTable Table, ParameterNumber Number), ParameterValue> values = [];
+
+		public ValueTask<ParameterValue?> GetAsync(
+			ParameterTable parameterTable,
+			ParameterNumber parameterNumber,
+			CancellationToken cancellationToken = default)
+		{
+			this.values.TryGetValue((parameterTable, parameterNumber), out var value);
+			return ValueTask.FromResult(value);
+		}
+
+		public ValueTask StoreAsync(
+			ParameterTable parameterTable,
+			ParameterNumber parameterNumber,
+			ParameterValue parameterValue,
+			CancellationToken cancellationToken = default)
+		{
+			this.values[(parameterTable, parameterNumber)] = parameterValue;
+			return ValueTask.CompletedTask;
 		}
 	}
 }

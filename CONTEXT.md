@@ -145,6 +145,8 @@ _Avoid_: durable password, browser session
 
 **Level 1 Password**:
 Router Parameter 5, the access password that authenticates a Level 1 Node Login.
+An active Level 1 Node Login may change its Current value immediately or its Non-Volatile value for the next Router start; its Permanent value has no modification access.
+Router persistence stores a salted password verifier, never the raw password.
 _Avoid_: operator account password, Current Password
 
 **Password Parameter**:

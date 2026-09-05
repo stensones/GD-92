@@ -33,7 +33,9 @@ public sealed class RouterIngressReceiver : IRouterIngressReceiver
 			envelope.Source,
 			envelope.Destinations.Addresses.Count);
 
-		var handling = this.parameterRequestHandler.Handle(envelope);
+		var handling = await this.parameterRequestHandler.HandleAsync(
+			envelope,
+			cancellationToken);
 		var response = handling.Response;
 
 		if (response is not null)

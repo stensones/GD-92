@@ -11,6 +11,12 @@ public sealed class RouterCurrentParameterProjection
 		PasswordLevel.FromValue(PasswordLevelNumber.Level1);
 	private static readonly Password EmptyPassword = Password.FromValue(
 		PasswordValue.FromValue(SevenBitAsciiString.FromValue(string.Empty)));
+	private static readonly ParameterNumber CurrentPasswordParameterNumber =
+		ParameterNumber.FromValue(4);
+	private static readonly ParameterNumber NoAcknowledgementTimeoutParameterNumber =
+		ParameterNumber.FromValue(12);
+	private static readonly ParameterNumber RetriesParameterNumber =
+		ParameterNumber.FromValue(19);
 
 	private RouterCurrentParameterProjection(
 		BrigadeOrAgencyIdentifier brigadeOrAgencyIdentifier,
@@ -58,6 +64,19 @@ public sealed class RouterCurrentParameterProjection
 			this.Retries);
 	}
 
+	public RouterCurrentParameterProjection WithLevel1PasswordVerifier(
+		PasswordVerifier level1PasswordVerifier)
+	{
+		ArgumentNullException.ThrowIfNull(level1PasswordVerifier);
+
+		return new RouterCurrentParameterProjection(
+			this.BrigadeOrAgencyIdentifier,
+			this.CurrentPassword,
+			level1PasswordVerifier,
+			this.NoAcknowledgementTimeout,
+			this.Retries);
+	}
+
 	public static RouterCurrentParameterProjection FromNonVolatileValues(
 		ParameterValue brigadeOrAgencyIdentifier,
 		ParameterValue currentPassword,
@@ -97,7 +116,7 @@ public sealed class RouterCurrentParameterProjection
 		var buffer = new EncodedMessageBuffer(parameterValue.ToWireValue());
 		var value = PasswordParameter.FromEncodedMessageBuffer(ref buffer);
 
-		EnsureCompletelyRead(buffer, parameterValue, 4);
+		EnsureCompletelyRead(buffer, parameterValue, CurrentPasswordParameterNumber);
 		return value;
 	}
 
@@ -106,7 +125,7 @@ public sealed class RouterCurrentParameterProjection
 		var buffer = new EncodedMessageBuffer(parameterValue.ToWireValue());
 		var value = NoAcknowledgementTimeout.FromEncodedMessageBuffer(ref buffer);
 
-		EnsureCompletelyRead(buffer, parameterValue, 12);
+		EnsureCompletelyRead(buffer, parameterValue, NoAcknowledgementTimeoutParameterNumber);
 		return value;
 	}
 
@@ -115,19 +134,19 @@ public sealed class RouterCurrentParameterProjection
 		var buffer = new EncodedMessageBuffer(parameterValue.ToWireValue());
 		var value = Retries.FromEncodedMessageBuffer(ref buffer);
 
-		EnsureCompletelyRead(buffer, parameterValue, 19);
+		EnsureCompletelyRead(buffer, parameterValue, RetriesParameterNumber);
 		return value;
 	}
 
 	private static void EnsureCompletelyRead(
 		EncodedMessageBuffer buffer,
 		ParameterValue parameterValue,
-		byte parameterNumber)
+		ParameterNumber parameterNumber)
 	{
 		if (buffer.RemainingBitCount != 0)
 		{
 			throw new ArgumentException(
-				$"Router Parameter {parameterNumber} contains trailing encoded data.",
+				$"Router Parameter {parameterNumber.Value} contains trailing encoded data.",
 				nameof(parameterValue));
 		}
 	}

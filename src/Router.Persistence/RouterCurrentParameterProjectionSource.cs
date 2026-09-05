@@ -69,4 +69,31 @@ public sealed class RouterCurrentParameterProjectionSource
 			}
 		}
 	}
+
+	public bool HasActiveNodeLoginAtLevelOne()
+	{
+		return this.GetCurrent().CurrentPassword.Level == LevelOne;
+	}
+
+	public bool TryChangeLevel1Password(PasswordVerifier passwordVerifier)
+	{
+		ArgumentNullException.ThrowIfNull(passwordVerifier);
+
+		while (true)
+		{
+			var current = this.GetCurrent();
+			if (current.CurrentPassword.Level != LevelOne)
+			{
+				return false;
+			}
+
+			var changed = current.WithLevel1PasswordVerifier(passwordVerifier);
+			if (ReferenceEquals(
+				Interlocked.CompareExchange(ref this.currentParameters, changed, current),
+				current))
+			{
+				return true;
+			}
+		}
+	}
 }

@@ -23,11 +23,12 @@ builder.Services.AddScoped<IRouterParameterStore, EfRouterParameterStore>();
 builder.Services.AddScoped<IRouterPasswordVerifierStore, EfRouterPasswordVerifierStore>();
 builder.Services.AddScoped<RouterParameterBootstrapper>();
 builder.Services.AddSingleton<RouterCurrentParameterProjectionSource>();
-builder.Services.AddSingleton(serviceProvider =>
+builder.Services.AddScoped(serviceProvider =>
 	new RouterParameterRequestHandler(
 		routerSettings.LocalAddress,
 		routerSettings.ProtocolVersion,
-		serviceProvider.GetRequiredService<RouterCurrentParameterProjectionSource>()));
+		serviceProvider.GetRequiredService<RouterCurrentParameterProjectionSource>(),
+		serviceProvider.GetRequiredService<IRouterPasswordVerifierStore>()));
 builder.Services.AddScoped<IUserAgentIngress, RabbitMqUserAgentIngress>();
 builder.Services.AddScoped<IRouterIngressReceiver, RouterIngressReceiver>();
 
