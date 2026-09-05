@@ -1,4 +1,5 @@
 using AwesomeAssertions;
+using Router.Persistence;
 using Microsoft.Extensions.Configuration;
 using Stensones.GD92.Fields;
 
@@ -15,6 +16,21 @@ public sealed class RouterSettingsTests
 
 		settings.InitialLevel1Password.Should().Be(
 			PasswordValue.FromValue(SevenBitAsciiString.FromValue("0123456789")));
+	}
+
+	[Fact]
+	public void Provides_typed_initial_no_acknowledgement_timeout_and_retries()
+	{
+		var configuration = CreateConfiguration(
+			("Router:InitialLevel1Password", "FIRE"),
+			("Router:NoAcknowledgementTimeout", "8"),
+			("Router:Retries", "7"));
+
+		var settings = RouterSettings.FromConfiguration(configuration);
+
+		settings.NoAcknowledgementTimeout.Should().Be(
+			NoAcknowledgementTimeout.FromValue(Word8.FromValue(8)));
+		settings.Retries.Should().Be(Retries.FromValue(Word8.FromValue(7)));
 	}
 
 	[Fact]
@@ -49,12 +65,14 @@ public sealed class RouterSettingsTests
 			["Router:LocalAddress:Brigade"] = "26",
 			["Router:LocalAddress:Node"] = "100",
 			["Router:LocalAddress:Port"] = "0",
-			["Router:ProtocolVersion"] = "2"
+			["Router:ProtocolVersion"] = "2",
+			["Router:NoAcknowledgementTimeout"] = "5",
+			["Router:Retries"] = "3"
 		};
 
 		foreach (var value in values)
 		{
-			configurationValues.Add(value.Key, value.Value);
+			configurationValues[value.Key] = value.Value;
 		}
 
 		return new ConfigurationBuilder()

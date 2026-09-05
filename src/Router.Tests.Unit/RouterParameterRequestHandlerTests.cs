@@ -44,8 +44,7 @@ public sealed class RouterParameterRequestHandlerTests
 		var handler = new RouterParameterRequestHandler(
 			routerAddress,
 			ProtocolVersion.FromValue(ProtocolVersionNumber.FromValue(2)),
-			RouterCurrentParameterProjection.FromBrigadeOrAgencyIdentifier(
-				BrigadeOrAgencyIdentifier.FromValue(42)));
+			CreateCurrentParameterProjection(42));
 
 		var result = handler.Handle(CreateParameterRequest(requestSource, routerAddress));
 
@@ -60,8 +59,7 @@ public sealed class RouterParameterRequestHandlerTests
 	{
 		var routerAddress = CreateAddress(26, 100, 0);
 		var currentParameters = new RouterCurrentParameterProjectionSource();
-		currentParameters.Publish(Router.Persistence.RouterCurrentParameterProjection.FromParameterOneValue(
-			ParameterValue.FromWireValue([42])));
+		currentParameters.Publish(CreateCurrentParameterProjection(42));
 		var handler = new RouterParameterRequestHandler(
 			routerAddress,
 			ProtocolVersion.FromValue(ProtocolVersionNumber.FromValue(2)),
@@ -176,5 +174,24 @@ public sealed class RouterParameterRequestHandlerTests
 			Brigade.FromValue(BrigadeOrAgencyIdentifier.FromValue(brigade)),
 			Node.FromValue(NodeIdentifier.FromValue(node)),
 			Port.FromValue(PortIdentifier.FromValue(port)));
+	}
+
+	private static RouterCurrentParameterProjection CreateCurrentParameterProjection(byte brigade)
+	{
+		var localAddress = CreateAddress(brigade, 100, 0);
+
+		return RouterCurrentParameterProjection.FromNonVolatileValues(
+			ParameterValue.FromWireValue([brigade]),
+			ParameterValue.FromWireValue(
+				PasswordParameter.FromFields(
+					PasswordLevel.FromValue(PasswordLevelNumber.FromValue(0)),
+					Password.FromValue(
+						PasswordValue.FromValue(SevenBitAsciiString.FromValue(string.Empty))),
+					localAddress).ToWireValue()),
+			PasswordVerifier.Create(
+				PasswordValue.FromValue(SevenBitAsciiString.FromValue("FIRE")),
+				PasswordVerifierWorkFactor.Default),
+			ParameterValue.FromWireValue([5]),
+			ParameterValue.FromWireValue([3]));
 	}
 }

@@ -6,24 +6,48 @@ namespace Router.Persistence;
 public sealed class RouterCurrentParameterProjection
 {
 	private RouterCurrentParameterProjection(
-		BrigadeOrAgencyIdentifier brigadeOrAgencyIdentifier)
+		BrigadeOrAgencyIdentifier brigadeOrAgencyIdentifier,
+		PasswordParameter currentPassword,
+		PasswordVerifier level1PasswordVerifier,
+		NoAcknowledgementTimeout noAcknowledgementTimeout,
+		Retries retries)
 	{
 		this.BrigadeOrAgencyIdentifier = brigadeOrAgencyIdentifier;
+		this.CurrentPassword = currentPassword;
+		this.Level1PasswordVerifier = level1PasswordVerifier;
+		this.NoAcknowledgementTimeout = noAcknowledgementTimeout;
+		this.Retries = retries;
 	}
 
 	public BrigadeOrAgencyIdentifier BrigadeOrAgencyIdentifier { get; }
+	public PasswordParameter CurrentPassword { get; }
+	public PasswordVerifier Level1PasswordVerifier { get; }
+	public NoAcknowledgementTimeout NoAcknowledgementTimeout { get; }
+	public Retries Retries { get; }
 
-	public static RouterCurrentParameterProjection FromBrigadeOrAgencyIdentifier(
-		BrigadeOrAgencyIdentifier brigadeOrAgencyIdentifier)
+	public static RouterCurrentParameterProjection FromNonVolatileValues(
+		ParameterValue brigadeOrAgencyIdentifier,
+		ParameterValue currentPassword,
+		PasswordVerifier level1PasswordVerifier,
+		ParameterValue noAcknowledgementTimeout,
+		ParameterValue retries)
 	{
-		return new RouterCurrentParameterProjection(brigadeOrAgencyIdentifier);
+		ArgumentNullException.ThrowIfNull(brigadeOrAgencyIdentifier);
+		ArgumentNullException.ThrowIfNull(currentPassword);
+		ArgumentNullException.ThrowIfNull(level1PasswordVerifier);
+		ArgumentNullException.ThrowIfNull(noAcknowledgementTimeout);
+		ArgumentNullException.ThrowIfNull(retries);
+
+		return new RouterCurrentParameterProjection(
+			ReadParameterOne(brigadeOrAgencyIdentifier),
+			ReadCurrentPassword(currentPassword),
+			level1PasswordVerifier,
+			ReadNoAcknowledgementTimeout(noAcknowledgementTimeout),
+			ReadRetries(retries));
 	}
 
-	public static RouterCurrentParameterProjection FromParameterOneValue(
-		ParameterValue parameterValue)
+	private static BrigadeOrAgencyIdentifier ReadParameterOne(ParameterValue parameterValue)
 	{
-		ArgumentNullException.ThrowIfNull(parameterValue);
-
 		var encodedValue = parameterValue.ToWireValue();
 		if (encodedValue.Length != 1)
 		{
@@ -32,7 +56,46 @@ public sealed class RouterCurrentParameterProjection
 				nameof(parameterValue));
 		}
 
-		return new RouterCurrentParameterProjection(
-			BrigadeOrAgencyIdentifier.FromValue(encodedValue[0]));
+		return BrigadeOrAgencyIdentifier.FromValue(encodedValue[0]);
+	}
+
+	private static PasswordParameter ReadCurrentPassword(ParameterValue parameterValue)
+	{
+		var buffer = new EncodedMessageBuffer(parameterValue.ToWireValue());
+		var value = PasswordParameter.FromEncodedMessageBuffer(ref buffer);
+
+		EnsureCompletelyRead(buffer, parameterValue, 4);
+		return value;
+	}
+
+	private static NoAcknowledgementTimeout ReadNoAcknowledgementTimeout(ParameterValue parameterValue)
+	{
+		var buffer = new EncodedMessageBuffer(parameterValue.ToWireValue());
+		var value = NoAcknowledgementTimeout.FromEncodedMessageBuffer(ref buffer);
+
+		EnsureCompletelyRead(buffer, parameterValue, 12);
+		return value;
+	}
+
+	private static Retries ReadRetries(ParameterValue parameterValue)
+	{
+		var buffer = new EncodedMessageBuffer(parameterValue.ToWireValue());
+		var value = Retries.FromEncodedMessageBuffer(ref buffer);
+
+		EnsureCompletelyRead(buffer, parameterValue, 19);
+		return value;
+	}
+
+	private static void EnsureCompletelyRead(
+		EncodedMessageBuffer buffer,
+		ParameterValue parameterValue,
+		byte parameterNumber)
+	{
+		if (buffer.RemainingBitCount != 0)
+		{
+			throw new ArgumentException(
+				$"Router Parameter {parameterNumber} contains trailing encoded data.",
+				nameof(parameterValue));
+		}
 	}
 }

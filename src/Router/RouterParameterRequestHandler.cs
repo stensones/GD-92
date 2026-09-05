@@ -14,12 +14,9 @@ public sealed class RouterParameterRequestHandler
 	public RouterParameterRequestHandler(
 		CommunicationsAddress localAddress,
 		ProtocolVersion protocolVersion)
-		: this(
-			localAddress,
-			protocolVersion,
-			RouterCurrentParameterProjection.FromBrigadeOrAgencyIdentifier(
-				BrigadeOrAgencyIdentifier.FromValue(localAddress.ToWireValue()[0])))
 	{
+		this.localAddress = localAddress ?? throw new ArgumentNullException(nameof(localAddress));
+		this.protocolVersion = protocolVersion ?? throw new ArgumentNullException(nameof(protocolVersion));
 	}
 
 	public RouterParameterRequestHandler(
@@ -74,9 +71,10 @@ public sealed class RouterParameterRequestHandler
 			Parameter.FromFields(
 				MoreValues.No,
 				ParameterValue.FromWireValue(
-					(this.currentParameterSource?.GetCurrent() ?? this.currentParameters ??
-						throw new InvalidOperationException("Router current Parameters have not been loaded."))
-						.BrigadeOrAgencyIdentifier.ToWireValue())));
+					(this.currentParameterSource?.GetCurrent()?.BrigadeOrAgencyIdentifier ??
+						this.currentParameters?.BrigadeOrAgencyIdentifier ??
+						this.localAddress.Brigade.Value)
+						.ToWireValue())));
 
 		return RouterEnvelopeHandlingResult.Responded(response);
 	}

@@ -20,6 +20,7 @@ builder.Services.AddWolverine(options =>
 builder.Services.AddSingleton(routerSettings);
 builder.AddNpgsqlDbContext<RouterDbContext>("router-database");
 builder.Services.AddScoped<IRouterParameterStore, EfRouterParameterStore>();
+builder.Services.AddScoped<IRouterPasswordVerifierStore, EfRouterPasswordVerifierStore>();
 builder.Services.AddScoped<RouterParameterBootstrapper>();
 builder.Services.AddSingleton<RouterCurrentParameterProjectionSource>();
 builder.Services.AddSingleton(serviceProvider =>
@@ -39,7 +40,7 @@ await using (var scope = host.Services.CreateAsyncScope())
 
 	var bootstrapper = scope.ServiceProvider.GetRequiredService<RouterParameterBootstrapper>();
 	var projection = await bootstrapper.LoadCurrentParameterProjectionAsync(
-		routerSettings.LocalAddress.Brigade.Value);
+		routerSettings.ParameterBootstrapConfiguration);
 	host.Services.GetRequiredService<RouterCurrentParameterProjectionSource>().Publish(projection);
 }
 

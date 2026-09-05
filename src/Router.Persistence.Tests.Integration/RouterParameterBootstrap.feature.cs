@@ -35,7 +35,7 @@ namespace Router.Persistence.Tests.Integration
         {
             this._testOutputHelper = testOutputHelper;
         }
-        
+
         public static async global::System.Threading.Tasks.Task FeatureSetupAsync()
         {
         }
@@ -105,7 +105,7 @@ namespace Router.Persistence.Tests.Integration
         
         private static global::Reqnroll.Formatters.RuntimeSupport.FeatureLevelCucumberMessages InitializeCucumberMessages()
         {
-            return new global::Reqnroll.Formatters.RuntimeSupport.FeatureLevelCucumberMessages("RouterParameterBootstrap.feature.ndjson", 3);
+            return new global::Reqnroll.Formatters.RuntimeSupport.FeatureLevelCucumberMessages("RouterParameterBootstrap.feature.ndjson", 4);
         }
         
         async global::System.Threading.Tasks.Task global::Xunit.IAsyncLifetime.InitializeAsync()
@@ -173,6 +173,50 @@ namespace Router.Persistence.Tests.Integration
             await this.ScenarioCleanupAsync();
         }
         
+        [global::Xunit.SkippableFactAttribute(DisplayName="Bootstrapping the initial typed Router Parameters")]
+        [global::Xunit.TraitAttribute("FeatureTitle", "Router Parameter Bootstrap")]
+        [global::Xunit.TraitAttribute("Description", "Bootstrapping the initial typed Router Parameters")]
+        public async global::System.Threading.Tasks.Task BootstrappingTheInitialTypedRouterParameters()
+        {
+            string[] tagsOfScenario = ((string[])(null));
+            global::System.Collections.Specialized.OrderedDictionary argumentsOfScenario = new global::System.Collections.Specialized.OrderedDictionary();
+            string pickleIndex = "1";
+            global::Reqnroll.ScenarioInfo scenarioInfo = new global::Reqnroll.ScenarioInfo("Bootstrapping the initial typed Router Parameters", null, tagsOfScenario, argumentsOfScenario, featureTags, pickleIndex);
+            string[] tagsOfRule = ((string[])(null));
+            global::Reqnroll.RuleInfo ruleInfo = null;
+#line 10
+  this.ScenarioInitialize(scenarioInfo, ruleInfo);
+#line hidden
+            if ((global::Reqnroll.TagHelper.ContainsIgnoreTag(scenarioInfo.CombinedTags) || global::Reqnroll.TagHelper.ContainsIgnoreTag(featureTags)))
+            {
+                await testRunner.SkipScenarioAsync();
+            }
+            else
+            {
+                await this.ScenarioStartAsync();
+#line 11
+    await testRunner.GivenAsync("an empty isolated Router database", ((string)(null)), ((global::Reqnroll.Table)(null)), "Given ");
+#line hidden
+#line 12
+    await testRunner.WhenAsync("Router Parameter startup bootstraps its initial Parameters", ((string)(null)), ((global::Reqnroll.Table)(null)), "When ");
+#line hidden
+#line 13
+    await testRunner.ThenAsync("its current Password is the neutral local Router Password Parameter", ((string)(null)), ((global::Reqnroll.Table)(null)), "Then ");
+#line hidden
+#line 14
+    await testRunner.AndAsync("its current No Acknowledgement Timeout is 5 seconds", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
+#line hidden
+#line 15
+    await testRunner.AndAsync("its current Retries value is 3", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
+#line hidden
+#line 16
+    await testRunner.AndAsync("its Level 1 Password has permanent and non-volatile verifiers but no opaque Param" +
+                        "eter values", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
+#line hidden
+            }
+            await this.ScenarioCleanupAsync();
+        }
+
         [global::System.CodeDom.Compiler.GeneratedCodeAttribute("Reqnroll", "3.0.0.0")]
         [global::System.Runtime.CompilerServices.CompilerGeneratedAttribute()]
         public class FixtureData : object, global::Xunit.IAsyncLifetime

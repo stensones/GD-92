@@ -10,8 +10,12 @@ namespace Router.Persistence.Tests.Integration;
 [Binding]
 public sealed class RouterParameterBootstrapSteps
 {
+	private static readonly PasswordValue InitialLevel1Password =
+		PasswordValue.FromValue(SevenBitAsciiString.FromValue("FIRE"));
+
 	private PostgreSqlContainer? database;
 	private RouterCurrentParameterProjection? currentParameters;
+	private CommunicationsAddress? localAddress;
 
 	[Given(@"an empty isolated Router database")]
 	public async Task GivenAnEmptyIsolatedRouterDatabase()
@@ -47,6 +51,58 @@ public sealed class RouterParameterBootstrapSteps
 		return this.LoadCurrentParametersAsync(BrigadeOrAgencyIdentifier.FromValue(26));
 	}
 
+	[When(@"Router Parameter startup bootstraps its initial Parameters")]
+	public Task WhenRouterParameterStartupBootstrapsItsInitialParameters()
+	{
+		return this.LoadCurrentParametersAsync(BrigadeOrAgencyIdentifier.FromValue(26));
+	}
+
+	[Then(@"its current Password is the neutral local Router Password Parameter")]
+	public void ThenItsCurrentPasswordIsTheNeutralLocalRouterPasswordParameter()
+	{
+		this.currentParameters.Should().NotBeNull();
+		this.localAddress.Should().NotBeNull();
+		this.currentParameters!.CurrentPassword.Level.Should().Be(
+			PasswordLevel.FromValue(PasswordLevelNumber.FromValue(0)));
+		this.currentParameters.CurrentPassword.Password.ToWireValue().Should().Equal([0]);
+		this.currentParameters.CurrentPassword.CommunicationsAddress.Should().Be(this.localAddress);
+	}
+
+	[Then(@"its current No Acknowledgement Timeout is (.*) seconds")]
+	public void ThenItsCurrentNoAcknowledgementTimeoutIsSeconds(int seconds)
+	{
+		this.currentParameters.Should().NotBeNull();
+		this.currentParameters!.NoAcknowledgementTimeout.Should().Be(
+			NoAcknowledgementTimeout.FromValue(Word8.FromValue(checked((byte)seconds))));
+	}
+
+	[Then(@"its current Retries value is (.*)")]
+	public void ThenItsCurrentRetriesValueIs(int retries)
+	{
+		this.currentParameters.Should().NotBeNull();
+		this.currentParameters!.Retries.Should().Be(
+			Retries.FromValue(Word8.FromValue(checked((byte)retries))));
+	}
+
+	[Then(@"its Level 1 Password has permanent and non-volatile verifiers but no opaque Parameter values")]
+	public async Task ThenItsLevel1PasswordHasPermanentAndNonVolatileVerifiersButNoOpaqueParameterValues()
+	{
+		await using var context = this.CreateContext();
+		IRouterParameterStore parameterStore = new EfRouterParameterStore(context);
+		IRouterPasswordVerifierStore passwordVerifierStore =
+			new EfRouterPasswordVerifierStore(context);
+		var passwordParameterNumber = ParameterNumber.FromValue(5);
+
+		(await parameterStore.GetAsync(ParameterTable.Permanent, passwordParameterNumber))
+			.Should().BeNull();
+		(await parameterStore.GetAsync(ParameterTable.NonVolatile, passwordParameterNumber))
+			.Should().BeNull();
+		(await passwordVerifierStore.GetAsync(ParameterTable.Permanent, passwordParameterNumber))!
+			.Verifies(InitialLevel1Password).Should().BeTrue();
+		(await passwordVerifierStore.GetAsync(ParameterTable.NonVolatile, passwordParameterNumber))!
+			.Verifies(InitialLevel1Password).Should().BeTrue();
+	}
+
 	[AfterScenario]
 	public async Task DisposeDatabaseAsync()
 	{
@@ -58,14 +114,29 @@ public sealed class RouterParameterBootstrapSteps
 
 	private async Task LoadCurrentParametersAsync(BrigadeOrAgencyIdentifier brigadeOrAgencyIdentifier)
 	{
+		this.localAddress = CommunicationsAddress.FromValues(
+			Brigade.FromValue(brigadeOrAgencyIdentifier),
+			Node.FromValue(NodeIdentifier.FromValue(100)),
+			Port.FromValue(PortIdentifier.FromValue(0)));
+		await using var context = this.CreateContext();
+		var store = new EfRouterParameterStore(context);
+		var passwordVerifierStore = new EfRouterPasswordVerifierStore(context);
+		var bootstrapper = new RouterParameterBootstrapper(store, passwordVerifierStore);
+
+		this.currentParameters = await bootstrapper.LoadCurrentParameterProjectionAsync(
+			RouterParameterBootstrapConfiguration.FromValues(
+				this.localAddress,
+				InitialLevel1Password,
+				NoAcknowledgementTimeout.FromValue(Word8.FromValue(5)),
+				Retries.FromValue(Word8.FromValue(3))));
+	}
+
+	private RouterDbContext CreateContext()
+	{
 		var options = new DbContextOptionsBuilder<RouterDbContext>()
 			.UseNpgsql(this.database!.GetConnectionString())
 			.Options;
-		await using var context = new RouterDbContext(options);
-		var store = new EfRouterParameterStore(context);
-		var bootstrapper = new RouterParameterBootstrapper(store);
 
-		this.currentParameters = await bootstrapper.LoadCurrentParameterProjectionAsync(
-			brigadeOrAgencyIdentifier);
+		return new RouterDbContext(options);
 	}
 }

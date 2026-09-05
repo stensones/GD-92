@@ -11,6 +11,8 @@ public readonly record struct PasswordVerifierWorkFactor
 
 	public int Iterations { get; }
 
+	public static PasswordVerifierWorkFactor Default { get; } = new(MinimumIterations);
+
 	public static PasswordVerifierWorkFactor FromIterations(int iterations)
 	{
 		EnsureValid(iterations, nameof(iterations));
