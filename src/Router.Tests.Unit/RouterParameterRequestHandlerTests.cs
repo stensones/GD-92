@@ -73,6 +73,51 @@ public sealed class RouterParameterRequestHandlerTests
 	}
 
 	[Fact]
+	public void Rejects_an_invalid_current_parameter_four_level_one_password_with_the_parameter_invalid_password_NAK()
+	{
+		var routerAddress = CreateAddress(26, 100, 0);
+		var source = new RouterCurrentParameterProjectionSource();
+		source.Publish(CreateCurrentParameterProjection(
+			26,
+			PasswordValue.FromValue(SevenBitAsciiString.FromValue("FIRE1"))));
+		var handler = new RouterParameterRequestHandler(
+			routerAddress,
+			ProtocolVersion.FromValue(ProtocolVersionNumber.FromValue(2)),
+			source);
+		var userAgentAddress = CreateAddress(26, 100, 25);
+		var request = Envelope.FromValues(
+			userAgentAddress,
+			Destinations.FromAddresses(routerAddress),
+			ProtocolAndPriority.FromValues(
+				MessagePriority.FromValue(MessagePriorityLevel.FromValue(3)),
+				ProtocolVersion.FromValue(ProtocolVersionNumber.FromValue(2))),
+			AcknowledgementAndSequence.FromValues(
+				SequenceNumber.FromValue(MessageSequenceIdentifier.FromValue(7)),
+				AcknowledgementRequest.Requested),
+			SetParameter.FromFields(
+				ParameterTable.Current,
+				ParameterNumber.FromValue(4),
+				ParameterValue.FromWireValue(
+					PasswordParameter.FromFields(
+						PasswordLevel.FromValue(PasswordLevelNumber.Level1),
+						Password.FromValue(
+							PasswordValue.FromValue(SevenBitAsciiString.FromValue("WATER"))),
+						userAgentAddress).ToWireValue())));
+
+		var result = handler.Handle(request);
+
+		result.Status.Should().Be(RouterEnvelopeHandlingStatus.Responded);
+		result.Response.Should().NotBeNull();
+		var response = result.Response!;
+		response.Source.Should().Be(routerAddress);
+		response.Destinations.Addresses.Should().ContainSingle().Which.Should().Be(userAgentAddress);
+		response.AcknowledgementAndSequence.SequenceNumber.Should().Be(request.AcknowledgementAndSequence.SequenceNumber);
+		var negativeAcknowledgement = response.Contents.Should().BeOfType<NegativeAcknowledgement>().Subject;
+		negativeAcknowledgement.Destinations.Addresses.Should().ContainSingle().Which.Should().Be(routerAddress);
+		negativeAcknowledgement.ReasonCode.ToWireValue().Should().Equal([0x04, 0x04]);
+	}
+
+	[Fact]
 	public void Does_not_respond_to_a_Parameter_Request_addressed_outside_the_local_Router()
 	{
 		var routerAddress = CreateAddress(26, 100, 0);
@@ -176,7 +221,9 @@ public sealed class RouterParameterRequestHandlerTests
 			Port.FromValue(PortIdentifier.FromValue(port)));
 	}
 
-	private static RouterCurrentParameterProjection CreateCurrentParameterProjection(byte brigade)
+	private static RouterCurrentParameterProjection CreateCurrentParameterProjection(
+		byte brigade,
+		PasswordValue? levelOnePassword = null)
 	{
 		var localAddress = CreateAddress(brigade, 100, 0);
 
@@ -184,12 +231,12 @@ public sealed class RouterParameterRequestHandlerTests
 			ParameterValue.FromWireValue([brigade]),
 			ParameterValue.FromWireValue(
 				PasswordParameter.FromFields(
-					PasswordLevel.FromValue(PasswordLevelNumber.FromValue(0)),
+					PasswordLevel.FromValue(PasswordLevelNumber.Unauthenticated),
 					Password.FromValue(
 						PasswordValue.FromValue(SevenBitAsciiString.FromValue(string.Empty))),
 					localAddress).ToWireValue()),
 			PasswordVerifier.Create(
-				PasswordValue.FromValue(SevenBitAsciiString.FromValue("FIRE")),
+				levelOnePassword ?? PasswordValue.FromValue(SevenBitAsciiString.FromValue("FIRE")),
 				PasswordVerifierWorkFactor.Default),
 			ParameterValue.FromWireValue([5]),
 			ParameterValue.FromWireValue([3]));

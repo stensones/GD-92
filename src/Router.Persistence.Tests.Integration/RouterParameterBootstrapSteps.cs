@@ -63,7 +63,7 @@ public sealed class RouterParameterBootstrapSteps
 		this.currentParameters.Should().NotBeNull();
 		this.localAddress.Should().NotBeNull();
 		this.currentParameters!.CurrentPassword.Level.Should().Be(
-			PasswordLevel.FromValue(PasswordLevelNumber.FromValue(0)));
+			PasswordLevel.FromValue(PasswordLevelNumber.Unauthenticated));
 		this.currentParameters.CurrentPassword.Password.ToWireValue().Should().Equal([0]);
 		this.currentParameters.CurrentPassword.CommunicationsAddress.Should().Be(this.localAddress);
 	}

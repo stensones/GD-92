@@ -11,16 +11,21 @@ public sealed record PasswordLevel : IGD9Field
 
 	public static PasswordLevel FromValue(PasswordLevelNumber value)
 	{
+		if (!Enum.IsDefined(value))
+		{
+			throw new ArgumentOutOfRangeException(nameof(value));
+		}
+
 		return new PasswordLevel(value);
 	}
 
 	public static PasswordLevel FromEncodedMessageBuffer(ref EncodedMessageBuffer buffer)
 	{
-		return FromValue(PasswordLevelNumber.FromValue((byte)buffer.ReadUnsignedBits(8)));
+		return FromValue((PasswordLevelNumber)buffer.ReadUnsignedBits(8));
 	}
 
 	public byte[] ToWireValue()
 	{
-		return [this.Value.Value];
+		return [(byte)this.Value];
 	}
 }

@@ -2,49 +2,34 @@ namespace Router.Persistence;
 
 public sealed class PasswordVerifierData
 {
-	internal const int SaltLength = 16;
-	internal const int HashLength = 32;
-
-	private readonly byte[] salt;
-	private readonly byte[] hash;
-
 	private PasswordVerifierData(
 		PasswordVerifierVersion version,
 		PasswordVerifierWorkFactor workFactor,
-		byte[] salt,
-		byte[] hash)
+		PasswordVerifierSalt salt,
+		PasswordVerifierHash hash)
 	{
 		this.Version = version;
 		this.WorkFactor = workFactor;
-		this.salt = [.. salt];
-		this.hash = [.. hash];
+		this.Salt = salt;
+		this.Hash = hash;
 	}
 
 	public PasswordVerifierVersion Version { get; }
 	public PasswordVerifierWorkFactor WorkFactor { get; }
-	public byte[] Salt => [.. this.salt];
-	public byte[] Hash => [.. this.hash];
+	public PasswordVerifierSalt Salt { get; }
+	public PasswordVerifierHash Hash { get; }
 
-	public static PasswordVerifierData FromStoredValues(
+	public static PasswordVerifierData Create(
 		PasswordVerifierVersion version,
 		PasswordVerifierWorkFactor workFactor,
-		byte[] salt,
-		byte[] hash)
+		PasswordVerifierSalt salt,
+		PasswordVerifierHash hash)
 	{
+		ArgumentNullException.ThrowIfNull(version);
+		ArgumentNullException.ThrowIfNull(workFactor);
 		ArgumentNullException.ThrowIfNull(salt);
 		ArgumentNullException.ThrowIfNull(hash);
-		PasswordVerifierVersion.EnsureSupported(version, nameof(version));
 		PasswordVerifierWorkFactor.EnsureValid(workFactor.Iterations, nameof(workFactor));
-
-		if (salt.Length != SaltLength)
-		{
-			throw new ArgumentException("The salt has an invalid length.", nameof(salt));
-		}
-
-		if (hash.Length != HashLength)
-		{
-			throw new ArgumentException("The hash has an invalid length.", nameof(hash));
-		}
 
 		return new PasswordVerifierData(version, workFactor, salt, hash);
 	}

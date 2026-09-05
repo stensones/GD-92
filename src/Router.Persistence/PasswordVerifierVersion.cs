@@ -1,29 +1,27 @@
 namespace Router.Persistence;
 
-public readonly record struct PasswordVerifierVersion
+public sealed record PasswordVerifierVersion
 {
-	private PasswordVerifierVersion(int value)
+	private const int CurrentDatabaseValue = 1;
+
+	private PasswordVerifierVersion()
 	{
-		this.Value = value;
 	}
 
-	public static PasswordVerifierVersion Current { get; } = new(1);
+	public static PasswordVerifierVersion Current { get; } = new();
 
-	public int Value { get; }
-
-	public static PasswordVerifierVersion FromValue(int value)
+	internal static PasswordVerifierVersion FromDatabaseValue(int value)
 	{
-		var version = new PasswordVerifierVersion(value);
-		EnsureSupported(version, nameof(value));
-
-		return version;
-	}
-
-	internal static void EnsureSupported(PasswordVerifierVersion version, string parameterName)
-	{
-		if (version != Current)
+		if (value != CurrentDatabaseValue)
 		{
-			throw new ArgumentOutOfRangeException(parameterName);
+			throw new ArgumentOutOfRangeException(nameof(value));
 		}
+
+		return Current;
+	}
+
+	internal int ToDatabaseValue()
+	{
+		return CurrentDatabaseValue;
 	}
 }

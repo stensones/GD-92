@@ -160,6 +160,45 @@ public sealed class InMemoryPendingDeliveryRegistry : IPendingDeliveryRegistry
 		}
 	}
 
+	public bool TryCompleteInvalidPasswordNegativeAcknowledgement(Envelope envelope)
+	{
+		ArgumentNullException.ThrowIfNull(envelope);
+
+		if (envelope.Contents is not NegativeAcknowledgement negativeAcknowledgement ||
+			negativeAcknowledgement.ReasonCode.ParameterReasonCode != ParameterReasonCode.InvalidPassword ||
+			envelope.Destinations.Addresses.Count != 1)
+		{
+			return false;
+		}
+
+		var uswr = new UniqueSystemWideReference(
+			envelope.Destinations.Addresses[0],
+			envelope.Source,
+			envelope.AcknowledgementAndSequence.SequenceNumber);
+
+		if (negativeAcknowledgement.Destinations.Addresses.Count != 1 ||
+			negativeAcknowledgement.Destinations.Addresses[0] != uswr.Destination)
+		{
+			return false;
+		}
+
+		lock (this.synchronizationLock)
+		{
+			if (!this.deliveries.TryGetValue(uswr, out var status) ||
+				status is not PendingNodeLoginStatus pendingNodeLogin)
+			{
+				return false;
+			}
+
+			this.deliveries[uswr] = new InvalidPasswordNodeLoginStatus(
+				new RouterParameterRequestStatusIdentifier(uswr),
+				pendingNodeLogin.UserAgentAddress);
+			this.GetPendingSequences(uswr.Destination).Remove(uswr.SequenceNumber.Value);
+
+			return true;
+		}
+	}
+
 	private HashSet<ushort> GetPendingSequences(CommunicationsAddress destination)
 	{
 		if (this.pendingSequencesByDestination.TryGetValue(destination, out var pendingSequences))

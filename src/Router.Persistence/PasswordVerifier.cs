@@ -5,13 +5,13 @@ namespace Router.Persistence;
 
 public sealed class PasswordVerifier
 {
-	private readonly byte[] salt;
-	private readonly byte[] hash;
+	private readonly PasswordVerifierSalt salt;
+	private readonly PasswordVerifierHash hash;
 
 	private PasswordVerifier(
 		PasswordVerifierWorkFactor workFactor,
-		byte[] salt,
-		byte[] hash)
+		PasswordVerifierSalt salt,
+		PasswordVerifierHash hash)
 	{
 		this.WorkFactor = workFactor;
 		this.salt = salt;
@@ -24,9 +24,11 @@ public sealed class PasswordVerifier
 		PasswordValue password,
 		PasswordVerifierWorkFactor workFactor)
 	{
+		ArgumentNullException.ThrowIfNull(workFactor);
 		PasswordVerifierWorkFactor.EnsureValid(workFactor.Iterations, nameof(workFactor));
 
-		var salt = RandomNumberGenerator.GetBytes(PasswordVerifierData.SaltLength);
+		var salt = PasswordVerifierSalt.FromDatabaseValue(
+			RandomNumberGenerator.GetBytes(PasswordVerifierSalt.Length));
 		var hash = DeriveHash(password, salt, workFactor);
 
 		return new PasswordVerifier(workFactor, salt, hash);
@@ -35,8 +37,6 @@ public sealed class PasswordVerifier
 	public static PasswordVerifier FromStoredData(PasswordVerifierData storedData)
 	{
 		ArgumentNullException.ThrowIfNull(storedData);
-
-		PasswordVerifierVersion.EnsureSupported(storedData.Version, nameof(storedData));
 
 		return new PasswordVerifier(
 			storedData.WorkFactor,
@@ -48,28 +48,31 @@ public sealed class PasswordVerifier
 	{
 		var suppliedHash = DeriveHash(password, this.salt, this.WorkFactor);
 
-		return CryptographicOperations.FixedTimeEquals(this.hash, suppliedHash);
+		return CryptographicOperations.FixedTimeEquals(
+			this.hash.ToDatabaseValue(),
+			suppliedHash.ToDatabaseValue());
 	}
 
 	public PasswordVerifierData ToStoredData()
 	{
-		return PasswordVerifierData.FromStoredValues(
+		return PasswordVerifierData.Create(
 			PasswordVerifierVersion.Current,
 			this.WorkFactor,
 			this.salt,
 			this.hash);
 	}
 
-	private static byte[] DeriveHash(
+	private static PasswordVerifierHash DeriveHash(
 		PasswordValue password,
-		byte[] salt,
+		PasswordVerifierSalt salt,
 		PasswordVerifierWorkFactor workFactor)
 	{
-		return Rfc2898DeriveBytes.Pbkdf2(
-			password.Value.ToWireValue(),
-			salt,
-			workFactor.Iterations,
-			HashAlgorithmName.SHA256,
-			PasswordVerifierData.HashLength);
+		return PasswordVerifierHash.FromDatabaseValue(
+			Rfc2898DeriveBytes.Pbkdf2(
+				password.Value.ToWireValue(),
+				salt.ToDatabaseValue(),
+				workFactor.Iterations,
+				HashAlgorithmName.SHA256,
+				PasswordVerifierHash.Length));
 	}
 }

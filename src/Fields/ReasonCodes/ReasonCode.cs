@@ -2,12 +2,23 @@ namespace Stensones.GD92.Fields;
 
 public sealed record ReasonCode : IGD9Field
 {
-	private ReasonCode(GeneralReasonCode generalReasonCode)
+	private const byte GeneralReasonCodeSet = 1;
+	private const byte ParameterReasonCodeSet = 4;
+
+	private ReasonCode(byte set, byte value)
 	{
-		this.GeneralReasonCode = generalReasonCode;
+		this.Set = set;
+		this.Value = value;
 	}
 
-	public GeneralReasonCode GeneralReasonCode { get; }
+	public byte Set { get; }
+	public byte Value { get; }
+	public GeneralReasonCode? GeneralReasonCode => this.Set == GeneralReasonCodeSet
+		? (GeneralReasonCode)this.Value
+		: null;
+	public ParameterReasonCode? ParameterReasonCode => this.Set == ParameterReasonCodeSet
+		? (ParameterReasonCode)this.Value
+		: null;
 
 	public static ReasonCode FromGeneralReasonCode(GeneralReasonCode generalReasonCode)
 	{
@@ -16,23 +27,34 @@ public sealed record ReasonCode : IGD9Field
 			throw new ArgumentOutOfRangeException(nameof(generalReasonCode));
 		}
 
-		return new ReasonCode(generalReasonCode);
+		return new ReasonCode(GeneralReasonCodeSet, (byte)generalReasonCode);
+	}
+
+	public static ReasonCode FromParameterReasonCode(ParameterReasonCode parameterReasonCode)
+	{
+		if (!Enum.IsDefined(parameterReasonCode))
+		{
+			throw new ArgumentOutOfRangeException(nameof(parameterReasonCode));
+		}
+
+		return new ReasonCode(ParameterReasonCodeSet, (byte)parameterReasonCode);
 	}
 
 	public static ReasonCode FromEncodedMessageBuffer(ref EncodedMessageBuffer buffer)
 	{
 		var reasonCodeSet = (byte)buffer.ReadUnsignedBits(8);
+		var reasonCodeValue = (byte)buffer.ReadUnsignedBits(8);
 
-		if (reasonCodeSet != 1)
+		return reasonCodeSet switch
 		{
-			throw new NotSupportedException($"Reason Code Set {reasonCodeSet} is not supported.");
-		}
-
-		return FromGeneralReasonCode((GeneralReasonCode)buffer.ReadUnsignedBits(8));
+			GeneralReasonCodeSet => FromGeneralReasonCode((GeneralReasonCode)reasonCodeValue),
+			ParameterReasonCodeSet => FromParameterReasonCode((ParameterReasonCode)reasonCodeValue),
+			_ => throw new NotSupportedException($"Reason Code Set {reasonCodeSet} is not supported.")
+		};
 	}
 
 	public byte[] ToWireValue()
 	{
-		return [0x01, (byte)this.GeneralReasonCode];
+		return [this.Set, this.Value];
 	}
 }

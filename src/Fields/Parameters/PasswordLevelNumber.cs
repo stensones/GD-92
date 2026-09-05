@@ -1,21 +1,10 @@
 namespace Stensones.GD92.Fields;
 
-public readonly record struct PasswordLevelNumber
+public enum PasswordLevelNumber : byte
 {
-	private PasswordLevelNumber(byte value)
-	{
-		this.Value = value;
-	}
-
-	public byte Value { get; }
-
-	public static PasswordLevelNumber FromValue(byte value)
-	{
-		if (value > 4)
-		{
-			throw new ArgumentOutOfRangeException(nameof(value));
-		}
-
-		return new PasswordLevelNumber(value);
-	}
+	Unauthenticated,
+	Level1,
+	Level2,
+	Level3,
+	Level4
 }

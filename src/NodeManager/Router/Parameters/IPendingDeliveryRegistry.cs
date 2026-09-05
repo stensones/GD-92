@@ -22,4 +22,6 @@ public interface IPendingDeliveryRegistry
 	bool TryCompleteParameterResponse(Envelope envelope);
 
 	bool TryCompleteAcknowledgement(Envelope envelope);
+
+	bool TryCompleteInvalidPasswordNegativeAcknowledgement(Envelope envelope);
 }

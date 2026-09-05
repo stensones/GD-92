@@ -47,7 +47,7 @@ public sealed class RouterPasswordVerifierPersistenceSteps
 		this.differentPassword = CreateDifferentPassword(this.originalPassword.Value);
 		var verifier = PasswordVerifier.Create(
 			this.originalPassword.Value,
-			PasswordVerifierWorkFactor.FromIterations(10_000));
+			PasswordVerifierWorkFactor.Default);
 
 		await using var context = this.CreateContext();
 		IRouterPasswordVerifierStore store = new EfRouterPasswordVerifierStore(context);

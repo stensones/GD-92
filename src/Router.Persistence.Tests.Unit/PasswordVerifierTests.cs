@@ -10,7 +10,7 @@ public sealed class PasswordVerifierTests
 	public void Verifies_the_password_used_to_create_it()
 	{
 		var password = PasswordValue.FromValue(SevenBitAsciiString.FromValue("FIRE"));
-		var workFactor = PasswordVerifierWorkFactor.FromIterations(10_000);
+		var workFactor = PasswordVerifierWorkFactor.Default;
 
 		var verifier = PasswordVerifier.Create(password, workFactor);
 
@@ -22,7 +22,7 @@ public sealed class PasswordVerifierTests
 	{
 		var verifier = PasswordVerifier.Create(
 			PasswordValue.FromValue(SevenBitAsciiString.FromValue("FIRE")),
-			PasswordVerifierWorkFactor.FromIterations(10_000));
+			PasswordVerifierWorkFactor.Default);
 		var differentPassword = PasswordValue.FromValue(SevenBitAsciiString.FromValue("RESCUE"));
 
 		verifier.Verifies(differentPassword).Should().BeFalse();
@@ -32,20 +32,20 @@ public sealed class PasswordVerifierTests
 	public void Creates_independent_verifier_state_for_the_same_password()
 	{
 		var password = PasswordValue.FromValue(SevenBitAsciiString.FromValue("FIRE"));
-		var workFactor = PasswordVerifierWorkFactor.FromIterations(10_000);
+		var workFactor = PasswordVerifierWorkFactor.Default;
 
 		var firstVerifier = PasswordVerifier.Create(password, workFactor);
 		var secondVerifier = PasswordVerifier.Create(password, workFactor);
 
-		firstVerifier.ToStoredData().Salt.Should().NotBeEquivalentTo(
-			secondVerifier.ToStoredData().Salt);
+		firstVerifier.ToStoredData().Salt.ToArray().Should().NotBeEquivalentTo(
+			secondVerifier.ToStoredData().Salt.ToArray());
 	}
 
 	[Fact]
 	public void Restores_a_versioned_verifier_from_stored_data()
 	{
 		var password = PasswordValue.FromValue(SevenBitAsciiString.FromValue("FIRE"));
-		var workFactor = PasswordVerifierWorkFactor.FromIterations(10_000);
+		var workFactor = PasswordVerifierWorkFactor.Default;
 		var storedData = PasswordVerifier.Create(password, workFactor).ToStoredData();
 
 		var restoredVerifier = PasswordVerifier.FromStoredData(storedData);
@@ -56,22 +56,18 @@ public sealed class PasswordVerifierTests
 	}
 
 	[Fact]
-	public void Rejects_stored_data_with_an_invalid_salt_length()
+	public void Keeps_stored_salt_and_hash_immutable()
 	{
-		var createStoredData = () => PasswordVerifierData.FromStoredValues(
-			PasswordVerifierVersion.Current,
-			PasswordVerifierWorkFactor.FromIterations(10_000),
-			new byte[15],
-			new byte[32]);
+		var password = PasswordValue.FromValue(SevenBitAsciiString.FromValue("FIRE"));
+		var storedData = PasswordVerifier.Create(
+			password,
+			PasswordVerifierWorkFactor.Default).ToStoredData();
 
-		createStoredData.Should().Throw<ArgumentException>();
-	}
+		var salt = storedData.Salt.ToArray();
+		var hash = storedData.Hash.ToArray();
+		salt[0] ^= 0xFF;
+		hash[0] ^= 0xFF;
 
-	[Fact]
-	public void Rejects_an_unsupported_stored_verifier_version()
-	{
-		var createVersion = () => PasswordVerifierVersion.FromValue(2);
-
-		createVersion.Should().Throw<ArgumentOutOfRangeException>();
+		PasswordVerifier.FromStoredData(storedData).Verifies(password).Should().BeTrue();
 	}
 }

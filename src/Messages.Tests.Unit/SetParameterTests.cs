@@ -13,7 +13,7 @@ public sealed class SetParameterTests
 			Node.FromValue(NodeIdentifier.FromValue(100)),
 			Port.FromValue(PortIdentifier.FromValue(25)));
 		var passwordParameter = PasswordParameter.FromFields(
-			PasswordLevel.FromValue(PasswordLevelNumber.FromValue(1)),
+			PasswordLevel.FromValue(PasswordLevelNumber.Level1),
 			Password.FromValue(PasswordValue.FromValue(SevenBitAsciiString.FromValue("FIRE"))),
 			address);
 		var setParameter = SetParameter.FromFields(

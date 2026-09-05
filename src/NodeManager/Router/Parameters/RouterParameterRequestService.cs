@@ -57,7 +57,7 @@ public sealed class RouterParameterRequestService(
 				ParameterNumber.FromValue(4),
 				ParameterValue.FromWireValue(
 					PasswordParameter.FromFields(
-						PasswordLevel.FromValue(PasswordLevelNumber.FromValue(1)),
+						PasswordLevel.FromValue(PasswordLevelNumber.Level1),
 						Password.FromValue(password),
 						communicationsAddress).ToWireValue())));
 

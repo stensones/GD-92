@@ -74,6 +74,8 @@ public sealed class RouterParametersController(
 				Format(pendingNodeLogin.UserAgentAddress),
 			LoggedOnNodeLoginStatus loggedOnNodeLogin =>
 				Format(loggedOnNodeLogin.UserAgentAddress),
+			InvalidPasswordNodeLoginStatus invalidPassword =>
+				Format(invalidPassword.UserAgentAddress),
 			_ => null
 		};
 
@@ -85,6 +87,7 @@ public sealed class RouterParametersController(
 				ReceivedRouterParameterRequestStatus received => received.State,
 				PendingNodeLoginStatus pending => pending.State,
 				LoggedOnNodeLoginStatus loggedOn => loggedOn.State,
+				InvalidPasswordNodeLoginStatus invalidPassword => invalidPassword.State,
 				_ => throw new InvalidOperationException("The Router Parameter Request status is unknown.")
 			},
 			brigadeOrAgencyNumber,

@@ -17,3 +17,11 @@ public sealed record LoggedOnNodeLoginStatus(
 {
 	public string State { get; } = "logged-on";
 }
+
+public sealed record InvalidPasswordNodeLoginStatus(
+	RouterParameterRequestStatusIdentifier Identifier,
+	CommunicationsAddress UserAgentAddress) :
+	RouterParameterRequestStatus(Identifier)
+{
+	public string State { get; } = "invalid_password";
+}

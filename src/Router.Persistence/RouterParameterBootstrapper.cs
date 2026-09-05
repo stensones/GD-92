@@ -177,7 +177,7 @@ public sealed class RouterParameterBootstrapper
 	{
 		return ParameterValue.FromWireValue(
 			PasswordParameter.FromFields(
-				PasswordLevel.FromValue(PasswordLevelNumber.FromValue(0)),
+				PasswordLevel.FromValue(PasswordLevelNumber.Unauthenticated),
 				Password.FromValue(
 					PasswordValue.FromValue(SevenBitAsciiString.FromValue(string.Empty))),
 				localAddress).ToWireValue());

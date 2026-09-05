@@ -75,7 +75,7 @@ public sealed class RouterParametersControllerTests
 		var passwordBuffer = new EncodedMessageBuffer(logon.ParameterValue.ToWireValue());
 		var passwordParameter = PasswordParameter.FromEncodedMessageBuffer(ref passwordBuffer);
 		passwordParameter.Level.Should().Be(
-			PasswordLevel.FromValue(PasswordLevelNumber.FromValue(1)));
+			PasswordLevel.FromValue(PasswordLevelNumber.Level1));
 		passwordParameter.CommunicationsAddress.Should().Be(suppliedUserAgent);
 		passwordParameter.Password.Value.Should().Be(
 			PasswordValue.FromValue(SevenBitAsciiString.FromValue("FIRE1")));
@@ -224,6 +224,41 @@ public sealed class RouterParametersControllerTests
 		response.State.Should().Be("logged-on");
 		response.UserAgentAddress.Should().Be("26.100.25");
 		JsonSerializer.Serialize(response).Should().NotContain("FIRE1");
+	}
+
+	[Fact]
+	public async Task Returns_an_invalid_password_status_after_the_User_Agent_receiver_correlates_the_local_Router_NAK()
+	{
+		var userAgent = Address(brigade: 26, node: 100, port: 25);
+		var router = Address(brigade: 26, node: 100, port: 0);
+		var pendingDeliveries = new InMemoryPendingDeliveryRegistry();
+		var identifier = pendingDeliveries.ReserveNodeLogin(userAgent, router, userAgent);
+		var receiver = new RouterParameterResponseReceiver(pendingDeliveries);
+
+		await receiver.ReceiveAsync(
+			Envelope.FromValues(
+				router,
+				Destinations.FromAddresses(userAgent),
+				ProtocolAndPriority.FromValues(
+					MessagePriority.FromValue(MessagePriorityLevel.FromValue(3)),
+					ProtocolVersion.FromValue(ProtocolVersionNumber.FromValue(2))),
+				AcknowledgementAndSequence.FromValues(
+					identifier.USWR.SequenceNumber,
+					AcknowledgementRequest.NotRequested),
+				NegativeAcknowledgement.FromValues(
+					Destinations.FromAddresses(router),
+					ReasonCode.FromParameterReasonCode(ParameterReasonCode.InvalidPassword))),
+			CancellationToken.None);
+		var controller = new RouterParametersController(
+			new ReturningRouterParameterRequestService(identifier),
+			pendingDeliveries);
+
+		var result = controller.Status(identifier.ToString());
+
+		var response = result.Should().BeOfType<OkObjectResult>().Which.Value
+			.Should().BeOfType<RouterParameterRequestStatusResponse>().Which;
+		response.State.Should().Be("invalid_password");
+		JsonSerializer.Serialize(response).Should().Contain("invalid_password");
 	}
 
 	private static CommunicationsAddress Address(byte brigade, ushort node, byte port)

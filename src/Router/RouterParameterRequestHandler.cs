@@ -10,6 +10,8 @@ public sealed class RouterParameterRequestHandler
 	private readonly ProtocolVersion protocolVersion;
 	private readonly RouterCurrentParameterProjection? currentParameters;
 	private readonly RouterCurrentParameterProjectionSource? currentParameterSource;
+	private static readonly PasswordLevel LevelOne =
+		PasswordLevel.FromValue(PasswordLevelNumber.Level1);
 
 	public RouterParameterRequestHandler(
 		CommunicationsAddress localAddress,
@@ -112,11 +114,20 @@ public sealed class RouterParameterRequestHandler
 		var valueBuffer = new EncodedMessageBuffer(setParameter.ParameterValue.ToWireValue());
 		var submittedPassword = PasswordParameter.FromEncodedMessageBuffer(ref valueBuffer);
 
-		if (this.currentParameterSource is null ||
-			!this.currentParameterSource.TryLogOnAtLevelOne(submittedPassword))
+		if (this.currentParameterSource is null || submittedPassword.Level != LevelOne)
 		{
 			return RouterEnvelopeHandlingResult.NotHandled(
 				RouterEnvelopeHandlingStatus.ParameterNotHandled);
+		}
+
+		if (!this.currentParameterSource.TryLogOnAtLevelOne(submittedPassword))
+		{
+			return RouterEnvelopeHandlingResult.Responded(Envelope.CreateNegativeAcknowledgement(
+				envelope,
+				this.localAddress,
+				this.protocolVersion,
+				envelope.Destinations,
+				ReasonCode.FromParameterReasonCode(ParameterReasonCode.InvalidPassword)));
 		}
 
 		return RouterEnvelopeHandlingResult.Responded(Envelope.CreateAcknowledgement(

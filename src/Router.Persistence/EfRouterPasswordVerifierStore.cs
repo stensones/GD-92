@@ -35,11 +35,11 @@ public sealed class EfRouterPasswordVerifierStore : IRouterPasswordVerifierStore
 			cancellationToken);
 
 		return record is null ? null : PasswordVerifier.FromStoredData(
-			PasswordVerifierData.FromStoredValues(
-				PasswordVerifierVersion.FromValue(record.Version),
-				PasswordVerifierWorkFactor.FromIterations(record.WorkFactor),
-				record.Salt,
-				record.Hash));
+			PasswordVerifierData.Create(
+				PasswordVerifierVersion.FromDatabaseValue(record.Version),
+				PasswordVerifierWorkFactor.FromDatabaseValue(record.WorkFactor),
+				PasswordVerifierSalt.FromDatabaseValue(record.Salt),
+				PasswordVerifierHash.FromDatabaseValue(record.Hash)));
 	}
 
 	public async ValueTask StoreAsync(
@@ -68,18 +68,18 @@ public sealed class EfRouterPasswordVerifierStore : IRouterPasswordVerifierStore
 			{
 				ParameterSetId = parameterSet.Id,
 				ParameterNumber = parameterNumber.Value,
-				Version = data.Version.Value,
-				WorkFactor = data.WorkFactor.Iterations,
-				Salt = data.Salt,
-				Hash = data.Hash
+				Version = data.Version.ToDatabaseValue(),
+				WorkFactor = data.WorkFactor.ToDatabaseValue(),
+				Salt = data.Salt.ToDatabaseValue(),
+				Hash = data.Hash.ToDatabaseValue()
 			});
 		}
 		else
 		{
-			record.Version = data.Version.Value;
-			record.WorkFactor = data.WorkFactor.Iterations;
-			record.Salt = data.Salt;
-			record.Hash = data.Hash;
+			record.Version = data.Version.ToDatabaseValue();
+			record.WorkFactor = data.WorkFactor.ToDatabaseValue();
+			record.Salt = data.Salt.ToDatabaseValue();
+			record.Hash = data.Hash.ToDatabaseValue();
 		}
 
 		await this.context.SaveChangesAsync(cancellationToken);

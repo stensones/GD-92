@@ -5,7 +5,7 @@ namespace Router.Persistence;
 public sealed class RouterCurrentParameterProjectionSource
 {
 	private static readonly PasswordLevel LevelOne =
-		PasswordLevel.FromValue(PasswordLevelNumber.FromValue(1));
+		PasswordLevel.FromValue(PasswordLevelNumber.Level1);
 
 	private RouterCurrentParameterProjection? currentParameters;
 

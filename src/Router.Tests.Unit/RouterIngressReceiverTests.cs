@@ -49,7 +49,7 @@ public sealed class RouterIngressReceiverTests
 
 		var currentPassword = currentParameters.GetCurrent().CurrentPassword;
 		currentPassword.Level.Should().Be(
-			PasswordLevel.FromValue(PasswordLevelNumber.FromValue(1)));
+			PasswordLevel.FromValue(PasswordLevelNumber.Level1));
 		currentPassword.Password.Value.Value.Value.Should().BeEmpty();
 		currentPassword.CommunicationsAddress.Should().Be(suppliedCommunicationsAddress);
 	}
@@ -116,7 +116,7 @@ public sealed class RouterIngressReceiverTests
 				ParameterNumber.FromValue(4),
 				ParameterValue.FromWireValue(
 					PasswordParameter.FromFields(
-						PasswordLevel.FromValue(PasswordLevelNumber.FromValue(1)),
+						PasswordLevel.FromValue(PasswordLevelNumber.Level1),
 						Password.FromValue(
 							PasswordValue.FromValue(SevenBitAsciiString.FromValue(password))),
 						suppliedCommunicationsAddress).ToWireValue())));
@@ -137,7 +137,7 @@ public sealed class RouterIngressReceiverTests
 			ParameterValue.FromWireValue(localAddress.Brigade.Value.ToWireValue()),
 			ParameterValue.FromWireValue(
 				PasswordParameter.FromFields(
-					PasswordLevel.FromValue(PasswordLevelNumber.FromValue(0)),
+					PasswordLevel.FromValue(PasswordLevelNumber.Unauthenticated),
 					Password.FromValue(
 						PasswordValue.FromValue(SevenBitAsciiString.FromValue(string.Empty))),
 					localAddress).ToWireValue()),

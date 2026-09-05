@@ -7,7 +7,7 @@ public sealed class PasswordLevelTests
 	[Fact]
 	public void Serializes_the_unauthenticated_password_level()
 	{
-		var value = PasswordLevelNumber.FromValue(0);
+		var value = PasswordLevelNumber.Unauthenticated;
 
 		var passwordLevel = PasswordLevel.FromValue(value);
 
@@ -18,15 +18,15 @@ public sealed class PasswordLevelTests
 	[Fact]
 	public void Serializes_the_highest_password_level()
 	{
-		var passwordLevel = PasswordLevel.FromValue(PasswordLevelNumber.FromValue(4));
+		var passwordLevel = PasswordLevel.FromValue(PasswordLevelNumber.Level4);
 
 		passwordLevel.ToWireValue().Should().Equal(new byte[] { 0x04 });
 	}
 
 	[Fact]
-	public void Rejects_a_password_level_number_above_four()
+	public void Rejects_an_undefined_password_level_number()
 	{
-		var createPasswordLevel = () => PasswordLevelNumber.FromValue(5);
+		var createPasswordLevel = () => PasswordLevel.FromValue((PasswordLevelNumber)5);
 
 		createPasswordLevel.Should().Throw<ArgumentOutOfRangeException>();
 	}

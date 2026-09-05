@@ -1,6 +1,6 @@
 namespace Router.Persistence;
 
-public readonly record struct PasswordVerifierWorkFactor
+public sealed record PasswordVerifierWorkFactor
 {
 	internal const int MinimumIterations = 10_000;
 
@@ -9,11 +9,11 @@ public readonly record struct PasswordVerifierWorkFactor
 		this.Iterations = iterations;
 	}
 
-	public int Iterations { get; }
+	internal int Iterations { get; }
 
 	public static PasswordVerifierWorkFactor Default { get; } = new(MinimumIterations);
 
-	public static PasswordVerifierWorkFactor FromIterations(int iterations)
+	internal static PasswordVerifierWorkFactor FromDatabaseValue(int iterations)
 	{
 		EnsureValid(iterations, nameof(iterations));
 
@@ -26,5 +26,10 @@ public readonly record struct PasswordVerifierWorkFactor
 		{
 			throw new ArgumentOutOfRangeException(parameterName);
 		}
+	}
+
+	internal int ToDatabaseValue()
+	{
+		return this.Iterations;
 	}
 }
