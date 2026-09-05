@@ -16,9 +16,38 @@
     <p id="router-brigade-status" role="status" hidden></p>
 </section>
 
+<section aria-labelledby="node-login">
+    <h2 id="node-login">Node Login</h2>
+    <p>Log on a User Agent at the local Router.</p>
+
+    <form id="router-logon" action="/router/parameters/logon" method="post">
+        <label>
+            Password
+            <input type="password" name="password" required />
+        </label>
+        <label>
+            Brigade or Agency
+            <input type="number" name="brigade" min="0" max="255" required />
+        </label>
+        <label>
+            Node
+            <input type="number" name="node" min="0" max="65535" required />
+        </label>
+        <label>
+            Port
+            <input type="number" name="port" min="0" max="255" required />
+        </label>
+        <button type="submit">Log on</button>
+    </form>
+
+    <p id="router-logon-status" role="status" hidden></p>
+</section>
+
 <script>
     const requestForm = document.getElementById("router-brigade-request");
     const status = document.getElementById("router-brigade-status");
+    const logonForm = document.getElementById("router-logon");
+    const logonStatus = document.getElementById("router-logon-status");
 
     requestForm.addEventListener("submit", async event => {
         event.preventDefault();
@@ -49,6 +78,44 @@
             }
 
             window.setTimeout(poll, 1000);
+        };
+
+        poll();
+    });
+
+    logonForm.addEventListener("submit", async event => {
+        event.preventDefault();
+        logonStatus.hidden = false;
+        logonStatus.textContent = "Logging on...";
+
+        const response = await fetch(logonForm.action, {
+            method: "POST",
+            body: new FormData(logonForm),
+            redirect: "manual"
+        });
+        const statusUrl = response.headers.get("location");
+
+        if (response.status !== 303 || !statusUrl) {
+            logonStatus.textContent = "The Node Login could not be submitted.";
+            return;
+        }
+
+        const poll = async () => {
+            const result = await fetch(statusUrl);
+
+            if (!result.ok) {
+                logonStatus.textContent = "The Node Login could not be completed.";
+                return;
+            }
+
+            const login = await result.json();
+            logonStatus.textContent = login.userAgentAddress
+                ? `Node Login ${login.state} for User-Agent address ${login.userAgentAddress}.`
+                : `Node Login ${login.state}.`;
+
+            if (login.state === "pending") {
+                window.setTimeout(poll, 1000);
+            }
         };
 
         poll();

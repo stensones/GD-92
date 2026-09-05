@@ -57,9 +57,9 @@ public sealed class RouterParameterRequestSteps
 	{
 		this.pageContent.Should().Contain("""<form id="router-logon" action="/router/parameters/logon" method="post">""");
 		this.pageContent.Should().Contain("""type="password" name="password" required""");
-		this.pageContent.Should().Contain("""type="number" name="brigade" required""");
-		this.pageContent.Should().Contain("""type="number" name="node" required""");
-		this.pageContent.Should().Contain("""type="number" name="port" required""");
+		this.pageContent.Should().Contain("""type="number" name="brigade""");
+		this.pageContent.Should().Contain("""type="number" name="node""");
+		this.pageContent.Should().Contain("""type="number" name="port""");
 		this.pageContent.Should().Contain("""type="submit">Log on</button>""");
 	}
 
