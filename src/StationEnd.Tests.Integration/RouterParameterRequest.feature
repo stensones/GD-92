@@ -31,3 +31,13 @@ Feature: Router Parameter Request
     When I log on User-Agent address Brigade 26, Node 100, and Port 25 with the incorrect password "WATER"
     Then I am redirected to the pending Node Login status
     And the Node Login status eventually shows invalid password
+
+  Scenario: Logging off the local Router
+    Given NodeManager is the User Agent at Brigade 26, Node 100, and Port 25
+    And its local Router is at Brigade 26, Node 100, and Port 0
+    And the Router Level 1 password is "FIRE1"
+    When I log on User-Agent address Brigade 26, Node 100, and Port 25 with the Level 1 password
+    Then the Node Login status eventually shows User-Agent address 26.100.25 is logged on
+    When I log off the local Router
+    Then I am redirected to the pending Node Login status
+    And the Node Login status eventually shows the Router is logged off

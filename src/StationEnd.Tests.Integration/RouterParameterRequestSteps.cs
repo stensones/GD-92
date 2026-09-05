@@ -79,6 +79,12 @@ public sealed class RouterParameterRequestSteps
 			]));
 	}
 
+	[When(@"I log off the local Router")]
+	public async Task WhenILogOffTheLocalRouter()
+	{
+		this.response = await this.client!.PostAsync("/router/parameters/logoff", null);
+	}
+
 	[Given(@"the Router persistent Parameter Tables are empty")]
 	public async Task GivenTheRouterPersistentParameterTablesAreEmpty()
 	{
@@ -183,6 +189,28 @@ public sealed class RouterParameterRequestSteps
 
 		throw new Xunit.Sdk.XunitException(
 			"The Node Login status did not show an invalid password rejection.");
+	}
+
+	[Then(@"the Node Login status eventually shows the Router is logged off")]
+	public async Task ThenTheNodeLoginStatusEventuallyShowsTheRouterIsLoggedOff()
+	{
+		var statusAddress = this.response!.Headers.Location!;
+
+		for (var attempt = 0; attempt < 30; attempt++)
+		{
+			var status = await this.client!.GetAsync(statusAddress);
+			var content = await status.Content.ReadAsStringAsync();
+
+			if (status.StatusCode == HttpStatusCode.OK &&
+				content.Contains("logged-off", StringComparison.Ordinal))
+			{
+				return;
+			}
+
+			await Task.Delay(TimeSpan.FromSeconds(1));
+		}
+
+		throw new Xunit.Sdk.XunitException("The Node Login status did not show that the Router is logged off.");
 	}
 
 	[Then(@"the Router retains brigade or agency number (.*) in its permanent and non-volatile Parameter Tables")]
