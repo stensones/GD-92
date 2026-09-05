@@ -278,6 +278,12 @@ public sealed class EnvelopeSteps
 		this.decodingException.Should().NotBeNull();
 	}
 
+	[Then(@"the malformed Text Contents are rejected")]
+	public void ThenTheMalformedTextContentsAreRejected()
+	{
+		this.decodingException.Should().NotBeNull();
+	}
+
 	[Given(@"an Envelope source of Brigade (.*), Node (.*), and Port (.*)")]
 	public void GivenAnEnvelopeSource(byte brigade, ushort node, byte port)
 	{

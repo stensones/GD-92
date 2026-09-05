@@ -26,6 +26,11 @@ Feature: Envelopes
     When decoding the Envelope is attempted
     Then the Message Contents length mismatch is rejected
 
+  Scenario: Rejecting an Envelope with malformed compressed Text Contents
+    Given encoded Envelope bytes "1A191901411A191912FCD11B010100011B7E"
+    When decoding the Envelope is attempted
+    Then the malformed Text Contents are rejected
+
   Scenario: Decoding a Set Parameter Envelope
     Given encoded Envelope bytes "1A191902011A191912FCD13C01010004464952451C"
     When the Envelope is decoded

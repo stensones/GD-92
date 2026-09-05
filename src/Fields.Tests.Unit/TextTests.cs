@@ -72,4 +72,20 @@ public sealed class TextTests
 
 		Text.FromEncodedMessageBuffer(ref buffer).Value.Should().Be("FIRE");
 	}
+
+	[Fact]
+	public void Rejects_an_incomplete_compressed_escape_sequence_during_decoding()
+	{
+		Action decodeText = () => DecodeText([0x00, 0x01, 0x1B]);
+
+		decodeText.Should().Throw<InvalidOperationException>()
+			.WithMessage("*incomplete escape sequence*");
+	}
+
+	private static Text DecodeText(byte[] wireValue)
+	{
+		var buffer = new EncodedMessageBuffer(wireValue);
+
+		return Text.FromEncodedMessageBuffer(ref buffer);
+	}
 }

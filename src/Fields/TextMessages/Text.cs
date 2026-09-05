@@ -42,7 +42,10 @@ public sealed record Text : IGD9Field
 			value[index] = (byte)buffer.ReadUnsignedBits(8);
 		}
 
-		return new Text(value);
+		var text = new Text(value);
+		_ = text.Value;
+
+		return text;
 	}
 
 	public byte[] ToWireValue()
