@@ -42,13 +42,16 @@ public sealed class EnvelopeTests
 	}
 
 	[Fact]
-	public void Preserves_the_contents_of_a_known_unsupported_envelope()
+	public void Decodes_the_contents_of_a_set_parameter_envelope()
 	{
 		var envelope = DecodeEnvelope("1A191902011A191912FCD13C01010004464952451C");
 
-		var contents = envelope.Contents.Should().BeOfType<UnsupportedMessageContents>().Which;
+		var contents = envelope.Contents.Should().BeOfType<SetParameter>().Which;
 
 		contents.Type.Should().Be(MessageType.FromValue(GD92MessageType.SetParameter));
+		contents.ParameterTable.Should().Be(ParameterTable.NonVolatile);
+		contents.ParameterNumber.Should().Be(ParameterNumber.FromValue(1));
+		contents.ParameterValue.ToWireValue().Should().Equal(Convert.FromHexString("000446495245"));
 		contents.ToWireValue().Should().Equal(Convert.FromHexString("0101000446495245"));
 		envelope.ToWireValue().Should().Equal(Convert.FromHexString("1A191902011A191912FCD13C01010004464952451C"));
 	}
@@ -72,6 +75,30 @@ public sealed class EnvelopeTests
 			ParameterRequest.FromFields(
 				ParameterTable.Current,
 				ParameterNumber.FromValue(1)));
+
+		createEnvelope.Should().Throw<InvalidOperationException>();
+	}
+
+	[Fact]
+	public void Rejects_a_set_parameter_without_an_acknowledgement_request()
+	{
+		var address = CommunicationsAddress.FromValues(
+			Brigade.FromValue(BrigadeOrAgencyIdentifier.FromValue(26)),
+			Node.FromValue(NodeIdentifier.FromValue(100)),
+			Port.FromValue(PortIdentifier.FromValue(25)));
+		var createEnvelope = () => Envelope.FromValues(
+			address,
+			Destinations.FromAddresses(address),
+			ProtocolAndPriority.FromValues(
+				MessagePriority.FromValue(MessagePriorityLevel.FromValue(1)),
+				ProtocolVersion.FromValue(ProtocolVersionNumber.FromValue(2))),
+			AcknowledgementAndSequence.FromValues(
+				SequenceNumber.FromValue(MessageSequenceIdentifier.FromValue(31953)),
+				AcknowledgementRequest.NotRequested),
+			SetParameter.FromFields(
+				ParameterTable.Current,
+				ParameterNumber.FromValue(5),
+				ParameterValue.FromWireValue(new byte[] { 0x00 })));
 
 		createEnvelope.Should().Throw<InvalidOperationException>();
 	}

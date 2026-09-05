@@ -25,12 +25,14 @@ else
 }
 
 var routerDatabase = postgres.AddDatabase("router-database", "router");
+var routerLevel1Password = builder.AddParameter("router-level1-password", secret: true);
 
 builder.AddProject<Projects.Router>("Router")
 	.WithReference(rabbitMq)
 	.WaitFor(rabbitMq)
 	.WithReference(routerDatabase)
 	.WaitFor(postgres)
+	.WithEnvironment("Router__InitialLevel1Password", routerLevel1Password)
 	;
 
 builder.AddProject<Projects.BusMTA>("bus-MTA");

@@ -44,10 +44,10 @@ public sealed class Envelope
 		ArgumentNullException.ThrowIfNull(acknowledgementAndSequence);
 		ArgumentNullException.ThrowIfNull(contents);
 
-		if (contents is ParameterRequest or ParameterRequestMultiple &&
+		if (contents is ParameterRequest or ParameterRequestMultiple or SetParameter &&
 			!acknowledgementAndSequence.AcknowledgementRequest.IsRequested)
 		{
-			throw new InvalidOperationException("A Parameter Request Envelope must request acknowledgement.");
+			throw new InvalidOperationException("A Parameter request or Set Parameter Envelope must request acknowledgement.");
 		}
 
 		var contentsWireValue = contents.ToWireValue();
@@ -219,6 +219,7 @@ public sealed class Envelope
 			GD92MessageType.Text => Text.FromEncodedMessageBuffer(ref contentsBuffer),
 			GD92MessageType.Acknowledgement => Acknowledgement.FromEncodedMessageBuffer(ref contentsBuffer),
 			GD92MessageType.NegativeAcknowledgement => NegativeAcknowledgement.FromEncodedMessageBuffer(ref contentsBuffer),
+			GD92MessageType.SetParameter => SetParameter.FromEncodedMessageBuffer(ref contentsBuffer),
 			GD92MessageType.ParameterRequest => ParameterRequest.FromEncodedMessageBuffer(ref contentsBuffer),
 			GD92MessageType.Parameter => Parameter.FromEncodedMessageBuffer(ref contentsBuffer),
 			GD92MessageType.ParameterRequestMultiple => ParameterRequestMultiple.FromEncodedMessageBuffer(ref contentsBuffer),

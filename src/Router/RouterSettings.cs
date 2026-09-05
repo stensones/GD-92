@@ -5,14 +5,19 @@ namespace Router;
 
 internal sealed class RouterSettings
 {
-	private RouterSettings(CommunicationsAddress localAddress, ProtocolVersion protocolVersion)
+	private RouterSettings(
+		CommunicationsAddress localAddress,
+		ProtocolVersion protocolVersion,
+		PasswordValue initialLevel1Password)
 	{
 		this.LocalAddress = localAddress;
 		this.ProtocolVersion = protocolVersion;
+		this.InitialLevel1Password = initialLevel1Password;
 	}
 
 	public CommunicationsAddress LocalAddress { get; }
 	public ProtocolVersion ProtocolVersion { get; }
+	public PasswordValue InitialLevel1Password { get; }
 
 	public static RouterSettings FromConfiguration(IConfiguration configuration)
 	{
@@ -28,6 +33,27 @@ internal sealed class RouterSettings
 				Node.FromValue(NodeIdentifier.FromValue(addressConfiguration.GetValue<ushort>("Node"))),
 				Port.FromValue(PortIdentifier.FromValue(addressConfiguration.GetValue<byte>("Port")))),
 			ProtocolVersion.FromValue(
-				ProtocolVersionNumber.FromValue(routerConfiguration.GetValue<byte>("ProtocolVersion"))));
+				ProtocolVersionNumber.FromValue(routerConfiguration.GetValue<byte>("ProtocolVersion"))),
+			ParseInitialLevel1Password(routerConfiguration["InitialLevel1Password"]));
+	}
+
+	private static PasswordValue ParseInitialLevel1Password(string? value)
+	{
+		if (string.IsNullOrEmpty(value))
+		{
+			throw new InvalidOperationException(
+				"Router:InitialLevel1Password must be a nonempty 7-bit ASCII password of at most 10 characters.");
+		}
+
+		try
+		{
+			return PasswordValue.FromValue(SevenBitAsciiString.FromValue(value));
+		}
+		catch (ArgumentException exception)
+		{
+			throw new InvalidOperationException(
+				"Router:InitialLevel1Password must be a nonempty 7-bit ASCII password of at most 10 characters.",
+				exception);
+		}
 	}
 }

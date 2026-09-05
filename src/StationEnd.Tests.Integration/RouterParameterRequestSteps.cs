@@ -13,6 +13,7 @@ public sealed class RouterParameterRequestSteps
 	private DistributedApplication? application;
 	private HttpClient? client;
 	private HttpResponseMessage? response;
+	private string? level1Password;
 
 	[Given(@"NodeManager is the User Agent at Brigade (.*), Node (.*), and Port (.*)")]
 	public void GivenNodeManagerIsTheUserAgentAt(byte brigade, ushort node, byte port)
@@ -37,10 +38,38 @@ public sealed class RouterParameterRequestSteps
 		this.response = await this.client!.PostAsync("/router/parameters/brigade-or-agency-number", null);
 	}
 
+	[When(@"I log on User-Agent address Brigade (.*), Node (.*), and Port (.*) with the Level 1 password")]
+	public async Task WhenILogOnUserAgentAddressWithTheLevel1Password(
+		byte brigade,
+		ushort node,
+		byte port)
+	{
+		if (this.application is null)
+		{
+			await this.StartApplicationAsync();
+		}
+
+		this.response = await this.client!.PostAsync(
+			"/router/parameters/logon",
+			new FormUrlEncodedContent(
+			[
+				new KeyValuePair<string, string>("password", this.level1Password!),
+				new KeyValuePair<string, string>("brigade", brigade.ToString()),
+				new KeyValuePair<string, string>("node", node.ToString()),
+				new KeyValuePair<string, string>("port", port.ToString())
+			]));
+	}
+
 	[Given(@"the Router persistent Parameter Tables are empty")]
 	public async Task GivenTheRouterPersistentParameterTablesAreEmpty()
 	{
 		await this.StartApplicationAsync();
+	}
+
+	[Given(@"the Router Level 1 password is ""(.*)""")]
+	public void GivenTheRouterLevel1PasswordIs(string password)
+	{
+		this.level1Password = password;
 	}
 
 	[Then(@"I am redirected to the pending Parameter Request status")]
@@ -55,6 +84,12 @@ public sealed class RouterParameterRequestSteps
 		}
 
 		this.response.Headers.Location.Should().NotBeNull();
+	}
+
+	[Then(@"I am redirected to the pending Node Login status")]
+	public async Task ThenIAmRedirectedToThePendingNodeLoginStatus()
+	{
+		await this.ThenIAmRedirectedToThePendingParameterRequestStatus();
 	}
 
 	[Then(@"the Parameter Request status eventually shows brigade or agency number (.*)")]
@@ -78,6 +113,34 @@ public sealed class RouterParameterRequestSteps
 
 		throw new Xunit.Sdk.XunitException(
 			$"The Parameter Request status did not show brigade or agency number {brigadeOrAgencyNumber}.");
+	}
+
+	[Then(@"the Node Login status eventually shows User-Agent address (.*)\.(.*)\.(.*) is logged on")]
+	public async Task ThenTheNodeLoginStatusEventuallyShowsUserAgentAddressIsLoggedOn(
+		byte brigade,
+		ushort node,
+		byte port)
+	{
+		var statusAddress = this.response!.Headers.Location!;
+		var expectedAddress = $"{brigade}.{node}.{port}";
+
+		for (var attempt = 0; attempt < 30; attempt++)
+		{
+			var status = await this.client!.GetAsync(statusAddress);
+			var content = await status.Content.ReadAsStringAsync();
+
+			if (status.StatusCode == HttpStatusCode.OK &&
+				content.Contains("logged-on", StringComparison.Ordinal) &&
+				content.Contains(expectedAddress, StringComparison.Ordinal))
+			{
+				return;
+			}
+
+			await Task.Delay(TimeSpan.FromSeconds(1));
+		}
+
+		throw new Xunit.Sdk.XunitException(
+			$"The Node Login status did not show User-Agent address {expectedAddress} as logged on.");
 	}
 
 	[Then(@"the Router retains brigade or agency number (.*) in its permanent and non-volatile Parameter Tables")]
@@ -119,6 +182,7 @@ public sealed class RouterParameterRequestSteps
 		var appHost = await DistributedApplicationTestingBuilder
 			.CreateAsync<Projects.GD92_StationEnd_AppHost>();
 		appHost.Configuration["Persistence:UsePersistentPostgres"] = "false";
+		appHost.Configuration["Parameters:router-level1-password"] = this.level1Password ?? "FIRE1";
 
 		this.application = await appHost.BuildAsync();
 		await this.application.StartAsync();

@@ -132,12 +132,32 @@ The Message Type 62 Contents that returns a Parameter Value in response to a Par
 _Avoid_: Parameter, Parameter Request
 
 **Password Level**:
-The access level required to modify a Parameter.
+The access threshold required to modify a Parameter; Level 0 is unauthenticated and Level 1 is the first protected threshold.
 _Avoid_: user role, permanent authentication
 
 **Node Login**:
-The temporary authenticated state that authorizes Parameter modification at one Communications Node.
-_Avoid_: system-wide login, device session
+The temporary authenticated state of one User-Agent Communications Address that authorizes Parameter modification at one Communications Node.
+_Avoid_: system-wide login, device session, operator account
+
+**Current Password**:
+Router Parameter 4, whose Current value represents the single active Node Login's Password Level and supplied User-Agent Communications Address.
+_Avoid_: durable password, browser session
+
+**Level 1 Password**:
+Router Parameter 5, the access password that authenticates a Level 1 Node Login.
+_Avoid_: operator account password, Current Password
+
+**Password Parameter**:
+The `<pass_param>` value containing a Password Level, Password, and supplied User-Agent Communications Address.
+_Avoid_: Current Password, password verifier
+
+**No Acknowledgement Timeout**:
+Router Parameter 12, the number of seconds a sending User-Agent waits for an acknowledgement before resending an unacknowledged Message.
+_Avoid_: RabbitMQ delivery timeout, manual acknowledgement timeout
+
+**Retries**:
+Router Parameter 19, the maximum total attempts a sending User-Agent makes to send an unacknowledged Message.
+_Avoid_: transport retry, Message Sequence count
 
 ### Message Structure and Classification
 
@@ -403,6 +423,13 @@ _Avoid_: retransmission, duplicate Message
 - A **Current Parameter Table** is initialized from its **Non-Volatile Parameter Table** on normal startup.
 - A **Permanent Parameter Table** supplies fallback Parameter values when a **Non-Volatile Parameter Table** is corrupted.
 - A **Node Login** at a **Communications Node** authorizes Parameter modification according to each **Parameter**'s **Password Level**.
+- A Router has at most one active **Node Login**; a successful login from another User-Agent Communications Address replaces it.
+- A failed attempt to establish a **Node Login** leaves the existing Node Login unchanged.
+- A **Node Login** remains active until it is replaced or logged off.
+- Any User-Agent Communications Address can clear the active **Node Login** by setting the **Current Password** to Password Level 0.
+- Changing the **Level 1 Password** does not alter the active **Node Login**.
+- A changed Non-Volatile **Level 1 Password** takes effect when it is copied to the Current Parameter Table on startup or reset.
+- A read of a **Current Password** or **Level 1 Password** redacts its Password as the string `PASSWORD`.
 - A **Parameter Request** identifies one **Parameter Table** and one **Parameter Number**.
 - A **Parameter Number** identifies one **Parameter** within its **Parameter Table**.
 - A **Message Originator** normally sets an **Acknowledgement Request** on a **Parameter Request Envelope**, while the recipient always returns a **Parameter Message** or **Negative Acknowledgement**.
