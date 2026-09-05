@@ -44,6 +44,25 @@ public sealed class RouterParameterRequestSteps
 		ushort node,
 		byte port)
 	{
+		await this.LogOnUserAgentAddressAsync(brigade, node, port, this.level1Password!);
+	}
+
+	[When(@"I log on User-Agent address Brigade (.*), Node (.*), and Port (.*) with the incorrect password ""(.*)""")]
+	public async Task WhenILogOnUserAgentAddressWithTheIncorrectPassword(
+		byte brigade,
+		ushort node,
+		byte port,
+		string password)
+	{
+		await this.LogOnUserAgentAddressAsync(brigade, node, port, password);
+	}
+
+	private async Task LogOnUserAgentAddressAsync(
+		byte brigade,
+		ushort node,
+		byte port,
+		string password)
+	{
 		if (this.application is null)
 		{
 			await this.StartApplicationAsync();
@@ -53,7 +72,7 @@ public sealed class RouterParameterRequestSteps
 			"/router/parameters/logon",
 			new FormUrlEncodedContent(
 			[
-				new KeyValuePair<string, string>("password", this.level1Password!),
+				new KeyValuePair<string, string>("password", password),
 				new KeyValuePair<string, string>("brigade", brigade.ToString()),
 				new KeyValuePair<string, string>("node", node.ToString()),
 				new KeyValuePair<string, string>("port", port.ToString())
@@ -141,6 +160,29 @@ public sealed class RouterParameterRequestSteps
 
 		throw new Xunit.Sdk.XunitException(
 			$"The Node Login status did not show User-Agent address {expectedAddress} as logged on.");
+	}
+
+	[Then(@"the Node Login status eventually shows invalid password")]
+	public async Task ThenTheNodeLoginStatusEventuallyShowsInvalidPassword()
+	{
+		var statusAddress = this.response!.Headers.Location!;
+
+		for (var attempt = 0; attempt < 30; attempt++)
+		{
+			var status = await this.client!.GetAsync(statusAddress);
+			var content = await status.Content.ReadAsStringAsync();
+
+			if (status.StatusCode == HttpStatusCode.OK &&
+				content.Contains("invalid_password", StringComparison.Ordinal))
+			{
+				return;
+			}
+
+			await Task.Delay(TimeSpan.FromSeconds(1));
+		}
+
+		throw new Xunit.Sdk.XunitException(
+			"The Node Login status did not show an invalid password rejection.");
 	}
 
 	[Then(@"the Router retains brigade or agency number (.*) in its permanent and non-volatile Parameter Tables")]

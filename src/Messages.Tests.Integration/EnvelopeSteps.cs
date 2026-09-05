@@ -186,6 +186,18 @@ public sealed class EnvelopeSteps
 		contents.ParameterNumber.Value.Should().Be(parameterNumber);
 	}
 
+	[Then(@"its decoded Set Parameter identifies the non-volatile table, parameter number (.*), and value bytes ""(.*)""")]
+	public void ThenItsDecodedSetParameterIdentifiesTheNonVolatileTable(
+		byte parameterNumber,
+		string parameterValue)
+	{
+		var contents = this.envelope!.Contents.Should().BeOfType<SetParameter>().Which;
+
+		contents.ParameterTable.Should().Be(ParameterTable.NonVolatile);
+		contents.ParameterNumber.Value.Should().Be(parameterNumber);
+		contents.ParameterValue.ToWireValue().Should().Equal(Convert.FromHexString(parameterValue));
+	}
+
 	[Then(@"its decoded Parameter Request Multiple identifies current-table parameter number (.*) and entries (.*) through (.*)")]
 	public void ThenItsDecodedParameterRequestMultipleIdentifiesCurrentTable(
 		byte parameterNumber,
