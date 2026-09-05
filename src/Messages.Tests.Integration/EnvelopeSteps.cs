@@ -284,6 +284,12 @@ public sealed class EnvelopeSteps
 		this.decodingException.Should().NotBeNull();
 	}
 
+	[Then(@"the non-empty Acknowledgement Contents are rejected")]
+	public void ThenTheNonEmptyAcknowledgementContentsAreRejected()
+	{
+		this.decodingException.Should().NotBeNull();
+	}
+
 	[Given(@"an Envelope source of Brigade (.*), Node (.*), and Port (.*)")]
 	public void GivenAnEnvelopeSource(byte brigade, ushort node, byte port)
 	{
