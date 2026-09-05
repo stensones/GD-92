@@ -10,18 +10,11 @@ public sealed class RouterParameterRequestHandler
 	private readonly ProtocolVersion protocolVersion;
 	private readonly RouterCurrentParameterProjection? currentParameters;
 	private readonly RouterCurrentParameterProjectionSource? currentParameterSource;
-	private readonly IRouterPasswordVerifierStore? passwordVerifierStore;
+	private readonly IRouterLevel1PasswordVerifierStore? passwordVerifierStore;
 	private static readonly PasswordLevel LevelZero =
 		PasswordLevel.FromValue(PasswordLevelNumber.Unauthenticated);
 	private static readonly PasswordLevel LevelOne =
 		PasswordLevel.FromValue(PasswordLevelNumber.Level1);
-	private static readonly ParameterNumber BrigadeOrAgencyNumber =
-		ParameterNumber.FromValue(1);
-	private static readonly ParameterNumber CurrentPasswordParameterNumber =
-		ParameterNumber.FromValue(4);
-	private static readonly ParameterNumber Level1PasswordParameterNumber =
-		ParameterNumber.FromValue(5);
-
 	public RouterParameterRequestHandler(
 		CommunicationsAddress localAddress,
 		ProtocolVersion protocolVersion)
@@ -55,7 +48,7 @@ public sealed class RouterParameterRequestHandler
 		CommunicationsAddress localAddress,
 		ProtocolVersion protocolVersion,
 		RouterCurrentParameterProjectionSource currentParameterSource,
-		IRouterPasswordVerifierStore passwordVerifierStore)
+		IRouterLevel1PasswordVerifierStore passwordVerifierStore)
 	{
 		this.localAddress = localAddress ?? throw new ArgumentNullException(nameof(localAddress));
 		this.protocolVersion = protocolVersion ?? throw new ArgumentNullException(nameof(protocolVersion));
@@ -90,7 +83,7 @@ public sealed class RouterParameterRequestHandler
 		ArgumentNullException.ThrowIfNull(envelope);
 
 		if (envelope.Contents is SetParameter setParameter &&
-			setParameter.ParameterNumber == Level1PasswordParameterNumber)
+			setParameter.ParameterNumber == RouterParameterCatalogue.Level1PasswordNumber)
 		{
 			return await this.HandleLevel1PasswordChangeAsync(
 				envelope,
@@ -113,7 +106,7 @@ public sealed class RouterParameterRequestHandler
 		}
 
 		if (parameterRequest.ParameterTable != ParameterTable.Current ||
-			parameterRequest.ParameterNumber != BrigadeOrAgencyNumber)
+			parameterRequest.ParameterNumber != RouterParameterCatalogue.BrigadeOrAgency.Number)
 		{
 			return RouterEnvelopeHandlingResult.NotHandled(
 				RouterEnvelopeHandlingStatus.ParameterNotHandled);
@@ -146,7 +139,7 @@ public sealed class RouterParameterRequestHandler
 		}
 
 		if (setParameter.ParameterTable != ParameterTable.Current ||
-			setParameter.ParameterNumber != CurrentPasswordParameterNumber)
+			setParameter.ParameterNumber != RouterParameterCatalogue.CurrentPassword.Number)
 		{
 			return RouterEnvelopeHandlingResult.NotHandled(
 				RouterEnvelopeHandlingStatus.ParameterNotHandled);
@@ -244,7 +237,6 @@ public sealed class RouterParameterRequestHandler
 		{
 			await this.passwordVerifierStore.StoreAsync(
 				ParameterTable.NonVolatile,
-				setParameter.ParameterNumber,
 				passwordVerifier,
 				cancellationToken);
 		}

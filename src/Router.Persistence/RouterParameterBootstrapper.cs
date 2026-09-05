@@ -5,23 +5,12 @@ namespace Router.Persistence;
 
 public sealed class RouterParameterBootstrapper
 {
-	private static readonly ParameterNumber BrigadeOrAgencyNumber =
-		ParameterNumber.FromValue(1);
-	private static readonly ParameterNumber CurrentPasswordParameterNumber =
-		ParameterNumber.FromValue(4);
-	private static readonly ParameterNumber Level1PasswordParameterNumber =
-		ParameterNumber.FromValue(5);
-	private static readonly ParameterNumber NoAcknowledgementTimeoutParameterNumber =
-		ParameterNumber.FromValue(12);
-	private static readonly ParameterNumber RetriesParameterNumber =
-		ParameterNumber.FromValue(19);
-
 	private readonly IRouterParameterStore store;
-	private readonly IRouterPasswordVerifierStore passwordVerifierStore;
+	private readonly IRouterLevel1PasswordVerifierStore passwordVerifierStore;
 
 	public RouterParameterBootstrapper(
 		IRouterParameterStore store,
-		IRouterPasswordVerifierStore passwordVerifierStore)
+		IRouterLevel1PasswordVerifierStore passwordVerifierStore)
 	{
 		this.store = store ?? throw new ArgumentNullException(nameof(store));
 		this.passwordVerifierStore = passwordVerifierStore ??
@@ -35,26 +24,26 @@ public sealed class RouterParameterBootstrapper
 		ArgumentNullException.ThrowIfNull(configuration);
 
 		var brigadeOrAgencyIdentifier = await this.LoadOrBootstrapParameterAsync(
-			BrigadeOrAgencyNumber,
-			ParameterValue.FromWireValue(configuration.LocalAddress.Brigade.Value.ToWireValue()),
+			RouterParameterCatalogue.BrigadeOrAgency,
+			configuration.LocalAddress.Brigade.Value,
 			cancellationToken);
 		var currentPassword = await this.LoadOrBootstrapParameterAsync(
-			CurrentPasswordParameterNumber,
+			RouterParameterCatalogue.CurrentPassword,
 			CreateNeutralCurrentPassword(configuration.LocalAddress),
 			cancellationToken);
 		var noAcknowledgementTimeout = await this.LoadOrBootstrapParameterAsync(
-			NoAcknowledgementTimeoutParameterNumber,
-			ParameterValue.FromWireValue(configuration.NoAcknowledgementTimeout.ToWireValue()),
+			RouterParameterCatalogue.NoAcknowledgementTimeout,
+			configuration.NoAcknowledgementTimeout,
 			cancellationToken);
 		var retries = await this.LoadOrBootstrapParameterAsync(
-			RetriesParameterNumber,
-			ParameterValue.FromWireValue(configuration.Retries.ToWireValue()),
+			RouterParameterCatalogue.Retries,
+			configuration.Retries,
 			cancellationToken);
 		var level1PasswordVerifier = await this.LoadLevel1PasswordVerifierAsync(
 			configuration.InitialLevel1Password,
 			cancellationToken);
 
-		return RouterCurrentParameterProjection.FromNonVolatileValues(
+		return RouterCurrentParameterProjection.FromNonVolatileParameters(
 			brigadeOrAgencyIdentifier,
 			currentPassword,
 			level1PasswordVerifier,
@@ -62,40 +51,40 @@ public sealed class RouterParameterBootstrapper
 			retries);
 	}
 
-	private async ValueTask<ParameterValue> LoadOrBootstrapParameterAsync(
-		ParameterNumber parameterNumber,
-		ParameterValue initialValue,
+	private async ValueTask<T> LoadOrBootstrapParameterAsync<T>(
+		RouterParameterDefinition<T> parameter,
+		T initialValue,
 		CancellationToken cancellationToken)
 	{
 		var permanentValue = await this.store.GetAsync(
 			ParameterTable.Permanent,
-			parameterNumber,
+			parameter.Number,
 			cancellationToken);
 		if (permanentValue is null)
 		{
-			permanentValue = initialValue;
+			permanentValue = parameter.Encode(initialValue);
 			await this.store.StoreAsync(
 				ParameterTable.Permanent,
-				parameterNumber,
+				parameter.Number,
 				permanentValue,
 				cancellationToken);
 		}
 
 		var nonVolatileValue = await this.store.GetAsync(
 			ParameterTable.NonVolatile,
-			parameterNumber,
+			parameter.Number,
 			cancellationToken);
 		if (nonVolatileValue is null)
 		{
 			nonVolatileValue = permanentValue;
 			await this.store.StoreAsync(
 				ParameterTable.NonVolatile,
-				parameterNumber,
+				parameter.Number,
 				nonVolatileValue,
 				cancellationToken);
 		}
 
-		return nonVolatileValue;
+		return parameter.Read(nonVolatileValue);
 	}
 
 	private async ValueTask<PasswordVerifier> LoadLevel1PasswordVerifierAsync(
@@ -114,7 +103,6 @@ public sealed class RouterParameterBootstrapper
 				PasswordVerifierWorkFactor.Default);
 			await this.passwordVerifierStore.StoreAsync(
 				ParameterTable.Permanent,
-				Level1PasswordParameterNumber,
 				permanentVerifier,
 				cancellationToken);
 		}
@@ -136,7 +124,6 @@ public sealed class RouterParameterBootstrapper
 
 		await this.passwordVerifierStore.StoreAsync(
 			ParameterTable.NonVolatile,
-			Level1PasswordParameterNumber,
 			permanentVerifier!,
 			cancellationToken);
 
@@ -145,7 +132,7 @@ public sealed class RouterParameterBootstrapper
 	}
 
 	private static async ValueTask<PasswordVerifier?> GetPasswordVerifierAsync(
-		IRouterPasswordVerifierStore passwordVerifierStore,
+		IRouterLevel1PasswordVerifierStore passwordVerifierStore,
 		ParameterTable parameterTable,
 		CancellationToken cancellationToken)
 	{
@@ -153,7 +140,6 @@ public sealed class RouterParameterBootstrapper
 		{
 			return await passwordVerifierStore.GetAsync(
 				parameterTable,
-				Level1PasswordParameterNumber,
 				cancellationToken);
 		}
 		catch (ArgumentException exception)
@@ -173,13 +159,12 @@ public sealed class RouterParameterBootstrapper
 				: throw new ArgumentOutOfRangeException(nameof(parameterTable));
 	}
 
-	private static ParameterValue CreateNeutralCurrentPassword(CommunicationsAddress localAddress)
+	private static PasswordParameter CreateNeutralCurrentPassword(CommunicationsAddress localAddress)
 	{
-		return ParameterValue.FromWireValue(
-			PasswordParameter.FromFields(
-				PasswordLevel.FromValue(PasswordLevelNumber.Unauthenticated),
-				Password.FromValue(
-					PasswordValue.FromValue(SevenBitAsciiString.FromValue(string.Empty))),
-				localAddress).ToWireValue());
+		return PasswordParameter.FromFields(
+			PasswordLevel.FromValue(PasswordLevelNumber.Unauthenticated),
+			Password.FromValue(
+				PasswordValue.FromValue(SevenBitAsciiString.FromValue(string.Empty))),
+			localAddress);
 	}
 }

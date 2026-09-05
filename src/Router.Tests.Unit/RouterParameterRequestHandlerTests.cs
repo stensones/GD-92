@@ -276,18 +276,17 @@ public sealed class RouterParameterRequestHandlerTests
 	{
 		var localAddress = CreateAddress(brigade, 100, 0);
 
-		return RouterCurrentParameterProjection.FromNonVolatileValues(
-			ParameterValue.FromWireValue([brigade]),
-			ParameterValue.FromWireValue(
-				PasswordParameter.FromFields(
-					PasswordLevel.FromValue(PasswordLevelNumber.Unauthenticated),
-					Password.FromValue(
-						PasswordValue.FromValue(SevenBitAsciiString.FromValue(string.Empty))),
-					localAddress).ToWireValue()),
+		return RouterCurrentParameterProjection.FromNonVolatileParameters(
+			BrigadeOrAgencyIdentifier.FromValue(brigade),
+			PasswordParameter.FromFields(
+				PasswordLevel.FromValue(PasswordLevelNumber.Unauthenticated),
+				Password.FromValue(
+					PasswordValue.FromValue(SevenBitAsciiString.FromValue(string.Empty))),
+				localAddress),
 			PasswordVerifier.Create(
 				levelOnePassword ?? PasswordValue.FromValue(SevenBitAsciiString.FromValue("FIRE")),
 				PasswordVerifierWorkFactor.Default),
-			ParameterValue.FromWireValue([5]),
-			ParameterValue.FromWireValue([3]));
+			NoAcknowledgementTimeout.FromValue(Word8.FromValue(5)),
+			Retries.FromValue(Word8.FromValue(3)));
 	}
 }

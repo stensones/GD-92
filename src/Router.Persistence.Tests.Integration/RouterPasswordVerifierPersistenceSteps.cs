@@ -11,8 +11,6 @@ namespace Router.Persistence.Tests.Integration;
 [Binding]
 public sealed class RouterPasswordVerifierPersistenceSteps
 {
-	private static readonly ParameterNumber PasswordParameterNumber = ParameterNumber.FromValue(5);
-
 	private PostgreSqlContainer? database;
 	private PasswordValue? originalPassword;
 	private PasswordValue? differentPassword;
@@ -50,10 +48,9 @@ public sealed class RouterPasswordVerifierPersistenceSteps
 			PasswordVerifierWorkFactor.Default);
 
 		await using var context = this.CreateContext();
-		IRouterPasswordVerifierStore store = new EfRouterPasswordVerifierStore(context);
+		IRouterLevel1PasswordVerifierStore store = new EfRouterPasswordVerifierStore(context);
 		await store.StoreAsync(
 			ParameterTable.Permanent,
-			PasswordParameterNumber,
 			verifier);
 	}
 
@@ -61,11 +58,10 @@ public sealed class RouterPasswordVerifierPersistenceSteps
 	public async Task ThenAFreshStoreRetrievesTheOriginalPasswordVerifier()
 	{
 		await using var context = this.CreateContext();
-		IRouterPasswordVerifierStore store = new EfRouterPasswordVerifierStore(context);
+		IRouterLevel1PasswordVerifierStore store = new EfRouterPasswordVerifierStore(context);
 
 		this.reloadedVerifier = await store.GetAsync(
-			ParameterTable.Permanent,
-			PasswordParameterNumber);
+			ParameterTable.Permanent);
 
 		this.reloadedVerifier.Should().NotBeNull();
 		this.reloadedVerifier!.Verifies(this.originalPassword!.Value).Should().BeTrue();

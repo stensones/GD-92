@@ -301,19 +301,18 @@ public sealed class RouterIngressReceiverTests
 	private static RouterCurrentParameterProjection CreateCurrentParameterProjection(
 		CommunicationsAddress localAddress)
 	{
-		return RouterCurrentParameterProjection.FromNonVolatileValues(
-			ParameterValue.FromWireValue(localAddress.Brigade.Value.ToWireValue()),
-			ParameterValue.FromWireValue(
-				PasswordParameter.FromFields(
-					PasswordLevel.FromValue(PasswordLevelNumber.Unauthenticated),
-					Password.FromValue(
-						PasswordValue.FromValue(SevenBitAsciiString.FromValue(string.Empty))),
-					localAddress).ToWireValue()),
+		return RouterCurrentParameterProjection.FromNonVolatileParameters(
+			localAddress.Brigade.Value,
+			PasswordParameter.FromFields(
+				PasswordLevel.FromValue(PasswordLevelNumber.Unauthenticated),
+				Password.FromValue(
+					PasswordValue.FromValue(SevenBitAsciiString.FromValue(string.Empty))),
+				localAddress),
 			PasswordVerifier.Create(
 				PasswordValue.FromValue(SevenBitAsciiString.FromValue("FIRE")),
 				PasswordVerifierWorkFactor.Default),
-			ParameterValue.FromWireValue([5]),
-			ParameterValue.FromWireValue([3]));
+			NoAcknowledgementTimeout.FromValue(Word8.FromValue(5)),
+			Retries.FromValue(Word8.FromValue(3)));
 	}
 
 	private static PasswordParameter CreatePasswordParameter(
@@ -383,26 +382,24 @@ public sealed class RouterIngressReceiverTests
 		}
 	}
 
-	private sealed class CapturingPasswordVerifierStore : IRouterPasswordVerifierStore
+	private sealed class CapturingPasswordVerifierStore : IRouterLevel1PasswordVerifierStore
 	{
-		public Dictionary<(ParameterTable Table, ParameterNumber Number), PasswordVerifier> StoredValues { get; } = [];
+		public Dictionary<ParameterTable, PasswordVerifier> StoredValues { get; } = [];
 
 		public ValueTask<PasswordVerifier?> GetAsync(
 			ParameterTable parameterTable,
-			ParameterNumber parameterNumber,
 			CancellationToken cancellationToken = default)
 		{
-			this.StoredValues.TryGetValue((parameterTable, parameterNumber), out var value);
+			this.StoredValues.TryGetValue(parameterTable, out var value);
 			return ValueTask.FromResult(value);
 		}
 
 		public ValueTask StoreAsync(
 			ParameterTable parameterTable,
-			ParameterNumber parameterNumber,
 			PasswordVerifier passwordVerifier,
 			CancellationToken cancellationToken = default)
 		{
-			this.StoredValues[(parameterTable, parameterNumber)] = passwordVerifier;
+			this.StoredValues[parameterTable] = passwordVerifier;
 			return ValueTask.CompletedTask;
 		}
 	}
