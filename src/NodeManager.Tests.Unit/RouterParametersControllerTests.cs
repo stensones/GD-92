@@ -1,5 +1,9 @@
 using AwesomeAssertions;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.Abstractions;
+using Microsoft.AspNetCore.Mvc.Filters;
+using Microsoft.AspNetCore.Routing;
 using NodeManager.Router.Parameters;
 using Stensones.GD92.Fields;
 using Stensones.GD92.Messages;
@@ -115,6 +119,26 @@ public sealed class RouterParametersControllerTests
 		var redirect = result.Should().BeOfType<SeeOtherRedirectResult>().Which;
 		redirect.Location.Should().Be($"/router/parameters/logon/status/{statusIdentifier}");
 		redirect.StatusCode.Should().Be(303);
+	}
+
+	[Fact]
+	public void Rejects_a_non_HTTPS_logon_before_the_action_can_process_its_form()
+	{
+		var action = typeof(RouterParametersController)
+			.GetMethod(nameof(RouterParametersController.LogOn))!;
+		var httpsRequirement = action.GetCustomAttributes(inherit: true)
+			.OfType<RequireHttpsAttribute>()
+			.Should().ContainSingle().Which;
+		var httpContext = new DefaultHttpContext();
+		httpContext.Request.Method = HttpMethods.Post;
+		httpContext.Request.Scheme = Uri.UriSchemeHttp;
+		var filterContext = new AuthorizationFilterContext(
+			new ActionContext(httpContext, new RouteData(), new ActionDescriptor()),
+			[]);
+
+		httpsRequirement.OnAuthorization(filterContext);
+
+		filterContext.Result.Should().NotBeNull();
 	}
 
 	[Fact]
