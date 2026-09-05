@@ -5,6 +5,11 @@ namespace Router.Persistence;
 
 public sealed class RouterCurrentParameterProjection
 {
+	private static readonly PasswordLevel LevelOne =
+		PasswordLevel.FromValue(PasswordLevelNumber.FromValue(1));
+	private static readonly Password EmptyPassword = Password.FromValue(
+		PasswordValue.FromValue(SevenBitAsciiString.FromValue(string.Empty)));
+
 	private RouterCurrentParameterProjection(
 		BrigadeOrAgencyIdentifier brigadeOrAgencyIdentifier,
 		PasswordParameter currentPassword,
@@ -24,6 +29,19 @@ public sealed class RouterCurrentParameterProjection
 	public PasswordVerifier Level1PasswordVerifier { get; }
 	public NoAcknowledgementTimeout NoAcknowledgementTimeout { get; }
 	public Retries Retries { get; }
+
+	public RouterCurrentParameterProjection LogOnAtLevelOne(
+		CommunicationsAddress communicationsAddress)
+	{
+		ArgumentNullException.ThrowIfNull(communicationsAddress);
+
+		return new RouterCurrentParameterProjection(
+			this.BrigadeOrAgencyIdentifier,
+			PasswordParameter.FromFields(LevelOne, EmptyPassword, communicationsAddress),
+			this.Level1PasswordVerifier,
+			this.NoAcknowledgementTimeout,
+			this.Retries);
+	}
 
 	public static RouterCurrentParameterProjection FromNonVolatileValues(
 		ParameterValue brigadeOrAgencyIdentifier,

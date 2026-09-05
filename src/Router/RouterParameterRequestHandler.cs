@@ -44,12 +44,24 @@ public sealed class RouterParameterRequestHandler
 	{
 		ArgumentNullException.ThrowIfNull(envelope);
 
-		if (envelope.Contents is not ParameterRequest parameterRequest)
+		if (envelope.Contents is ParameterRequest parameterRequest)
 		{
-			return RouterEnvelopeHandlingResult.NotHandled(
-				RouterEnvelopeHandlingStatus.MessageTypeNotHandled);
+			return this.HandleParameterRequest(envelope, parameterRequest);
 		}
 
+		if (envelope.Contents is SetParameter setParameter)
+		{
+			return this.HandleSetParameter(envelope, setParameter);
+		}
+
+		return RouterEnvelopeHandlingResult.NotHandled(
+			RouterEnvelopeHandlingStatus.MessageTypeNotHandled);
+	}
+
+	private RouterEnvelopeHandlingResult HandleParameterRequest(
+		Envelope envelope,
+		ParameterRequest parameterRequest)
+	{
 		if (envelope.Destinations.Addresses.Count != 1 ||
 			envelope.Destinations.Addresses[0] != this.localAddress)
 		{
@@ -77,6 +89,40 @@ public sealed class RouterParameterRequestHandler
 						.ToWireValue())));
 
 		return RouterEnvelopeHandlingResult.Responded(response);
+	}
+
+	private RouterEnvelopeHandlingResult HandleSetParameter(
+		Envelope envelope,
+		SetParameter setParameter)
+	{
+		if (envelope.Destinations.Addresses.Count != 1 ||
+			envelope.Destinations.Addresses[0] != this.localAddress)
+		{
+			return RouterEnvelopeHandlingResult.NotHandled(
+				RouterEnvelopeHandlingStatus.DestinationNotHandled);
+		}
+
+		if (setParameter.ParameterTable != ParameterTable.Current ||
+			setParameter.ParameterNumber.Value != 4)
+		{
+			return RouterEnvelopeHandlingResult.NotHandled(
+				RouterEnvelopeHandlingStatus.ParameterNotHandled);
+		}
+
+		var valueBuffer = new EncodedMessageBuffer(setParameter.ParameterValue.ToWireValue());
+		var submittedPassword = PasswordParameter.FromEncodedMessageBuffer(ref valueBuffer);
+
+		if (this.currentParameterSource is null ||
+			!this.currentParameterSource.TryLogOnAtLevelOne(submittedPassword))
+		{
+			return RouterEnvelopeHandlingResult.NotHandled(
+				RouterEnvelopeHandlingStatus.ParameterNotHandled);
+		}
+
+		return RouterEnvelopeHandlingResult.Responded(Envelope.CreateAcknowledgement(
+			envelope,
+			this.localAddress,
+			this.protocolVersion));
 	}
 }
 
