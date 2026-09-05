@@ -8,6 +8,8 @@ namespace Stensones.GD92.Messages.Tests.Integration;
 public sealed class ParameterValidationSteps
 {
 	private InvalidOperationException? decodingException;
+	private Parameter? parameter;
+	private byte[]? parameterContents;
 
 	[Given(@"Parameter Contents with a partial Parameter Value byte")]
 	public void GivenParameterContentsWithAPartialParameterValueByte()
@@ -59,5 +61,33 @@ public sealed class ParameterValidationSteps
 	public void ThenThePartialSetParameterValueIsRejected()
 	{
 		this.decodingException.Should().NotBeNull();
+	}
+
+	[Given(@"Parameter Contents bytes ""(.*)""")]
+	public void GivenParameterContentsBytes(string contents)
+	{
+		this.parameter = null;
+		this.decodingException = null;
+		this.parameterContents = Convert.FromHexString(contents);
+	}
+
+	[When(@"the Parameter Contents are decoded")]
+	public void WhenTheParameterContentsAreDecoded()
+	{
+		var buffer = new EncodedMessageBuffer(this.parameterContents!);
+
+		this.parameter = Parameter.FromEncodedMessageBuffer(ref buffer);
+	}
+
+	[Then(@"the Parameter Contents indicate that more values follow")]
+	public void ThenTheParameterContentsIndicateThatMoreValuesFollow()
+	{
+		this.parameter!.MoreValues.Should().Be(MoreValues.Yes);
+	}
+
+	[Then(@"the Parameter Value bytes are ""(.*)""")]
+	public void ThenTheParameterValueBytesAre(string value)
+	{
+		this.parameter!.ParameterValue.ToWireValue().Should().Equal(Convert.FromHexString(value));
 	}
 }
