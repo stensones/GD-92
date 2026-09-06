@@ -42,6 +42,10 @@ _Avoid_: final delivery, Message Transfer Agent Frame
 The delivery of an Envelope from a local Router to the addressed User Agent.
 _Avoid_: browser response, Message Transfer Agent Frame
 
+**Local Participant Ingress**:
+The delivery of a management Envelope from a local Router to an addressed Message Transfer Agent or User Agent.
+_Avoid_: User-Agent Ingress, browser response
+
 **Message Transfer Agent (MTA)**:
 A Communications Entity that operates with a paired MTA to transfer messages reliably across a communications bearer.
 _Avoid_: router, User Agent
@@ -72,6 +76,10 @@ _Avoid_: dedicated network-management terminal
 The fallback logical management role addressed through a second special User Agent address.
 _Avoid_: backup device
 
+**Network Management User Agent**:
+A User Agent whose Agent Type identifies it as a network-management terminal.
+_Avoid_: Network Manager, Router
+
 ### Configuration
 
 **Parameter**:
@@ -94,6 +102,26 @@ The volatile Parameter Table containing the values presently used by a Communica
 **Node Parameter Set**:
 The complete coordinated set of Router, Message Transfer Agent, and User Agent Parameters maintained at one Communications Node.
 _Avoid_: application configuration, Router-only settings
+
+**Communications Node Inventory**:
+The discovered Router, Message Transfer Agents, and User Agents at one Communications Node, identified by port and agent type.
+_Avoid_: configured list, device list
+
+**Agent Type**:
+The protocol-defined or user-defined identifier that characterizes a Message Transfer Agent or User Agent port.
+_Avoid_: participant kind, physical equipment type
+
+**Unclassified Participant**:
+A discovered port whose user-defined Agent Type does not establish whether it is a Message Transfer Agent or User Agent.
+_Avoid_: unknown device, Message Transfer Agent, User Agent
+
+**Inventory Scan**:
+A bounded sequence of Parameter Requests that discovers the participants of one Communications Node.
+_Avoid_: configuration read, network scan
+
+**Inventory Scan Summary**:
+The outcome counts for successful and unsuccessful Participant discovery requests in one Inventory Scan.
+_Avoid_: configured participant count, error log
 
 **Parameter Number**:
 The eight-bit identifier of a Parameter within a Parameter Table.
@@ -411,17 +439,23 @@ _Avoid_: retransmission, duplicate Message
 - A **Router** switches messages between the **User Agents** and **Message Transfer Agents** in its **Communications Node**.
 - A **User Agent** submits each outgoing **Envelope** to its local **Router** through **Router Ingress**.
 - A **Router** delivers an Envelope addressed to a local **User Agent** through **User-Agent Ingress**.
+- A **Router** delivers a management **Envelope** addressed to a local **Message Transfer Agent** or **User Agent** through **Local Participant Ingress**.
 - A **Message Transfer Agent** transfers messages only with its paired **Message Transfer Agent**.
 - A **Message Transfer Agent** transfers an encoded **Envelope** to its paired Message Transfer Agent in a **Frame**.
 - A **Router** and **User Agent** validate the **Block Check Character** of a received **Envelope**.
 - A Router or **User Agent** attempts a **Negative Acknowledgement** with a **General Reason Code** when a received Envelope's length, **Block Check Character**, or **Protocol Version** is invalid.
 - A **User Agent** has exactly one **Communications Address** and one or more **UA Capabilities**.
+- A **Network Management User Agent** is a **User Agent** that fulfils a **Network Manager** or **Alternative Network Manager** role.
 - An **Alerter User Agent**, **Paging User Agent**, **Printer User Agent**, **Peripheral User Agent**, or **Resource User Agent** is a **User Agent** with the corresponding **UA Capabilities**.
 - Every **User Agent** supports the **Network Manager** and **Alternative Network Manager** addresses.
 - An **External System** may present one or more addressed **User Agents** through a combined **Message Transfer Agent** and User Agent interface.
 - An **External Bearer** carries **Messages** but has no **Communications Address**.
 - A **Router**, **Message Transfer Agent**, or **User Agent** owns zero or more **Parameters**.
 - A **Communications Node** has one **Node Parameter Set** maintained through its **Router**.
+- A **Communications Node Inventory** identifies the Router, zero or more **Message Transfer Agents**, and zero or more **User Agents** at one **Communications Node**.
+- A **Message Transfer Agent** or **User Agent** has one **Agent Type**.
+- An **Unclassified Participant** has a user-defined **Agent Type**.
+- A **Communications Node Inventory** is produced by one **Inventory Scan** and includes its **Inventory Scan Summary**.
 - A **Current Parameter Table** is initialized from its **Non-Volatile Parameter Table** on normal startup.
 - A **Permanent Parameter Table** supplies fallback Parameter values when a **Non-Volatile Parameter Table** is corrupted.
 - A **Node Login** at a **Communications Node** authorizes Parameter modification according to each **Parameter**'s **Password Level**.
