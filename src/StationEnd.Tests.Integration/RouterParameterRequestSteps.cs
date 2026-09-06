@@ -274,11 +274,13 @@ public sealed class RouterParameterRequestSteps
 	{
 		var statusAddress = this.response!.Headers.Location!;
 		var expectedAddress = $"{brigade}.{node}.{port}";
+		string? lastStatus = null;
 
 		for (var attempt = 0; attempt < 30; attempt++)
 		{
 			var status = await this.client!.GetAsync(statusAddress);
 			var content = await status.Content.ReadAsStringAsync();
+			lastStatus = $"{status.StatusCode}: {content}";
 
 			if (status.StatusCode == HttpStatusCode.OK &&
 				content.Contains("logged-on", StringComparison.Ordinal) &&
@@ -291,7 +293,8 @@ public sealed class RouterParameterRequestSteps
 		}
 
 		throw new Xunit.Sdk.XunitException(
-			$"The Node Login status did not show User-Agent address {expectedAddress} as logged on.");
+			$"The Node Login status did not show User-Agent address {expectedAddress} as logged on. " +
+			$"Last status: {lastStatus}");
 	}
 
 	[Then(@"the Node Login status eventually shows invalid password")]
@@ -376,9 +379,11 @@ public sealed class RouterParameterRequestSteps
 	private async Task StartApplicationAsync()
 	{
 		var appHost = await DistributedApplicationTestingBuilder
-			.CreateAsync<Projects.GD92_StationEnd_AppHost>();
-		appHost.Configuration["Persistence:UsePersistentPostgres"] = "false";
-		appHost.Configuration["Parameters:router-level1-password"] = this.level1Password ?? "FIRE1";
+			.CreateAsync<Projects.GD92_StationEnd_AppHost>(
+				[
+					"--Persistence:UsePersistentPostgres=false",
+					$"--Parameters:router-level1-password={this.level1Password ?? "FIRE1"}"
+				]);
 
 		this.application = await appHost.BuildAsync();
 		await this.application.StartAsync();

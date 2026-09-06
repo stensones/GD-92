@@ -25,9 +25,12 @@ else
 }
 
 var routerDatabase = postgres.AddDatabase("router-database", "router");
-var routerLevel1Password = builder.AddParameter("router-level1-password", secret: true);
+var routerLevel1Password = builder.AddParameterFromConfiguration(
+	"router-level1-password",
+	"Parameters:router-level1-password",
+	secret: true);
 
-builder.AddProject<Projects.Router>("Router")
+var router = builder.AddProject<Projects.Router>("Router")
 	.WithReference(rabbitMq)
 	.WaitFor(rabbitMq)
 	.WithReference(routerDatabase)
@@ -45,7 +48,8 @@ builder.AddProject<Projects.LANMTA>("LAN-MTA")
 
 builder.AddProject<Projects.NodeManager>("Node-Manager-UA")
 	.WithReference(rabbitMq)
-	.WaitFor(rabbitMq);
+	.WaitFor(rabbitMq)
+	.WaitFor(router);
 
 builder.AddProject<Projects.PrinterUA>("Printer-UA")
 	.WithReference(rabbitMq)
