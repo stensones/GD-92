@@ -15,6 +15,8 @@ public sealed class RouterParameterRequestHandler
 		PasswordLevel.FromValue(PasswordLevelNumber.Unauthenticated);
 	private static readonly PasswordLevel LevelOne =
 		PasswordLevel.FromValue(PasswordLevelNumber.Level1);
+	internal CommunicationsAddress LocalAddress => this.localAddress;
+
 	public RouterParameterRequestHandler(
 		CommunicationsAddress localAddress,
 		ProtocolVersion protocolVersion)

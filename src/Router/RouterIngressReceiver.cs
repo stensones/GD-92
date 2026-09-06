@@ -8,17 +8,21 @@ public sealed class RouterIngressReceiver : IRouterIngressReceiver
 {
 	private readonly RouterParameterRequestHandler parameterRequestHandler;
 	private readonly IUserAgentIngress userAgentIngress;
+	private readonly ILocalParticipantIngress localParticipantIngress;
 	private readonly ILogger<RouterIngressReceiver> logger;
 
 	public RouterIngressReceiver(
 		RouterParameterRequestHandler parameterRequestHandler,
 		IUserAgentIngress userAgentIngress,
+		ILocalParticipantIngress localParticipantIngress,
 		ILogger<RouterIngressReceiver> logger)
 	{
 		this.parameterRequestHandler = parameterRequestHandler ??
 			throw new ArgumentNullException(nameof(parameterRequestHandler));
 		this.userAgentIngress = userAgentIngress ??
 			throw new ArgumentNullException(nameof(userAgentIngress));
+		this.localParticipantIngress = localParticipantIngress ??
+			throw new ArgumentNullException(nameof(localParticipantIngress));
 		this.logger = logger ?? throw new ArgumentNullException(nameof(logger));
 	}
 
@@ -46,6 +50,10 @@ public sealed class RouterIngressReceiver : IRouterIngressReceiver
 				response.Contents.Type.Value,
 				response.Destinations.Addresses[0]);
 		}
+		else if (this.IsForLocalParticipant(envelope))
+		{
+			await this.localParticipantIngress.DeliverAsync(envelope, cancellationToken);
+		}
 		else
 		{
 			this.logger.LogWarning(
@@ -53,5 +61,20 @@ public sealed class RouterIngressReceiver : IRouterIngressReceiver
 				envelope.Contents.Type.Value,
 				handling.Status);
 		}
+	}
+
+	private bool IsForLocalParticipant(Envelope envelope)
+	{
+		if (envelope.Destinations.Addresses.Count != 1)
+		{
+			return false;
+		}
+
+		var destination = envelope.Destinations.Addresses[0];
+		var localAddress = this.parameterRequestHandler.LocalAddress;
+
+		return destination.Brigade == localAddress.Brigade &&
+			destination.Node == localAddress.Node &&
+			destination.Port.Value != 0;
 	}
 }

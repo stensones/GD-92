@@ -1,4 +1,5 @@
 ﻿using NodeManager.Router.Parameters;
+using NodeManager.Router.Participants;
 using Stensones.GD92.Transport.RabbitMQ;
 using Wolverine;
 using Wolverine.RabbitMQ;
@@ -22,15 +23,18 @@ builder.Services.AddWolverine(options =>
 {
 	options.UseRabbitMqUsingNamedConnection("RabbitMQ").AutoProvision();
 	options.ListenForUserAgentIngress(requestSettings.MessageOriginator);
+	options.ListenForLocalParticipantIngress(requestSettings.MessageOriginator);
 });
 
 builder.Services.AddSingleton(requestSettings);
 builder.Services.AddSingleton<IPendingDeliveryRegistry, InMemoryPendingDeliveryRegistry>();
-builder.Services.AddSingleton<IUserAgentIngressReceiver, RouterParameterResponseReceiver>();
-builder.Services.AddScoped<IRouterIngress>(serviceProvider =>
-	new RabbitMqRouterIngress(
-		serviceProvider.GetRequiredService<IMessageBus>(),
-		requestSettings.LocalRouter));
+builder.Services.AddSingleton<IInventoryScanRegistry, InMemoryInventoryScanRegistry>();
+builder.Services.AddSingleton<IInventoryScanRunner, InventoryScanRunner>();
+builder.Services.AddSingleton<RouterParameterResponseReceiver>();
+builder.Services.AddSingleton<IUserAgentIngressReceiver>(serviceProvider =>
+	serviceProvider.GetRequiredService<RouterParameterResponseReceiver>());
+builder.Services.AddScoped<ILocalParticipantIngressReceiver, NodeManagerParticipantIngressReceiver>();
+builder.Services.AddScoped<IRouterIngress, NodeManagerRouterIngress>();
 builder.Services.AddSingleton<INodeLoginRetryDelay, NodeLoginRetryDelay>();
 builder.Services.AddSingleton<INodeLoginRetryScheduler>(serviceProvider =>
 	new NodeLoginRetryScheduler(
@@ -45,6 +49,7 @@ var app = builder.Build();
 
 app.UseStaticFiles(); // Enables serving static files from wwwroot
 app.MapDefaultEndpoints();
+app.MapControllers();
 
 app.MapControllerRoute(
 	name: "default",

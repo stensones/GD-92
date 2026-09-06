@@ -225,6 +225,25 @@ public sealed class InMemoryPendingDeliveryRegistry : IPendingDeliveryRegistry
 		}
 	}
 
+	public bool TryTimeoutParameterRequest(RouterParameterRequestStatusIdentifier statusIdentifier)
+	{
+		ArgumentNullException.ThrowIfNull(statusIdentifier);
+
+		lock (this.synchronizationLock)
+		{
+			if (!this.deliveries.TryGetValue(statusIdentifier.USWR, out var status) ||
+				status is not PendingRouterParameterRequestStatus)
+			{
+				return false;
+			}
+
+			this.deliveries.Remove(statusIdentifier.USWR);
+			this.GetPendingSequences(statusIdentifier.USWR.Destination)
+				.Remove(statusIdentifier.USWR.SequenceNumber.Value);
+			return true;
+		}
+	}
+
 	public bool TryTimeoutNodeLogin(RouterParameterRequestStatusIdentifier statusIdentifier)
 	{
 		ArgumentNullException.ThrowIfNull(statusIdentifier);

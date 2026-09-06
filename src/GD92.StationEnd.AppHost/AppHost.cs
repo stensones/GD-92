@@ -39,12 +39,16 @@ builder.AddProject<Projects.BusMTA>("bus-MTA");
 
 builder.AddProject<Projects.IOUA>("IO-UA");
 
-builder.AddProject<Projects.LANMTA>("LAN-MTA");
+builder.AddProject<Projects.LANMTA>("LAN-MTA")
+	.WithReference(rabbitMq)
+	.WaitFor(rabbitMq);
 
 builder.AddProject<Projects.NodeManager>("Node-Manager-UA")
 	.WithReference(rabbitMq)
 	.WaitFor(rabbitMq);
 
-builder.AddProject<Projects.PrinterUA>("Printer-UA");
+builder.AddProject<Projects.PrinterUA>("Printer-UA")
+	.WithReference(rabbitMq)
+	.WaitFor(rabbitMq);
 
 builder.Build().Run();

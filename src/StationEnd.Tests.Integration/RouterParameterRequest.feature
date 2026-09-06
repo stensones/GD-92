@@ -20,6 +20,25 @@ Feature: Router Parameter Request
     When I open NodeManager
     Then NodeManager presents a Node Login form that securely submits password, brigade, node, and port
 
+  Scenario: Following a Node Login status redirect
+    When I open NodeManager
+    Then NodeManager follows a Node Login status redirect
+
+  Scenario: Discovering local participants
+    Given NodeManager is the User Agent at Brigade 26, Node 100, and Port 25
+    And its local Router is at Brigade 26, Node 100, and Port 0
+    When I open NodeManager
+    Then NodeManager presents an enabled Discover local participants control
+    When I select Discover local participants
+    Then I am redirected to a pending Inventory Scan status
+    And the Inventory Scan status reports progress before completion
+    And the completed Inventory Scan lists Router port 0, LAN MTA port 1, Printer User Agent port 2, and Network Management User Agent port 25
+    And the completed Inventory Scan summary shows 3 discovered participants, 60 timeouts, no delivery failures, and no negative acknowledgements
+
+  Scenario: Presenting Inventory Scan progress and results
+    When I open NodeManager
+    Then NodeManager presents Inventory Scan progress and result areas
+
   Scenario: Logging on a User-Agent at the local Router
     Given NodeManager is the User Agent at Brigade 26, Node 100, and Port 25
     And its local Router is at Brigade 26, Node 100, and Port 0

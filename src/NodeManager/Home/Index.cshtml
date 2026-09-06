@@ -43,11 +43,40 @@
     <p id="router-logon-status" role="status" hidden></p>
 </section>
 
+<section aria-labelledby="participant-discovery">
+    <h2 id="participant-discovery">Local participants</h2>
+    <p>Discover the Router, Message Transfer Agents, and User Agents at the local Communications Node.</p>
+
+    <form id="router-participant-discovery" action="/router/participants/discovery" method="post">
+        <button id="router-participant-discovery-submit" type="submit">Discover local participants</button>
+    </form>
+
+    <p id="router-participant-discovery-status" role="status" hidden></p>
+    <table id="router-participant-discovery-results" hidden>
+        <caption>Discovered local participants</caption>
+        <thead>
+            <tr>
+                <th scope="col">Port</th>
+                <th scope="col">Kind</th>
+                <th scope="col">Agent Type</th>
+            </tr>
+        </thead>
+        <tbody></tbody>
+    </table>
+    <div id="router-participant-discovery-summary" hidden></div>
+</section>
+
 <script>
     const requestForm = document.getElementById("router-brigade-request");
     const status = document.getElementById("router-brigade-status");
     const logonForm = document.getElementById("router-logon");
     const logonStatus = document.getElementById("router-logon-status");
+    const discoveryForm = document.getElementById("router-participant-discovery");
+    const discoveryButton = document.getElementById("router-participant-discovery-submit");
+    const discoveryStatus = document.getElementById("router-participant-discovery-status");
+    const discoveryResults = document.getElementById("router-participant-discovery-results");
+    const discoveryResultRows = discoveryResults.querySelector("tbody");
+    const discoverySummary = document.getElementById("router-participant-discovery-summary");
 
     requestForm.addEventListener("submit", async event => {
         event.preventDefault();
@@ -90,12 +119,11 @@
 
         const response = await fetch(logonForm.action, {
             method: "POST",
-            body: new FormData(logonForm),
-            redirect: "manual"
+            body: new FormData(logonForm)
         });
-        const statusUrl = response.headers.get("location");
+        const statusUrl = response.url;
 
-        if (response.status !== 303 || !statusUrl) {
+        if (!response.ok || !statusUrl) {
             logonStatus.textContent = "The Node Login could not be submitted.";
             return;
         }
@@ -116,6 +144,78 @@
             if (login.state === "pending") {
                 window.setTimeout(poll, 1000);
             }
+        };
+
+        poll();
+    });
+
+    const renderInventoryScan = scan => {
+        discoveryStatus.hidden = false;
+        discoveryStatus.textContent = `Inventory Scan: ${scan.completedProbeCount} of 63 probes completed.`;
+        discoveryResults.hidden = false;
+        discoveryResultRows.replaceChildren();
+
+        for (const participant of scan.participants) {
+            const row = document.createElement("tr");
+
+            for (const value of [participant.port, participant.kind, participant.agentType ?? ""]) {
+                const cell = document.createElement("td");
+                cell.textContent = value;
+                row.append(cell);
+            }
+
+            discoveryResultRows.append(row);
+        }
+
+        if (scan.completedProbeCount === 63) {
+            const negativeAcknowledgements = Object.entries(scan.summary.negativeAcknowledgements)
+                .map(([reason, count]) => `${reason}: ${count}`)
+                .join(", ") || "none";
+
+            discoverySummary.hidden = false;
+            discoverySummary.textContent =
+                `Discovered participants: ${scan.summary.discoveredParticipantCount}. ` +
+                `Timeouts: ${scan.summary.timeoutCount}. ` +
+                `Delivery failures: ${scan.summary.deliveryFailureCount}. ` +
+                `Negative acknowledgements: ${negativeAcknowledgements}.`;
+        }
+    };
+
+    discoveryForm.addEventListener("submit", async event => {
+        event.preventDefault();
+        discoveryButton.disabled = true;
+        discoveryStatus.hidden = false;
+        discoveryStatus.textContent = "Discovering local participants...";
+        discoveryResults.hidden = true;
+        discoverySummary.hidden = true;
+
+        const response = await fetch(discoveryForm.action, { method: "POST" });
+        const statusUrl = response.url;
+
+        if (!response.ok || !statusUrl) {
+            discoveryStatus.textContent = "The Inventory Scan could not be submitted.";
+            discoveryButton.disabled = false;
+            return;
+        }
+
+        const poll = async () => {
+            const result = await fetch(statusUrl);
+
+            if (!result.ok) {
+                discoveryStatus.textContent = "The Inventory Scan could not be completed.";
+                discoveryButton.disabled = false;
+                return;
+            }
+
+            const scan = await result.json();
+            renderInventoryScan(scan);
+
+            if (scan.completedProbeCount < 63) {
+                window.setTimeout(poll, 1000);
+                return;
+            }
+
+            discoveryButton.disabled = false;
         };
 
         poll();

@@ -30,6 +30,7 @@ builder.Services.AddScoped(serviceProvider =>
 		serviceProvider.GetRequiredService<RouterCurrentParameterProjectionSource>(),
 		serviceProvider.GetRequiredService<IRouterLevel1PasswordVerifierStore>()));
 builder.Services.AddScoped<IUserAgentIngress, RabbitMqUserAgentIngress>();
+builder.Services.AddScoped<ILocalParticipantIngress, RabbitMqLocalParticipantIngress>();
 builder.Services.AddScoped<IRouterIngressReceiver, RouterIngressReceiver>();
 
 var host = builder.Build();

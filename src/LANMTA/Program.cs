@@ -1,14 +1,31 @@
-﻿using Microsoft.Extensions.DependencyInjection;
+﻿using LANMTA;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
-using Microsoft.Extensions.Logging;
+using Stensones.GD92.Fields;
+using Stensones.GD92.Transport.RabbitMQ;
+using Wolverine;
+using Wolverine.RabbitMQ;
 
 var builder = Host.CreateApplicationBuilder(args);
 builder.AddServiceDefaults();
 
-var application = builder.Build();
-application.Services
-	.GetRequiredService<ILoggerFactory>()
-	.CreateLogger("LANMTA")
-	.LogInformation("LAN MTA started.");
+var localAddress = CommunicationsAddress.FromValues(
+	Brigade.FromValue(BrigadeOrAgencyIdentifier.FromValue(26)),
+	Node.FromValue(NodeIdentifier.FromValue(100)),
+	Port.FromValue(PortIdentifier.FromValue(1)));
+var localRouter = CommunicationsAddress.FromValues(
+	localAddress.Brigade,
+	localAddress.Node,
+	Port.FromValue(PortIdentifier.FromValue(0)));
+var protocolVersion = ProtocolVersion.FromValue(ProtocolVersionNumber.FromValue(2));
 
-await application.RunAsync();
+builder.Services.AddWolverine(options =>
+{
+	options.UseRabbitMqUsingNamedConnection("RabbitMQ").AutoProvision();
+	options.ListenForLocalParticipantIngress(localAddress);
+});
+builder.Services.AddSingleton(new LanMtaSettings(localAddress, localRouter, protocolVersion));
+builder.Services.AddScoped<IRouterIngress, LanMtaRouterIngress>();
+builder.Services.AddScoped<ILocalParticipantIngressReceiver, LanMtaParameterReceiver>();
+
+await builder.Build().RunAsync();

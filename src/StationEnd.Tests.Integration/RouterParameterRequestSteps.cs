@@ -4,6 +4,7 @@ using AwesomeAssertions;
 using Npgsql;
 using Reqnroll;
 using System.Net;
+using System.Text.Json;
 
 namespace Stensones.GD92.StationEnd.Tests.Integration;
 
@@ -15,6 +16,7 @@ public sealed class RouterParameterRequestSteps
 	private HttpResponseMessage? response;
 	private string? level1Password;
 	private string? pageContent;
+	private Uri? inventoryScanStatusAddress;
 
 	[Given(@"NodeManager is the User Agent at Brigade (.*), Node (.*), and Port (.*)")]
 	public void GivenNodeManagerIsTheUserAgentAt(byte brigade, ushort node, byte port)
@@ -61,6 +63,105 @@ public sealed class RouterParameterRequestSteps
 		this.pageContent.Should().Contain("""type="number" name="node""");
 		this.pageContent.Should().Contain("""type="number" name="port""");
 		this.pageContent.Should().Contain("""type="submit">Log on</button>""");
+	}
+
+	[Then(@"NodeManager follows a Node Login status redirect")]
+	public void ThenNodeManagerFollowsANodeLoginStatusRedirect()
+	{
+		this.pageContent.Should().NotContain("redirect: \"manual\"");
+		this.pageContent.Should().Contain("const statusUrl = response.url;");
+	}
+
+	[Then(@"NodeManager presents an enabled Discover local participants control")]
+	public void ThenNodeManagerPresentsAnEnabledDiscoverLocalParticipantsControl()
+	{
+		this.pageContent.Should().Contain(
+			"""<form id="router-participant-discovery" action="/router/participants/discovery" method="post">""");
+		this.pageContent.Should().Contain("""type="submit">Discover local participants</button>""");
+		this.pageContent.Should().NotContain("""type="submit" disabled>Discover local participants</button>""");
+	}
+
+	[Then(@"NodeManager presents Inventory Scan progress and result areas")]
+	public void ThenNodeManagerPresentsInventoryScanProgressAndResultAreas()
+	{
+		this.pageContent.Should().Contain(
+			"""<p id="router-participant-discovery-status" role="status" hidden></p>""");
+		this.pageContent.Should().Contain(
+			"""<table id="router-participant-discovery-results" hidden>""");
+		this.pageContent.Should().Contain(
+			"""<div id="router-participant-discovery-summary" hidden></div>""");
+		this.pageContent.Should().Contain(
+			"""const discoveryForm = document.getElementById("router-participant-discovery");""");
+		this.pageContent.Should().Contain(
+			"""discoveryButton.disabled = true;""");
+		this.pageContent.Should().Contain(
+			"""Inventory Scan: ${scan.completedProbeCount} of 63 probes completed.""");
+	}
+
+	[When(@"I select Discover local participants")]
+	public async Task WhenISelectDiscoverLocalParticipants()
+	{
+		if (this.application is null)
+		{
+			await this.StartApplicationAsync();
+		}
+
+		this.response = await this.client!.PostAsync("/router/participants/discovery", null);
+	}
+
+	[Then(@"I am redirected to a pending Inventory Scan status")]
+	public void ThenIAmRedirectedToAPendingInventoryScanStatus()
+	{
+		this.response!.StatusCode.Should().Be(HttpStatusCode.SeeOther);
+		this.response.Headers.Location.Should().NotBeNull();
+		this.inventoryScanStatusAddress = this.response.Headers.Location;
+	}
+
+	[Then(@"the Inventory Scan status reports progress before completion")]
+	public async Task ThenTheInventoryScanStatusReportsProgressBeforeCompletion()
+	{
+		await this.WaitForInventoryScanStatusAsync(status =>
+			status.GetProperty("completedProbeCount").GetInt32() > 0 &&
+			status.GetProperty("completedProbeCount").GetInt32() < 63);
+	}
+
+	[Then(@"the completed Inventory Scan lists Router port 0, LAN MTA port 1, Printer User Agent port 2, and Network Management User Agent port 25")]
+	public async Task ThenTheCompletedInventoryScanListsLocalParticipants()
+	{
+		using var status = await this.WaitForInventoryScanStatusAsync(
+			document => document.GetProperty("completedProbeCount").GetInt32() == 63);
+		var participants = status.RootElement.GetProperty("participants").EnumerateArray().ToArray();
+
+		participants.Should().Contain(participant =>
+			participant.GetProperty("port").GetByte() == 0 &&
+			participant.GetProperty("kind").GetString() == "router");
+		participants.Should().Contain(participant =>
+			participant.GetProperty("port").GetByte() == 1 &&
+			participant.GetProperty("kind").GetString() == "mta" &&
+			participant.GetProperty("agentType").GetString() == "LAN MTA (10)");
+		participants.Should().Contain(participant =>
+			participant.GetProperty("port").GetByte() == 2 &&
+			participant.GetProperty("kind").GetString() == "ua" &&
+			participant.GetProperty("agentType").GetString() == "Printer (4)");
+		participants.Should().Contain(participant =>
+			participant.GetProperty("port").GetByte() == 25 &&
+			participant.GetProperty("kind").GetString() == "ua" &&
+			participant.GetProperty("agentType").GetString() == "Network Management UA (12)");
+	}
+
+	[Then(@"the completed Inventory Scan summary shows (.*) discovered participants, (.*) timeouts, no delivery failures, and no negative acknowledgements")]
+	public async Task ThenTheCompletedInventoryScanSummaryShows(
+		int discoveredParticipants,
+		int timeouts)
+	{
+		using var status = await this.WaitForInventoryScanStatusAsync(
+			document => document.GetProperty("completedProbeCount").GetInt32() == 63);
+		var summary = status.RootElement.GetProperty("summary");
+
+		summary.GetProperty("discoveredParticipantCount").GetInt32().Should().Be(discoveredParticipants);
+		summary.GetProperty("timeoutCount").GetInt32().Should().Be(timeouts);
+		summary.GetProperty("deliveryFailureCount").GetInt32().Should().Be(0);
+		summary.GetProperty("negativeAcknowledgements").EnumerateObject().Should().BeEmpty();
 	}
 
 	[When(@"I log on User-Agent address Brigade (.*), Node (.*), and Port (.*) with the Level 1 password")]
@@ -282,6 +383,29 @@ public sealed class RouterParameterRequestSteps
 		this.application = await appHost.BuildAsync();
 		await this.application.StartAsync();
 		this.client = CreateClient(this.application);
+	}
+
+	private async Task<JsonDocument> WaitForInventoryScanStatusAsync(
+		Func<JsonElement, bool> condition)
+	{
+		for (var attempt = 0; attempt < 150; attempt++)
+		{
+			var response = await this.client!.GetAsync(this.inventoryScanStatusAddress!);
+			if (response.StatusCode == HttpStatusCode.OK)
+			{
+				var content = await response.Content.ReadAsStringAsync();
+				using var status = JsonDocument.Parse(content);
+				if (condition(status.RootElement))
+				{
+					return JsonDocument.Parse(content);
+				}
+			}
+
+			await Task.Delay(TimeSpan.FromSeconds(1));
+		}
+
+		throw new Xunit.Sdk.XunitException(
+			"The Inventory Scan status did not reach the expected state.");
 	}
 
 	private static HttpClient CreateClient(DistributedApplication application)

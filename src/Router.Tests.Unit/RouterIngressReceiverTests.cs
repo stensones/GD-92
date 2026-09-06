@@ -25,6 +25,7 @@ public sealed class RouterIngressReceiverTests
 				ProtocolVersion.FromValue(ProtocolVersionNumber.FromValue(2)),
 				currentParameters),
 			ingress,
+			new CapturingLocalParticipantIngress(),
 			NullLogger<RouterIngressReceiver>.Instance);
 
 		await receiver.ReceiveAsync(
@@ -74,6 +75,7 @@ public sealed class RouterIngressReceiverTests
 				currentParameters,
 				passwordVerifierStore),
 			ingress,
+			new CapturingLocalParticipantIngress(),
 			NullLogger<RouterIngressReceiver>.Instance);
 
 		await receiver.ReceiveAsync(
@@ -125,6 +127,7 @@ public sealed class RouterIngressReceiverTests
 				currentParameters,
 				passwordVerifierStore),
 			ingress,
+			new CapturingLocalParticipantIngress(),
 			NullLogger<RouterIngressReceiver>.Instance);
 
 		await receiver.ReceiveAsync(
@@ -169,6 +172,7 @@ public sealed class RouterIngressReceiverTests
 				currentParameters,
 				passwordVerifierStore),
 			ingress,
+			new CapturingLocalParticipantIngress(),
 			NullLogger<RouterIngressReceiver>.Instance);
 
 		await receiver.ReceiveAsync(
@@ -203,6 +207,7 @@ public sealed class RouterIngressReceiverTests
 				currentParameters,
 				passwordVerifierStore),
 			ingress,
+			new CapturingLocalParticipantIngress(),
 			NullLogger<RouterIngressReceiver>.Instance);
 
 		await receiver.ReceiveAsync(
@@ -232,6 +237,7 @@ public sealed class RouterIngressReceiverTests
 				routerAddress,
 				ProtocolVersion.FromValue(ProtocolVersionNumber.FromValue(2))),
 			ingress,
+			new CapturingLocalParticipantIngress(),
 			NullLogger<RouterIngressReceiver>.Instance);
 
 		var receive = receiver.ReceiveAsync(CreateEnvelope(routerAddress), CancellationToken.None);
@@ -243,6 +249,27 @@ public sealed class RouterIngressReceiverTests
 
 		ingress.CompleteDelivery();
 		await receive;
+	}
+
+	[Fact]
+	public async Task Delivers_a_single_non_Router_local_destination_to_Local_Participant_Ingress()
+	{
+		var routerAddress = CreateAddress(26, 100, 0);
+		var userAgentIngress = new CapturingUserAgentIngress();
+		var localParticipantIngress = new CapturingLocalParticipantIngress();
+		var receiver = new RouterIngressReceiver(
+			new RouterParameterRequestHandler(
+				routerAddress,
+				ProtocolVersion.FromValue(ProtocolVersionNumber.FromValue(2))),
+			userAgentIngress,
+			localParticipantIngress,
+			NullLogger<RouterIngressReceiver>.Instance);
+		var request = CreateEnvelope(CreateAddress(26, 100, 1));
+
+		await receiver.ReceiveAsync(request, CancellationToken.None);
+
+		localParticipantIngress.Envelope.Should().Be(request);
+		userAgentIngress.Envelope.Should().BeNull();
 	}
 
 	private static Envelope CreateEnvelope(CommunicationsAddress routerAddress)
@@ -379,6 +406,17 @@ public sealed class RouterIngressReceiverTests
 		public void CompleteDelivery()
 		{
 			this.deliveryCompleted.TrySetResult();
+		}
+	}
+
+	private sealed class CapturingLocalParticipantIngress : ILocalParticipantIngress
+	{
+		public Envelope? Envelope { get; private set; }
+
+		public Task DeliverAsync(Envelope envelope, CancellationToken cancellationToken)
+		{
+			this.Envelope = envelope;
+			return Task.CompletedTask;
 		}
 	}
 

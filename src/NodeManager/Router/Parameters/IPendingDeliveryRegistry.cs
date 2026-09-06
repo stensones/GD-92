@@ -29,5 +29,7 @@ public interface IPendingDeliveryRegistry
 
 	bool TryCompleteNegativeAcknowledgement(Envelope envelope);
 
+	bool TryTimeoutParameterRequest(RouterParameterRequestStatusIdentifier statusIdentifier);
+
 	bool TryTimeoutNodeLogin(RouterParameterRequestStatusIdentifier statusIdentifier);
 }
