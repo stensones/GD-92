@@ -1,15 +1,18 @@
 using Stensones.GD92.Fields;
 using Stensones.GD92.Messages;
 using Stensones.GD92.Transport.RabbitMQ;
+using NodeManager.Persistence;
 using NodeManager.Router.Parameters;
 
 namespace NodeManager.Router.Participants;
 
 public sealed class NodeManagerParticipantIngressReceiver(
 	RouterParameterRequestSettings settings,
-	RouterParameterResponseReceiver responses,
+	NodeManagerCurrentParameterProjectionSource currentParameters,
+	IUserAgentIngressReceiver responses,
 	IRouterIngress routerIngress) : ILocalParticipantIngressReceiver
 {
+	private static readonly ParameterNumber PortNumberParameterNumber = ParameterNumber.FromValue(1);
 	private static readonly ParameterNumber AgentTypeParameterNumber = ParameterNumber.FromValue(2);
 
 	public async Task ReceiveAsync(Envelope envelope, CancellationToken cancellationToken)
@@ -21,7 +24,8 @@ public sealed class NodeManagerParticipantIngressReceiver(
 			envelope.Destinations.Addresses[0] != settings.MessageOriginator ||
 			envelope.Contents is not ParameterRequest parameterRequest ||
 			parameterRequest.ParameterTable != ParameterTable.Current ||
-			parameterRequest.ParameterNumber != AgentTypeParameterNumber)
+			(parameterRequest.ParameterNumber != PortNumberParameterNumber &&
+				parameterRequest.ParameterNumber != AgentTypeParameterNumber))
 		{
 			await responses.ReceiveAsync(envelope, cancellationToken);
 			return;
@@ -33,7 +37,7 @@ public sealed class NodeManagerParticipantIngressReceiver(
 			ProtocolVersion.FromValue(ProtocolVersionNumber.FromValue(2)),
 			Parameter.FromFields(
 				MoreValues.No,
-				ParameterValue.FromWireValue([12])));
+				currentParameters.GetCurrent().Get(parameterRequest.ParameterNumber)));
 
 		await routerIngress.SubmitAsync(response, cancellationToken);
 	}

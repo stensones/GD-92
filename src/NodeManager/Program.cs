@@ -1,4 +1,6 @@
-﻿using NodeManager.Router.Parameters;
+﻿using Microsoft.EntityFrameworkCore;
+using NodeManager.Persistence;
+using NodeManager.Router.Parameters;
 using NodeManager.Router.Participants;
 using Stensones.GD92.Transport.RabbitMQ;
 using Wolverine;
@@ -27,6 +29,10 @@ builder.Services.AddWolverine(options =>
 });
 
 builder.Services.AddSingleton(requestSettings);
+builder.AddNpgsqlDbContext<NodeManagerDbContext>("node-manager-database");
+builder.Services.AddScoped<INodeManagerParameterStore, EfNodeManagerParameterStore>();
+builder.Services.AddScoped<NodeManagerParameterBootstrapper>();
+builder.Services.AddSingleton<NodeManagerCurrentParameterProjectionSource>();
 builder.Services.AddSingleton<IPendingDeliveryRegistry, InMemoryPendingDeliveryRegistry>();
 builder.Services.AddSingleton<IInventoryScanRegistry, InMemoryInventoryScanRegistry>();
 builder.Services.AddSingleton<IInventoryScanRunner, InventoryScanRunner>();
@@ -46,6 +52,17 @@ builder.Services.AddSingleton<INodeLoginRetryScheduler>(serviceProvider =>
 builder.Services.AddScoped<IRouterParameterRequestService, RouterParameterRequestService>();
 
 var app = builder.Build();
+
+await using (var scope = app.Services.CreateAsyncScope())
+{
+	var database = scope.ServiceProvider.GetRequiredService<NodeManagerDbContext>();
+	await database.Database.MigrateAsync();
+
+	var bootstrapper = scope.ServiceProvider.GetRequiredService<NodeManagerParameterBootstrapper>();
+	var projection = await bootstrapper.LoadCurrentParameterProjectionAsync(
+		NodeManagerParameterBootstrapConfiguration.FromAddress(requestSettings.MessageOriginator));
+	app.Services.GetRequiredService<NodeManagerCurrentParameterProjectionSource>().Publish(projection);
+}
 
 app.UseStaticFiles(); // Enables serving static files from wwwroot
 app.MapDefaultEndpoints();
