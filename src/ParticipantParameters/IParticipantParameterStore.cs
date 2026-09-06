@@ -1,9 +1,9 @@
 using Stensones.GD92.Fields;
 using Stensones.GD92.Messages;
 
-namespace Router.Persistence;
+namespace ParticipantParameters;
 
-public interface IRouterParameterStore
+public interface IParticipantParameterStore
 {
 	ValueTask<ParameterValue?> GetAsync(
 		ParameterTable parameterTable,

@@ -1,6 +1,7 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.DependencyInjection;
+using ParticipantParameters;
 using Router;
 using Router.Persistence;
 using Stensones.GD92.Transport.RabbitMQ;
@@ -19,7 +20,7 @@ builder.Services.AddWolverine(options =>
 
 builder.Services.AddSingleton(routerSettings);
 builder.AddNpgsqlDbContext<RouterDbContext>("router-database");
-builder.Services.AddScoped<IRouterParameterStore, EfRouterParameterStore>();
+builder.Services.AddScoped<IParticipantParameterStore, EfRouterParameterStore>();
 builder.Services.AddScoped<IRouterLevel1PasswordVerifierStore, EfRouterPasswordVerifierStore>();
 builder.Services.AddScoped<RouterParameterBootstrapper>();
 builder.Services.AddSingleton<RouterCurrentParameterProjectionSource>();

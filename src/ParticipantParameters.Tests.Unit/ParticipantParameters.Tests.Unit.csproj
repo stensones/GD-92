@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <TargetFramework>net10.0</TargetFramework>
@@ -23,7 +23,6 @@
     <ProjectReference Include="..\Fields\Stensones.GD92.Fields.csproj" />
     <ProjectReference Include="..\Messages\Stensones.GD92.Messages.csproj" />
     <ProjectReference Include="..\ParticipantParameters\ParticipantParameters.csproj" />
-    <ProjectReference Include="..\Router.Persistence\Router.Persistence.csproj" />
   </ItemGroup>
 
 </Project>

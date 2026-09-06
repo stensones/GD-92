@@ -1,5 +1,6 @@
 using AwesomeAssertions;
 using Microsoft.EntityFrameworkCore;
+using ParticipantParameters;
 using Reqnroll;
 using Router.Persistence;
 using Stensones.GD92.Fields;
@@ -88,7 +89,7 @@ public sealed class RouterParameterBootstrapSteps
 	public async Task ThenItsLevel1PasswordHasPermanentAndNonVolatileVerifiersButNoOpaqueParameterValues()
 	{
 		await using var context = this.CreateContext();
-		IRouterParameterStore parameterStore = new EfRouterParameterStore(context);
+		IParticipantParameterStore parameterStore = new EfRouterParameterStore(context);
 		IRouterLevel1PasswordVerifierStore passwordVerifierStore =
 			new EfRouterPasswordVerifierStore(context);
 		(await parameterStore.GetAsync(

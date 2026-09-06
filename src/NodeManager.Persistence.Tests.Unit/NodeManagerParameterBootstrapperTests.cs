@@ -1,5 +1,6 @@
 using AwesomeAssertions;
 using NodeManager.Persistence;
+using ParticipantParameters;
 using Stensones.GD92.Fields;
 using Stensones.GD92.Messages;
 
@@ -51,7 +52,7 @@ public sealed class NodeManagerParameterBootstrapperTests
 			Port.FromValue(PortIdentifier.FromValue(port)));
 	}
 
-	private sealed class InMemoryNodeManagerParameterStore : INodeManagerParameterStore
+	private sealed class InMemoryNodeManagerParameterStore : IParticipantParameterStore
 	{
 		private readonly Dictionary<(ParameterTable Table, ParameterNumber Number), ParameterValue> values = [];
 

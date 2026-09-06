@@ -1,10 +1,11 @@
 using Microsoft.EntityFrameworkCore;
+using ParticipantParameters;
 using Stensones.GD92.Fields;
 using Stensones.GD92.Messages;
 
 namespace Router.Persistence;
 
-public sealed class EfRouterParameterStore : IRouterParameterStore
+public sealed class EfRouterParameterStore : IParticipantParameterStore
 {
 	private readonly RouterDbContext context;
 

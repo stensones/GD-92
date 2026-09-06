@@ -1,10 +1,11 @@
 using Microsoft.EntityFrameworkCore;
+using ParticipantParameters;
 using Stensones.GD92.Fields;
 using Stensones.GD92.Messages;
 
 namespace NodeManager.Persistence;
 
-public sealed class EfNodeManagerParameterStore : INodeManagerParameterStore
+public sealed class EfNodeManagerParameterStore : IParticipantParameterStore
 {
 	private readonly NodeManagerDbContext context;
 

@@ -22,6 +22,7 @@
   <ItemGroup>
     <ProjectReference Include="..\Fields\Stensones.GD92.Fields.csproj" />
     <ProjectReference Include="..\Messages\Stensones.GD92.Messages.csproj" />
+    <ProjectReference Include="..\ParticipantParameters\ParticipantParameters.csproj" />
     <ProjectReference Include="..\Router\Router.csproj" />
     <ProjectReference Include="..\Router.Persistence\Router.Persistence.csproj" />
     <ProjectReference Include="..\Transport.RabbitMQ\Stensones.GD92.Transport.RabbitMQ.csproj" />

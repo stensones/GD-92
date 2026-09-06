@@ -11,6 +11,10 @@
     <Project Path="Messages.Tests.Unit/Stensones.GD92.Messages.Tests.Unit.csproj" />
     <Project Path="Messages/Stensones.GD92.Messages.csproj" />
   </Folder>
+  <Folder Name="/ParticipantParameters/">
+    <Project Path="ParticipantParameters.Tests.Unit/ParticipantParameters.Tests.Unit.csproj" />
+    <Project Path="ParticipantParameters/ParticipantParameters.csproj" />
+  </Folder>
   <Folder Name="/Solution Items/">
     <File Path=".dockerignore" />
     <File Path=".editorconfig" />

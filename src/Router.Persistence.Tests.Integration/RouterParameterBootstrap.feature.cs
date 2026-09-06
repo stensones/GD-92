@@ -35,7 +35,7 @@ namespace Router.Persistence.Tests.Integration
         {
             this._testOutputHelper = testOutputHelper;
         }
-
+        
         public static async global::System.Threading.Tasks.Task FeatureSetupAsync()
         {
         }
@@ -216,7 +216,7 @@ namespace Router.Persistence.Tests.Integration
             }
             await this.ScenarioCleanupAsync();
         }
-
+        
         [global::System.CodeDom.Compiler.GeneratedCodeAttribute("Reqnroll", "3.0.0.0")]
         [global::System.Runtime.CompilerServices.CompilerGeneratedAttribute()]
         public class FixtureData : object, global::Xunit.IAsyncLifetime

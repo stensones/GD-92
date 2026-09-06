@@ -24,6 +24,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\Fields\Stensones.GD92.Fields.csproj" />
+    <ProjectReference Include="..\ParticipantParameters\ParticipantParameters.csproj" />
     <ProjectReference Include="..\Router.Persistence\Router.Persistence.csproj" />
   </ItemGroup>
 

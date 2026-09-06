@@ -2,6 +2,7 @@
 using NodeManager.Persistence;
 using NodeManager.Router.Parameters;
 using NodeManager.Router.Participants;
+using ParticipantParameters;
 using Stensones.GD92.Transport.RabbitMQ;
 using Wolverine;
 using Wolverine.RabbitMQ;
@@ -30,7 +31,7 @@ builder.Services.AddWolverine(options =>
 
 builder.Services.AddSingleton(requestSettings);
 builder.AddNpgsqlDbContext<NodeManagerDbContext>("node-manager-database");
-builder.Services.AddScoped<INodeManagerParameterStore, EfNodeManagerParameterStore>();
+builder.Services.AddScoped<IParticipantParameterStore, EfNodeManagerParameterStore>();
 builder.Services.AddScoped<NodeManagerParameterBootstrapper>();
 builder.Services.AddSingleton<NodeManagerCurrentParameterProjectionSource>();
 builder.Services.AddSingleton<IPendingDeliveryRegistry, InMemoryPendingDeliveryRegistry>();

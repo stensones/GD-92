@@ -1,3 +1,4 @@
+using ParticipantParameters;
 using Stensones.GD92.Fields;
 using Stensones.GD92.Messages;
 
@@ -5,14 +6,14 @@ namespace Router.Persistence;
 
 public sealed class RouterParameterBootstrapper
 {
-	private readonly IRouterParameterStore store;
+	private readonly ParticipantParameterBootstrapper parameterBootstrapper;
 	private readonly IRouterLevel1PasswordVerifierStore passwordVerifierStore;
 
 	public RouterParameterBootstrapper(
-		IRouterParameterStore store,
+		IParticipantParameterStore store,
 		IRouterLevel1PasswordVerifierStore passwordVerifierStore)
 	{
-		this.store = store ?? throw new ArgumentNullException(nameof(store));
+		this.parameterBootstrapper = new ParticipantParameterBootstrapper(store);
 		this.passwordVerifierStore = passwordVerifierStore ??
 			throw new ArgumentNullException(nameof(passwordVerifierStore));
 	}
@@ -23,68 +24,39 @@ public sealed class RouterParameterBootstrapper
 	{
 		ArgumentNullException.ThrowIfNull(configuration);
 
-		var brigadeOrAgencyIdentifier = await this.LoadOrBootstrapParameterAsync(
-			RouterParameterCatalogue.BrigadeOrAgency,
-			configuration.LocalAddress.Brigade.Value,
-			cancellationToken);
-		var currentPassword = await this.LoadOrBootstrapParameterAsync(
-			RouterParameterCatalogue.CurrentPassword,
-			CreateNeutralCurrentPassword(configuration.LocalAddress),
-			cancellationToken);
-		var noAcknowledgementTimeout = await this.LoadOrBootstrapParameterAsync(
-			RouterParameterCatalogue.NoAcknowledgementTimeout,
-			configuration.NoAcknowledgementTimeout,
-			cancellationToken);
-		var retries = await this.LoadOrBootstrapParameterAsync(
-			RouterParameterCatalogue.Retries,
-			configuration.Retries,
-			cancellationToken);
+		var nonVolatileValues = await this.parameterBootstrapper.LoadNonVolatileValuesAsync(
+		[
+			ParameterBootstrapValue.FromValues(
+				RouterParameterCatalogue.BrigadeOrAgency.Number,
+				RouterParameterCatalogue.BrigadeOrAgency.Encode(
+					configuration.LocalAddress.Brigade.Value)),
+			ParameterBootstrapValue.FromValues(
+				RouterParameterCatalogue.CurrentPassword.Number,
+				RouterParameterCatalogue.CurrentPassword.Encode(
+					CreateNeutralCurrentPassword(configuration.LocalAddress))),
+			ParameterBootstrapValue.FromValues(
+				RouterParameterCatalogue.NoAcknowledgementTimeout.Number,
+				RouterParameterCatalogue.NoAcknowledgementTimeout.Encode(
+					configuration.NoAcknowledgementTimeout)),
+			ParameterBootstrapValue.FromValues(
+				RouterParameterCatalogue.Retries.Number,
+				RouterParameterCatalogue.Retries.Encode(configuration.Retries))
+		],
+		cancellationToken);
 		var level1PasswordVerifier = await this.LoadLevel1PasswordVerifierAsync(
 			configuration.InitialLevel1Password,
 			cancellationToken);
 
 		return RouterCurrentParameterProjection.FromNonVolatileParameters(
-			brigadeOrAgencyIdentifier,
-			currentPassword,
+			RouterParameterCatalogue.BrigadeOrAgency.Read(
+				nonVolatileValues[RouterParameterCatalogue.BrigadeOrAgency.Number]),
+			RouterParameterCatalogue.CurrentPassword.Read(
+				nonVolatileValues[RouterParameterCatalogue.CurrentPassword.Number]),
 			level1PasswordVerifier,
-			noAcknowledgementTimeout,
-			retries);
-	}
-
-	private async ValueTask<T> LoadOrBootstrapParameterAsync<T>(
-		RouterParameterDefinition<T> parameter,
-		T initialValue,
-		CancellationToken cancellationToken)
-	{
-		var permanentValue = await this.store.GetAsync(
-			ParameterTable.Permanent,
-			parameter.Number,
-			cancellationToken);
-		if (permanentValue is null)
-		{
-			permanentValue = parameter.Encode(initialValue);
-			await this.store.StoreAsync(
-				ParameterTable.Permanent,
-				parameter.Number,
-				permanentValue,
-				cancellationToken);
-		}
-
-		var nonVolatileValue = await this.store.GetAsync(
-			ParameterTable.NonVolatile,
-			parameter.Number,
-			cancellationToken);
-		if (nonVolatileValue is null)
-		{
-			nonVolatileValue = permanentValue;
-			await this.store.StoreAsync(
-				ParameterTable.NonVolatile,
-				parameter.Number,
-				nonVolatileValue,
-				cancellationToken);
-		}
-
-		return parameter.Read(nonVolatileValue);
+			RouterParameterCatalogue.NoAcknowledgementTimeout.Read(
+				nonVolatileValues[RouterParameterCatalogue.NoAcknowledgementTimeout.Number]),
+			RouterParameterCatalogue.Retries.Read(
+				nonVolatileValues[RouterParameterCatalogue.Retries.Number]));
 	}
 
 	private async ValueTask<PasswordVerifier> LoadLevel1PasswordVerifierAsync(

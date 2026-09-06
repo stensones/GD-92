@@ -1,4 +1,5 @@
 using AwesomeAssertions;
+using ParticipantParameters;
 using Router.Persistence;
 using Stensones.GD92.Fields;
 using Stensones.GD92.Messages;
@@ -199,7 +200,7 @@ public sealed class RouterParameterBootstrapperTests
 		currentParameters.Level1PasswordVerifier.Verifies(permanentPassword).Should().BeFalse();
 	}
 
-	private sealed class InMemoryRouterParameterStore : IRouterParameterStore
+	private sealed class InMemoryRouterParameterStore : IParticipantParameterStore
 	{
 		private readonly Dictionary<(ParameterTable Table, ParameterNumber Number), ParameterValue> values = [];
 

@@ -16,6 +16,7 @@
   <ItemGroup>
     <ProjectReference Include="..\Fields\Stensones.GD92.Fields.csproj" />
     <ProjectReference Include="..\Messages\Stensones.GD92.Messages.csproj" />
+    <ProjectReference Include="..\ParticipantParameters\ParticipantParameters.csproj" />
   </ItemGroup>
 
 </Project>
