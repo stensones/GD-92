@@ -83,21 +83,25 @@ _Avoid_: Network Manager, Router
 ### Configuration
 
 **Parameter**:
-A protocol-defined configuration value owned by a Router, Message Transfer Agent, or User Agent port.
+A protocol-defined configuration value owned by one Router, Message Transfer Agent, or User Agent port. The addressed participant validates, changes, and, when durable, persists its own Parameter.
 _Avoid_: application setting, global configuration
 
 **Parameter Table**:
-The permanent, non-volatile, or current table that contains a protocol Parameter.
+The permanent, non-volatile, or current table containing one participant's protocol Parameters.
 _Avoid_: database table, arbitrary collection
 
 **Permanent Parameter Table**:
-The immutable Parameter Table that supplies installed baseline values and fallback configuration.
+The immutable Parameter Table owned by a participant that supplies installed baseline values and fallback configuration.
 
 **Non-Volatile Parameter Table**:
-The modifiable Parameter Table whose values survive a Communications Node power-down.
+The modifiable Parameter Table owned by a participant whose values survive a Communications Node power-down.
 
 **Current Parameter Table**:
-The volatile Parameter Table containing the values presently used by a Communications Node.
+The volatile Parameter Table containing the values presently used by its owning participant.
+
+**Participant Parameter Store**:
+The application-owned persistent store for one Router, Message Transfer Agent, or User Agent's Permanent and Non-Volatile Parameter Tables. Participant Parameter Stores may share physical database infrastructure but never share Parameter Table ownership.
+_Avoid_: shared parameters database, Router database for all ports
 
 **Node Parameter Set**:
 The complete coordinated set of Router, Message Transfer Agent, and User Agent Parameters maintained at one Communications Node.
@@ -147,6 +151,10 @@ _Avoid_: Parameter value, Set Parameter
 The Message Type 63 Contents that requests a Parameter Entry Selection from one table-valued Parameter.
 _Avoid_: Parameter Request, Parameter Message
 
+**Set Parameter**:
+The Message Type 60 Contents that requests a change to one Parameter in an addressed participant's Parameter Table.
+_Avoid_: Parameter Request, Parameter Value
+
 **More Values**:
 The boolean field in a Parameter Message indicating whether additional Parameter values remain to be returned.
 _Avoid_: parameter count, pagination token
@@ -164,11 +172,11 @@ The access threshold required to modify a Parameter; Level 0 is unauthenticated 
 _Avoid_: user role, permanent authentication
 
 **Node Login**:
-The temporary authenticated state of one User-Agent Communications Address that authorizes Parameter modification at one Communications Node.
+The Router-owned, temporary authenticated state of one User-Agent Communications Address that authorizes Parameter modification at one Communications Node.
 _Avoid_: system-wide login, device session, operator account
 
 **Current Password**:
-Router Parameter 4, whose Current value represents the single active Node Login's Password Level and supplied User-Agent Communications Address.
+Router Parameter 4, whose volatile Current value represents the single active Node Login's Password Level and supplied User-Agent Communications Address.
 _Avoid_: durable password, browser session
 
 **Level 1 Password**:
@@ -451,6 +459,8 @@ _Avoid_: retransmission, duplicate Message
 - An **External System** may present one or more addressed **User Agents** through a combined **Message Transfer Agent** and User Agent interface.
 - An **External Bearer** carries **Messages** but has no **Communications Address**.
 - A **Router**, **Message Transfer Agent**, or **User Agent** owns zero or more **Parameters**.
+- A **Parameter Table** belongs to exactly one **Router**, **Message Transfer Agent**, or **User Agent** port.
+- A **Participant Parameter Store** persists only its owning participant's Permanent and Non-Volatile **Parameter Tables**; physical database infrastructure may be shared without sharing Parameter ownership.
 - A **Communications Node** has one **Node Parameter Set** maintained through its **Router**.
 - A **Communications Node Inventory** identifies the Router, zero or more **Message Transfer Agents**, and zero or more **User Agents** at one **Communications Node**.
 - A **Message Transfer Agent** or **User Agent** has one **Agent Type**.
@@ -458,7 +468,7 @@ _Avoid_: retransmission, duplicate Message
 - A **Communications Node Inventory** is produced by one **Inventory Scan** and includes its **Inventory Scan Summary**.
 - A **Current Parameter Table** is initialized from its **Non-Volatile Parameter Table** on normal startup.
 - A **Permanent Parameter Table** supplies fallback Parameter values when a **Non-Volatile Parameter Table** is corrupted.
-- A **Node Login** at a **Communications Node** authorizes Parameter modification according to each **Parameter**'s **Password Level**.
+- A Router-owned **Node Login** at a **Communications Node** authorizes Parameter modification according to each **Parameter**'s **Password Level**.
 - A Router has at most one active **Node Login**; a successful login from another User-Agent Communications Address replaces it.
 - A failed attempt to establish a **Node Login** leaves the existing Node Login unchanged.
 - A **Node Login** remains active until it is replaced or logged off.
@@ -468,6 +478,7 @@ _Avoid_: retransmission, duplicate Message
 - A read of a **Current Password** or **Level 1 Password** redacts its Password as the string `PASSWORD`.
 - A **Parameter Request** identifies one **Parameter Table** and one **Parameter Number**.
 - A **Parameter Number** identifies one **Parameter** within its **Parameter Table**.
+- A **Parameter Request** or **Set Parameter** addressed to a **Message Transfer Agent** or **User Agent** is delivered to that participant; the participant validates and responds for its own **Parameters**.
 - A **Message Originator** normally sets an **Acknowledgement Request** on a **Parameter Request Envelope**, while the recipient always returns a **Parameter Message** or **Negative Acknowledgement**.
 - A **Parameter Request Multiple** identifies one **Parameter Table**, one **Parameter Number**, and one **Parameter Entry Selection**.
 - A **Parameter Request Multiple Envelope** always has its **Acknowledgement Request** set.
