@@ -205,20 +205,32 @@ public sealed class InMemoryPendingDeliveryRegistry : IPendingDeliveryRegistry
 
 		lock (this.synchronizationLock)
 		{
-			if (!this.deliveries.TryGetValue(uswr, out var status) ||
-				status is not PendingNodeLoginStatus pendingNodeLogin)
+			if (!this.deliveries.TryGetValue(uswr, out var status))
 			{
 				return false;
 			}
 
-			this.deliveries[uswr] =
-				negativeAcknowledgement.ReasonCode.ParameterReasonCode == ParameterReasonCode.InvalidPassword
-					? new InvalidPasswordNodeLoginStatus(
+			switch (status)
+			{
+				case PendingNodeLoginStatus pendingNodeLogin:
+					this.deliveries[uswr] =
+						negativeAcknowledgement.ReasonCode.ParameterReasonCode == ParameterReasonCode.InvalidPassword
+							? new InvalidPasswordNodeLoginStatus(
+								new RouterParameterRequestStatusIdentifier(uswr),
+								pendingNodeLogin.UserAgentAddress)
+							: new RejectedNodeLoginStatus(
+								new RouterParameterRequestStatusIdentifier(uswr),
+								pendingNodeLogin.UserAgentAddress);
+					break;
+				case PendingRouterParameterRequestStatus:
+					this.deliveries[uswr] = new RejectedRouterParameterRequestStatus(
 						new RouterParameterRequestStatusIdentifier(uswr),
-						pendingNodeLogin.UserAgentAddress)
-					: new RejectedNodeLoginStatus(
-						new RouterParameterRequestStatusIdentifier(uswr),
-						pendingNodeLogin.UserAgentAddress);
+						negativeAcknowledgement.ReasonCode);
+					break;
+				default:
+					return false;
+			}
+
 			this.GetPendingSequences(uswr.Destination).Remove(uswr.SequenceNumber.Value);
 
 			return true;
@@ -239,6 +251,27 @@ public sealed class InMemoryPendingDeliveryRegistry : IPendingDeliveryRegistry
 
 			this.deliveries[statusIdentifier.USWR] =
 				new TimedOutRouterParameterRequestStatus(statusIdentifier);
+			this.GetPendingSequences(statusIdentifier.USWR.Destination)
+				.Remove(statusIdentifier.USWR.SequenceNumber.Value);
+			return true;
+		}
+	}
+
+	public bool TryRecordParameterRequestDeliveryFailure(
+		RouterParameterRequestStatusIdentifier statusIdentifier)
+	{
+		ArgumentNullException.ThrowIfNull(statusIdentifier);
+
+		lock (this.synchronizationLock)
+		{
+			if (!this.deliveries.TryGetValue(statusIdentifier.USWR, out var status) ||
+				status is not PendingRouterParameterRequestStatus)
+			{
+				return false;
+			}
+
+			this.deliveries[statusIdentifier.USWR] =
+				new DeliveryFailedRouterParameterRequestStatus(statusIdentifier);
 			this.GetPendingSequences(statusIdentifier.USWR.Destination)
 				.Remove(statusIdentifier.USWR.SequenceNumber.Value);
 			return true;

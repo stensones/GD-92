@@ -58,6 +58,32 @@ public sealed class InMemoryInventoryScanRegistry : IInventoryScanRegistry
 		}
 	}
 
+	public void RecordNegativeAcknowledgement(
+		InventoryScanStatusIdentifier identifier,
+		ReasonCode reasonCode)
+	{
+		ArgumentNullException.ThrowIfNull(identifier);
+		ArgumentNullException.ThrowIfNull(reasonCode);
+
+		lock (this.synchronizationLock)
+		{
+			var status = this.statuses.GetValueOrDefault(identifier.Value) ??
+				throw new InvalidOperationException("The Inventory Scan does not exist.");
+			var summary = status.Summary;
+			var reasonCodeKey = FormatReasonCode(reasonCode);
+			var negativeAcknowledgements = summary.NegativeAcknowledgements
+				.ToDictionary(entry => entry.Key, entry => entry.Value);
+			negativeAcknowledgements[reasonCodeKey] =
+				negativeAcknowledgements.GetValueOrDefault(reasonCodeKey) + 1;
+
+			this.statuses[identifier.Value] = status with
+			{
+				CompletedProbeCount = status.CompletedProbeCount + 1,
+				Summary = summary with { NegativeAcknowledgements = negativeAcknowledgements }
+			};
+		}
+	}
+
 	public void RecordParticipant(
 		InventoryScanStatusIdentifier identifier,
 		byte port,
@@ -84,5 +110,25 @@ public sealed class InMemoryInventoryScanRegistry : IInventoryScanRegistry
 				}
 			};
 		}
+	}
+
+	private static string FormatReasonCode(ReasonCode reasonCode)
+	{
+		return reasonCode switch
+		{
+			{ ParameterReasonCode: { } parameterReasonCode } =>
+				$"parameter:{ToSnakeCase(parameterReasonCode.ToString())}",
+			{ GeneralReasonCode: { } generalReasonCode } =>
+				$"general:{ToSnakeCase(generalReasonCode.ToString())}",
+			_ => throw new InvalidOperationException("The Reason Code set is not supported.")
+		};
+	}
+
+	private static string ToSnakeCase(string value)
+	{
+		return string.Concat(value.Select((character, index) =>
+			index > 0 && char.IsUpper(character)
+				? $"_{char.ToLowerInvariant(character)}"
+				: char.ToLowerInvariant(character).ToString()));
 	}
 }

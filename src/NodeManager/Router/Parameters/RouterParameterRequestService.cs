@@ -29,7 +29,20 @@ public sealed class RouterParameterRequestService(
 				ParameterTable.Current,
 				ParameterNumber.FromValue(1)));
 
-		await routerIngress.SubmitAsync(envelope, cancellationToken);
+		try
+		{
+			await routerIngress.SubmitAsync(envelope, cancellationToken);
+		}
+		catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+		{
+			throw;
+		}
+		catch (Exception)
+		{
+			pendingDeliveries.TryRecordParameterRequestDeliveryFailure(statusIdentifier);
+			return statusIdentifier;
+		}
+
 		nodeLoginRetryScheduler.Schedule(statusIdentifier, envelope);
 		return statusIdentifier;
 	}

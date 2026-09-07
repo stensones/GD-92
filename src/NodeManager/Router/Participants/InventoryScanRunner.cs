@@ -102,6 +102,13 @@ public sealed class InventoryScanRunner(
 						port,
 						receivedResponse.ParameterValue);
 				}
+				else if (this.pendingDeliveries.GetStatus(statusIdentifier) is
+					RejectedRouterParameterRequestStatus rejectedResponse)
+				{
+					this.inventoryScans.RecordNegativeAcknowledgement(
+						inventoryScanIdentifier,
+						rejectedResponse.ReasonCode);
+				}
 
 				return;
 			}

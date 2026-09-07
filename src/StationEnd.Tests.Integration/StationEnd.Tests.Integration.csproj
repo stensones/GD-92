@@ -38,6 +38,7 @@
     <ProjectReference Include="..\GD92.StationEnd.AppHost\GD92.StationEnd.AppHost.csproj" />
     <ProjectReference Include="..\Fields\Stensones.GD92.Fields.csproj" />
     <ProjectReference Include="..\Messages\Stensones.GD92.Messages.csproj" />
+    <ProjectReference Include="..\NodeManager\NodeManager.csproj" />
     <ProjectReference Include="..\NodeManager.Persistence\NodeManager.Persistence.csproj" />
     <ProjectReference Include="..\Router.Persistence\Router.Persistence.csproj" />
     <ProjectReference Include="..\Transport.RabbitMQ\Stensones.GD92.Transport.RabbitMQ.csproj" />

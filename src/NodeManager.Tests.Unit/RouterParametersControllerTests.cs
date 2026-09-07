@@ -46,6 +46,25 @@ public sealed class RouterParametersControllerTests
 	}
 
 	[Fact]
+	public async Task Retains_a_terminal_status_when_initial_Router_Ingress_submission_fails()
+	{
+		var messageOriginator = Address(brigade: 26, node: 100, port: 25);
+		var localRouter = Address(brigade: 26, node: 100, port: 0);
+		var pendingDeliveries = new InMemoryPendingDeliveryRegistry();
+		IRouterParameterRequestService service = new RouterParameterRequestService(
+			new RouterParameterRequestSettings(messageOriginator, localRouter),
+			pendingDeliveries,
+			new FailingRouterIngress(),
+			NoOpNodeLoginRetryScheduler.Instance);
+
+		var statusIdentifier = await service.RequestLocalRouterBrigadeOrAgencyNumber(
+			CancellationToken.None);
+
+		pendingDeliveries.IsPending(statusIdentifier).Should().BeFalse();
+		pendingDeliveries.GetStatus(statusIdentifier).Should().NotBeNull();
+	}
+
+	[Fact]
 	public async Task Submits_a_level_one_logon_to_the_local_Router_and_returns_its_pending_USWR()
 	{
 		var messageOriginator = Address(brigade: 26, node: 100, port: 25);
@@ -392,6 +411,15 @@ public sealed class RouterParametersControllerTests
 		{
 			this.SubmittedEnvelope = envelope;
 			return Task.CompletedTask;
+		}
+	}
+
+	private sealed class FailingRouterIngress : IRouterIngress
+	{
+		public Task SubmitAsync(Envelope envelope, CancellationToken cancellationToken)
+		{
+			return Task.FromException(
+				new InvalidOperationException("The Router Ingress could not submit the management Envelope."));
 		}
 	}
 

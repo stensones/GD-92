@@ -31,5 +31,8 @@ public interface IPendingDeliveryRegistry
 
 	bool TryTimeoutParameterRequest(RouterParameterRequestStatusIdentifier statusIdentifier);
 
+	bool TryRecordParameterRequestDeliveryFailure(
+		RouterParameterRequestStatusIdentifier statusIdentifier);
+
 	bool TryTimeoutNodeLogin(RouterParameterRequestStatusIdentifier statusIdentifier);
 }

@@ -81,6 +81,34 @@ public sealed class RouterParameterResponseReceiverTests
 		pendingDeliveries.GetStatus(identifier).Should().BeOfType<RejectedNodeLoginStatus>();
 	}
 
+	[Fact]
+	public async Task Completes_a_matching_Parameter_Request_with_a_non_wait_ack_NAK()
+	{
+		var userAgent = Address(brigade: 26, node: 100, port: 25);
+		var router = Address(brigade: 26, node: 100, port: 0);
+		var pendingDeliveries = new InMemoryPendingDeliveryRegistry();
+		var identifier = pendingDeliveries.Reserve(userAgent, router);
+		var receiver = new RouterParameterResponseReceiver(pendingDeliveries);
+
+		await receiver.ReceiveAsync(
+			Envelope.FromValues(
+				router,
+				Destinations.FromAddresses(userAgent),
+				ProtocolAndPriority.FromValues(
+					MessagePriority.FromValue(MessagePriorityLevel.FromValue(3)),
+					ProtocolVersion.FromValue(ProtocolVersionNumber.FromValue(2))),
+				AcknowledgementAndSequence.FromValues(
+					identifier.USWR.SequenceNumber,
+					AcknowledgementRequest.NotRequested),
+				NegativeAcknowledgement.FromValues(
+					Destinations.FromAddresses(router),
+					ReasonCode.FromParameterReasonCode(ParameterReasonCode.InvalidSyntax))),
+			CancellationToken.None);
+
+		pendingDeliveries.IsPending(identifier).Should().BeFalse();
+		pendingDeliveries.GetStatus(identifier).Should().NotBeNull();
+	}
+
 	[Theory]
 	[InlineData(true, false, false)]
 	[InlineData(false, true, false)]

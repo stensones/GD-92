@@ -101,6 +101,8 @@ public sealed class RouterParametersController(
 				PendingRouterParameterRequestStatus pending => pending.State,
 				ReceivedRouterParameterRequestStatus received => received.State,
 				TimedOutRouterParameterRequestStatus timedOut => timedOut.State,
+				DeliveryFailedRouterParameterRequestStatus deliveryFailed => deliveryFailed.State,
+				RejectedRouterParameterRequestStatus rejected => rejected.State,
 				PendingNodeLoginStatus pending => pending.State,
 				PendingNodeLogoffStatus pending => pending.State,
 				LoggedOnNodeLoginStatus loggedOn => loggedOn.State,

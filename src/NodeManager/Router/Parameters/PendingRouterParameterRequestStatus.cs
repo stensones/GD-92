@@ -1,3 +1,6 @@
+using Stensones.GD92.Fields;
+using Stensones.GD92.Messages;
+
 namespace NodeManager.Router.Parameters;
 
 public abstract record RouterParameterRequestStatus(
@@ -15,4 +18,19 @@ public sealed record TimedOutRouterParameterRequestStatus(
 	RouterParameterRequestStatus(Identifier)
 {
 	public string State { get; } = "timed-out";
+}
+
+public sealed record DeliveryFailedRouterParameterRequestStatus(
+	RouterParameterRequestStatusIdentifier Identifier) :
+	RouterParameterRequestStatus(Identifier)
+{
+	public string State { get; } = "delivery-failed";
+}
+
+public sealed record RejectedRouterParameterRequestStatus(
+	RouterParameterRequestStatusIdentifier Identifier,
+	ReasonCode ReasonCode) :
+	RouterParameterRequestStatus(Identifier)
+{
+	public string State { get; } = "rejected";
 }
