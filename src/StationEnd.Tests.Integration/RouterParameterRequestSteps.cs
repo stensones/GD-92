@@ -372,6 +372,7 @@ public sealed class RouterParameterRequestSteps
 
 		if (this.application is not null)
 		{
+			await this.application.StopAsync();
 			await this.application.DisposeAsync();
 		}
 	}
@@ -382,11 +383,14 @@ public sealed class RouterParameterRequestSteps
 			.CreateAsync<Projects.GD92_StationEnd_AppHost>(
 				[
 					"--Persistence:UsePersistentPostgres=false",
+					"--StationEnd:IncludeBusMTAAndIOUA=false",
 					$"--Parameters:router-level1-password={this.level1Password ?? "FIRE1"}"
 				]);
 
 		this.application = await appHost.BuildAsync();
 		await this.application.StartAsync();
+		await this.application.ResourceNotifications.WaitForResourceHealthyAsync("Router");
+		await this.application.ResourceNotifications.WaitForResourceHealthyAsync("Node-Manager-UA");
 		this.client = CreateClient(this.application);
 	}
 

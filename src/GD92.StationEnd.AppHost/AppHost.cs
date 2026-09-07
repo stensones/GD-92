@@ -23,6 +23,9 @@ var routerLevel1Password = builder.AddParameterFromConfiguration(
 	"router-level1-password",
 	"Parameters:router-level1-password",
 	secret: true);
+var includeBusMtaAndIoUa = builder.Configuration.GetValue(
+	"StationEnd:IncludeBusMTAAndIOUA",
+	true);
 
 if (useExternalPostgres)
 {
@@ -75,9 +78,11 @@ else
 		.WaitFor(router);
 }
 
-builder.AddProject<Projects.BusMTA>("bus-MTA");
-
-builder.AddProject<Projects.IOUA>("IO-UA");
+if (includeBusMtaAndIoUa)
+{
+	builder.AddProject<Projects.BusMTA>("bus-MTA");
+	builder.AddProject<Projects.IOUA>("IO-UA");
+}
 
 builder.AddProject<Projects.LANMTA>("LAN-MTA")
 	.WithReference(rabbitMq)

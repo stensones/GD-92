@@ -8,6 +8,7 @@ using Microsoft.Extensions.Hosting;
 using Npgsql;
 using RabbitMQ.Client;
 using RabbitMQ.Client.Events;
+using RabbitMQ.Client.Exceptions;
 using Reqnroll;
 using Stensones.GD92.Fields;
 using Stensones.GD92.Messages;
@@ -135,6 +136,7 @@ public sealed class NodeManagerParameterPersistenceSteps
 
 		if (this.application is not null)
 		{
+			await this.application.StopAsync();
 			await this.application.DisposeAsync();
 		}
 
@@ -165,6 +167,7 @@ public sealed class NodeManagerParameterPersistenceSteps
 			.CreateAsync<Projects.GD92_StationEnd_AppHost>(
 				[
 					"--Persistence:UseExternalPostgres=true",
+					"--StationEnd:IncludeBusMTAAndIOUA=false",
 					$"--ConnectionStrings:router-database={this.ConnectionStringFor("router")}",
 					$"--ConnectionStrings:node-manager-database={this.ConnectionStringFor("node-manager")}"
 				]);
@@ -173,6 +176,17 @@ public sealed class NodeManagerParameterPersistenceSteps
 		await this.application.StartAsync();
 		await this.application.ResourceNotifications.WaitForResourceHealthyAsync("Router");
 		await this.application.ResourceNotifications.WaitForResourceHealthyAsync("Node-Manager-UA");
+
+		var rabbitMqConnectionString = await this.application.GetConnectionStringAsync("RabbitMQ")
+			?? throw new InvalidOperationException("The test RabbitMQ connection string was not provided.");
+		await WaitForQueueConsumerAsync(
+			rabbitMqConnectionString,
+			RouterIngressEndpoint.QueueNameFrom(RouterAddress),
+			"Router ingress");
+		await WaitForQueueConsumerAsync(
+			rabbitMqConnectionString,
+			LocalParticipantIngressEndpoint.QueueNameFrom(NodeManagerAddress),
+			"NodeManager local participant ingress");
 	}
 
 	private async Task StartRemoteUserAgentAsync()
@@ -422,6 +436,44 @@ public sealed class NodeManagerParameterPersistenceSteps
 			localParticipantIngressQueue);
 
 		return new LocalParticipantIngressQueueState(queue.MessageCount, queue.ConsumerCount);
+	}
+
+	private static async Task WaitForQueueConsumerAsync(
+		string rabbitMqConnectionString,
+		string queueName,
+		string ingressName)
+	{
+		using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(30));
+
+		while (!timeout.IsCancellationRequested)
+		{
+			try
+			{
+				var queue = await GetLocalParticipantIngressQueueStateAsync(
+					rabbitMqConnectionString,
+					queueName);
+				if (queue.ConsumerCount > 0)
+				{
+					return;
+				}
+			}
+			catch (OperationInterruptedException)
+			{
+				// The listener has not declared its queue yet.
+			}
+
+			try
+			{
+				await Task.Delay(TimeSpan.FromMilliseconds(100), timeout.Token);
+			}
+			catch (OperationCanceledException) when (timeout.IsCancellationRequested)
+			{
+				break;
+			}
+		}
+
+		throw new Xunit.Sdk.XunitException(
+			$"{ingressName} did not start a RabbitMQ consumer within 30 seconds.");
 	}
 
 	private sealed record LocalParticipantIngressQueueState(
