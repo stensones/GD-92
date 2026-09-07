@@ -61,7 +61,10 @@ public sealed class NodeLoginRetryScheduler(
 
 			if (this.pendingDeliveries.IsPending(statusIdentifier))
 			{
-				this.pendingDeliveries.TryTimeoutNodeLogin(statusIdentifier);
+				if (!this.pendingDeliveries.TryTimeoutNodeLogin(statusIdentifier))
+				{
+					this.pendingDeliveries.TryTimeoutParameterRequest(statusIdentifier);
+				}
 			}
 		}
 		catch (OperationCanceledException) when (applicationStopping.IsCancellationRequested)

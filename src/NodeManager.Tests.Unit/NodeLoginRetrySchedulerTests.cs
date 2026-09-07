@@ -39,7 +39,7 @@ public sealed class NodeLoginRetrySchedulerTests
 	}
 
 	[Fact]
-	public async Task Does_not_schedule_Parameter_reads_or_Node_Logoff()
+	public async Task Schedules_a_Parameter_read_but_not_a_Node_Logoff()
 	{
 		var userAgent = Address(brigade: 26, node: 100, port: 25);
 		var router = Address(brigade: 26, node: 100, port: 0);
@@ -50,11 +50,14 @@ public sealed class NodeLoginRetrySchedulerTests
 			new RecordingRouterIngress(),
 			retryScheduler);
 
-		await service.RequestLocalRouterBrigadeOrAgencyNumber(CancellationToken.None);
+		var identifier = await service.RequestLocalRouterBrigadeOrAgencyNumber(CancellationToken.None);
 		await service.RequestLocalRouterLogoff(CancellationToken.None);
 
-		retryScheduler.Identifier.Should().BeNull();
-		retryScheduler.Envelope.Should().BeNull();
+		retryScheduler.Identifier.Should().Be(identifier);
+		retryScheduler.Envelope.Should().NotBeNull();
+		retryScheduler.Envelope!.AcknowledgementAndSequence.SequenceNumber.Should().Be(
+			identifier.USWR.SequenceNumber);
+		retryScheduler.Envelope.Contents.Should().BeOfType<ParameterRequest>();
 	}
 
 	[Fact]
@@ -96,6 +99,42 @@ public sealed class NodeLoginRetrySchedulerTests
 		retryDelay.WaitCount.Should().Be(3);
 		pendingDeliveries.IsPending(identifier).Should().BeFalse();
 		pendingDeliveries.GetStatus(identifier).Should().BeOfType<TimedOutNodeLoginStatus>();
+	}
+
+	[Fact]
+	public async Task Retains_a_terminal_Parameter_Request_status_when_attempts_are_exhausted()
+	{
+		var userAgent = Address(brigade: 26, node: 100, port: 25);
+		var router = Address(brigade: 26, node: 100, port: 0);
+		var pendingDeliveries = new InMemoryPendingDeliveryRegistry();
+		var identifier = pendingDeliveries.Reserve(userAgent, router);
+		var envelope = Envelope.FromValues(
+			userAgent,
+			Destinations.FromAddresses(router),
+			ProtocolAndPriority.FromValues(
+				MessagePriority.FromValue(MessagePriorityLevel.FromValue(3)),
+				ProtocolVersion.FromValue(ProtocolVersionNumber.FromValue(2))),
+			AcknowledgementAndSequence.FromValues(
+				identifier.USWR.SequenceNumber,
+				AcknowledgementRequest.Requested),
+			ParameterRequest.FromFields(ParameterTable.Current, ParameterNumber.FromValue(1)));
+		var services = new ServiceCollection();
+		services.AddScoped<IRouterIngress, RecordingRouterIngress>();
+		await using var serviceProvider = services.BuildServiceProvider(
+			new ServiceProviderOptions { ValidateScopes = true });
+		var scheduler = new NodeLoginRetryScheduler(
+			NodeLoginRetryPolicy.FromValues(
+				NodeLoginNoAcknowledgementTimeout.FromValue(Word8.FromValue(1)),
+				NodeLoginTotalSends.FromValue(Word8.FromValue(1))),
+			pendingDeliveries,
+			serviceProvider.GetRequiredService<IServiceScopeFactory>(),
+			new ImmediatelyCompletingRetryDelay(),
+			CancellationToken.None);
+
+		await scheduler.RetryUntilTerminalAsync(identifier, envelope);
+
+		pendingDeliveries.IsPending(identifier).Should().BeFalse();
+		pendingDeliveries.GetStatus(identifier).Should().NotBeNull();
 	}
 
 	[Fact]

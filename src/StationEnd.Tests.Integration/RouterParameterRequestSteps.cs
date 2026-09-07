@@ -17,6 +17,7 @@ public sealed class RouterParameterRequestSteps
 	private string? level1Password;
 	private string? pageContent;
 	private Uri? inventoryScanStatusAddress;
+	private bool localRouterDoesNotRespond;
 
 	[Given(@"NodeManager is the User Agent at Brigade (.*), Node (.*), and Port (.*)")]
 	public void GivenNodeManagerIsTheUserAgentAt(byte brigade, ushort node, byte port)
@@ -28,6 +29,12 @@ public sealed class RouterParameterRequestSteps
 	public void GivenItsLocalRouterIsAt(byte brigade, ushort node, byte port)
 	{
 		(brigade, node, port).Should().Be((26, 100, 0));
+	}
+
+	[Given(@"NodeManager's configured local Router does not respond")]
+	public void GivenNodeManagersConfiguredLocalRouterDoesNotRespond()
+	{
+		this.localRouterDoesNotRespond = true;
 	}
 
 	[When(@"I request the local Router brigade or agency number")]
@@ -266,6 +273,31 @@ public sealed class RouterParameterRequestSteps
 			$"The Parameter Request status did not show brigade or agency number {brigadeOrAgencyNumber}.");
 	}
 
+	[Then(@"the Parameter Request status eventually shows timed-out")]
+	public async Task ThenTheParameterRequestStatusEventuallyShowsTimedOut()
+	{
+		var statusAddress = this.response!.Headers.Location!;
+
+		for (var attempt = 0; attempt < 10; attempt++)
+		{
+			using var status = await this.client!.GetAsync(statusAddress);
+			if (status.StatusCode == HttpStatusCode.OK)
+			{
+				var content = await status.Content.ReadAsStringAsync();
+				using var document = JsonDocument.Parse(content);
+				if (document.RootElement.GetProperty("state").GetString() == "timed-out")
+				{
+					return;
+				}
+			}
+
+			await Task.Delay(TimeSpan.FromSeconds(1));
+		}
+
+		throw new Xunit.Sdk.XunitException(
+			"The Parameter Request status did not show timed-out.");
+	}
+
 	[Then(@"the Node Login status eventually shows User-Agent address (.*)\.(.*)\.(.*) is logged on")]
 	public async Task ThenTheNodeLoginStatusEventuallyShowsUserAgentAddressIsLoggedOn(
 		byte brigade,
@@ -384,6 +416,15 @@ public sealed class RouterParameterRequestSteps
 				[
 					"--Persistence:UsePersistentPostgres=false",
 					"--StationEnd:IncludeBusMTAAndIOUA=false",
+					this.localRouterDoesNotRespond
+						? "--RouterParameterRequest:LocalRouter:Port=63"
+						: "--RouterParameterRequest:LocalRouter:Port=0",
+					this.localRouterDoesNotRespond
+						? "--GD92:no_ack_timeout=1"
+						: "--GD92:no_ack_timeout=5",
+					this.localRouterDoesNotRespond
+						? "--GD92:retries=1"
+						: "--GD92:retries=3",
 					$"--Parameters:router-level1-password={this.level1Password ?? "FIRE1"}"
 				]);
 

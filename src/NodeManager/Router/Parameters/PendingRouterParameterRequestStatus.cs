@@ -9,3 +9,10 @@ public sealed record PendingRouterParameterRequestStatus(
 {
 	public string State { get; } = "pending";
 }
+
+public sealed record TimedOutRouterParameterRequestStatus(
+	RouterParameterRequestStatusIdentifier Identifier) :
+	RouterParameterRequestStatus(Identifier)
+{
+	public string State { get; } = "timed-out";
+}

@@ -30,6 +30,7 @@ public sealed class RouterParameterRequestService(
 				ParameterNumber.FromValue(1)));
 
 		await routerIngress.SubmitAsync(envelope, cancellationToken);
+		nodeLoginRetryScheduler.Schedule(statusIdentifier, envelope);
 		return statusIdentifier;
 	}
 

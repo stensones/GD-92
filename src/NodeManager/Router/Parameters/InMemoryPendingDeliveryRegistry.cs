@@ -237,7 +237,8 @@ public sealed class InMemoryPendingDeliveryRegistry : IPendingDeliveryRegistry
 				return false;
 			}
 
-			this.deliveries.Remove(statusIdentifier.USWR);
+			this.deliveries[statusIdentifier.USWR] =
+				new TimedOutRouterParameterRequestStatus(statusIdentifier);
 			this.GetPendingSequences(statusIdentifier.USWR.Destination)
 				.Remove(statusIdentifier.USWR.SequenceNumber.Value);
 			return true;

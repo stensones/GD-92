@@ -179,6 +179,11 @@ _Avoid_: user role, permanent authentication
 The Router-owned, temporary authenticated state of one User-Agent Communications Address that authorizes Parameter modification at one Communications Node.
 _Avoid_: system-wide login, device session, operator account
 
+**Management Transaction**:
+A NodeManager-initiated local Router request comprising an outgoing management Envelope, response correlation, retry and timeout behavior, and a terminal outcome.
+A Node Login, local Router Parameter Request, and each Inventory Scan probe are Management Transactions.
+_Avoid_: HTTP request, RabbitMQ delivery
+
 **Current Password**:
 Router Parameter 4, whose volatile Current value represents the single active Node Login's Password Level and supplied User-Agent Communications Address.
 _Avoid_: durable password, browser session
@@ -476,6 +481,10 @@ _Avoid_: retransmission, duplicate Message
 - A **Communications Node Inventory** is produced by one **Inventory Scan** and includes its **Inventory Scan Summary**.
 - A **Current Parameter Table** is initialized from its **Non-Volatile Parameter Table** on normal startup.
 - A **Permanent Parameter Table** supplies fallback Parameter values when a **Non-Volatile Parameter Table** is corrupted.
+- Every **Management Transaction** uses the NodeManager's configured retry policy and retains a terminal timeout outcome when its attempts are exhausted.
+- A **Management Transaction** owns its response correlation and exposes its status or terminal outcome without exposing its correlation records.
+- A Router Ingress submission failure is a terminal **Management Transaction** delivery failure.
+- **Management Transaction** state is volatile and is discarded when NodeManager restarts.
 - A Router-owned **Node Login** at a **Communications Node** authorizes Parameter modification according to each **Parameter**'s **Password Level**.
 - A Router has at most one active **Node Login**; a successful login from another User-Agent Communications Address replaces it.
 - A failed attempt to establish a **Node Login** leaves the existing Node Login unchanged.
@@ -532,6 +541,8 @@ _Avoid_: retransmission, duplicate Message
 - A **Deferred Transaction Response** keeps its **Unacknowledged Delivery** pending until a final **User-Agent Transaction Response**.
 - A rejected **User-Agent Transaction Response** includes a **Reason Code**.
 - A **Negative Acknowledgement** identifies one or more affected destination **Communications Addresses** and a **Reason Code**.
+- An ordinary **Negative Acknowledgement** is a terminal **Management Transaction** outcome; `wait_ack` is a **Deferred Transaction Response** that remains pending for a later final outcome.
+- A `wait_ack` **Deferred Transaction Response** stops **Management Transaction** retransmission and starts one final-response timeout.
 - A **General Reason Code** is a **Reason Code** from reason-code set 1.
 - A **Parameter Reason Code** is a **Reason Code** from reason-code set 4.
 - An **Acknowledgement** is a final **User-Agent Transaction Response** for one destination.

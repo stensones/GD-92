@@ -42,6 +42,15 @@ if (useExternalPostgres)
 		.WithReference(rabbitMq)
 		.WaitFor(rabbitMq)
 		.WithReference(nodeManagerDatabase)
+		.WithEnvironment(
+			"RouterParameterRequest__LocalRouter__Port",
+			builder.Configuration["RouterParameterRequest:LocalRouter:Port"] ?? "0")
+		.WithEnvironment(
+			"GD92__no_ack_timeout",
+			builder.Configuration["GD92:no_ack_timeout"] ?? "5")
+		.WithEnvironment(
+			"GD92__retries",
+			builder.Configuration["GD92:retries"] ?? "3")
 		.WaitFor(router);
 }
 else
@@ -74,6 +83,15 @@ else
 		.WithReference(rabbitMq)
 		.WaitFor(rabbitMq)
 		.WithReference(nodeManagerDatabase)
+		.WithEnvironment(
+			"RouterParameterRequest__LocalRouter__Port",
+			builder.Configuration["RouterParameterRequest:LocalRouter:Port"] ?? "0")
+		.WithEnvironment(
+			"GD92__no_ack_timeout",
+			builder.Configuration["GD92:no_ack_timeout"] ?? "5")
+		.WithEnvironment(
+			"GD92__retries",
+			builder.Configuration["GD92:retries"] ?? "3")
 		.WaitFor(nodeManagerDatabase)
 		.WaitFor(router);
 }
