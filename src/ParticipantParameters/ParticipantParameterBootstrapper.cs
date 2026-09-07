@@ -12,10 +12,40 @@ public sealed class ParticipantParameterBootstrapper
 		this.store = store ?? throw new ArgumentNullException(nameof(store));
 	}
 
-	public async ValueTask<IReadOnlyDictionary<ParameterNumber, ParameterValue>>
+	public ValueTask<IReadOnlyDictionary<ParameterNumber, ParameterValue>>
 		LoadNonVolatileValuesAsync(
 			IEnumerable<ParameterBootstrapValue> bootstrapValues,
 			CancellationToken cancellationToken = default)
+	{
+		return this.InitializeAsync(
+			bootstrapValues,
+			static (nonVolatileValues, _) => ValueTask.FromResult(nonVolatileValues),
+			cancellationToken);
+	}
+
+	public async ValueTask<T> InitializeAsync<T>(
+		IEnumerable<ParameterBootstrapValue> bootstrapValues,
+		Func<IReadOnlyDictionary<ParameterNumber, ParameterValue>, CancellationToken, ValueTask<T>>
+			createProjection,
+		CancellationToken cancellationToken = default)
+	{
+		ArgumentNullException.ThrowIfNull(createProjection);
+
+		var valuesByNumber = ValidateBootstrapValues(bootstrapValues);
+		return await this.store.ExecuteInitializationAsync(
+			async initializeCancellationToken =>
+			{
+				var nonVolatileValues = await this.LoadNonVolatileValuesCoreAsync(
+					valuesByNumber.Values,
+					initializeCancellationToken);
+
+				return await createProjection(nonVolatileValues, initializeCancellationToken);
+			},
+			cancellationToken);
+	}
+
+	private static Dictionary<ParameterNumber, ParameterBootstrapValue> ValidateBootstrapValues(
+		IEnumerable<ParameterBootstrapValue> bootstrapValues)
 	{
 		ArgumentNullException.ThrowIfNull(bootstrapValues);
 
@@ -32,8 +62,16 @@ public sealed class ParticipantParameterBootstrapper
 			}
 		}
 
+		return valuesByNumber;
+	}
+
+	private async ValueTask<IReadOnlyDictionary<ParameterNumber, ParameterValue>>
+		LoadNonVolatileValuesCoreAsync(
+			IEnumerable<ParameterBootstrapValue> bootstrapValues,
+			CancellationToken cancellationToken)
+	{
 		var nonVolatileValues = new Dictionary<ParameterNumber, ParameterValue>();
-		foreach (var bootstrapValue in valuesByNumber.Values)
+		foreach (var bootstrapValue in bootstrapValues)
 		{
 			var permanentValue = await this.store.GetAsync(
 				ParameterTable.Permanent,

@@ -9,17 +9,12 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Aspire.Hosting.Testing" />
     <PackageReference Include="AwesomeAssertions" />
     <PackageReference Include="coverlet.collector" />
     <PackageReference Include="Microsoft.NET.Test.Sdk" />
-    <PackageReference Include="Npgsql" />
-    <PackageReference Include="RabbitMQ.Client" />
     <PackageReference Include="Reqnroll.Tools.MsBuild.Generation" />
     <PackageReference Include="Reqnroll.xUnit" />
     <PackageReference Include="Testcontainers.PostgreSql" />
-    <PackageReference Include="WolverineFx.RabbitMQ" />
-    <PackageReference Include="WolverineFx.RuntimeCompilation" />
     <PackageReference Include="xunit" />
     <PackageReference Include="xunit.runner.visualstudio" />
   </ItemGroup>
@@ -29,18 +24,10 @@
   </ItemGroup>
 
   <ItemGroup>
-    <None Update="xunit.runner.json">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </None>
-  </ItemGroup>
-
-  <ItemGroup>
-    <ProjectReference Include="..\GD92.StationEnd.AppHost\GD92.StationEnd.AppHost.csproj" />
     <ProjectReference Include="..\Fields\Stensones.GD92.Fields.csproj" />
     <ProjectReference Include="..\Messages\Stensones.GD92.Messages.csproj" />
     <ProjectReference Include="..\NodeManager.Persistence\NodeManager.Persistence.csproj" />
-    <ProjectReference Include="..\Router.Persistence\Router.Persistence.csproj" />
-    <ProjectReference Include="..\Transport.RabbitMQ\Stensones.GD92.Transport.RabbitMQ.csproj" />
+    <ProjectReference Include="..\ParticipantParameters\ParticipantParameters.csproj" />
   </ItemGroup>
 
 </Project>

@@ -73,6 +73,7 @@ public sealed class EfRouterPasswordVerifierStore : IRouterLevel1PasswordVerifie
 			record.Salt = data.Salt.ToDatabaseValue();
 			record.Hash = data.Hash.ToDatabaseValue();
 		}
+		parameterSet.Revision++;
 
 		await this.context.SaveChangesAsync(cancellationToken);
 	}

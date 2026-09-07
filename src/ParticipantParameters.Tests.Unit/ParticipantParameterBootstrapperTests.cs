@@ -65,6 +65,51 @@ public sealed class ParticipantParameterBootstrapperTests
 	}
 
 	[Fact]
+	public async Task Initializes_a_complete_Parameter_set_before_creating_the_participant_projection()
+	{
+		var store = new InMemoryParticipantParameterStore.TransactionalInMemoryParticipantParameterStore();
+		var bootstrapper = new ParticipantParameterBootstrapper(store);
+
+		var projection = await bootstrapper.InitializeAsync(
+		[
+			ParameterBootstrapValue.FromValues(
+				ParameterNumber.FromValue(1),
+				ParameterValue.FromWireValue([25])),
+			ParameterBootstrapValue.FromValues(
+				ParameterNumber.FromValue(2),
+				ParameterValue.FromWireValue([12]))
+		],
+		(values, _) => ValueTask.FromResult(
+			$"{values[ParameterNumber.FromValue(1)].ToWireValue()[0]}." +
+			$"{values[ParameterNumber.FromValue(2)].ToWireValue()[0]}"));
+
+		projection.Should().Be("25.12");
+	}
+
+	[Fact]
+	public async Task Rolls_back_the_complete_Parameter_set_when_creating_the_participant_projection_fails()
+	{
+		var store = new InMemoryParticipantParameterStore.TransactionalInMemoryParticipantParameterStore();
+		var bootstrapper = new ParticipantParameterBootstrapper(store);
+
+		var initialize = async () => await bootstrapper.InitializeAsync(
+		[
+			ParameterBootstrapValue.FromValues(
+				ParameterNumber.FromValue(1),
+				ParameterValue.FromWireValue([25])),
+			ParameterBootstrapValue.FromValues(
+				ParameterNumber.FromValue(2),
+				ParameterValue.FromWireValue([12]))
+		],
+		(_, _) => ValueTask.FromException<string>(
+			new InvalidOperationException("Projection creation failed.")));
+
+		await initialize.Should().ThrowAsync<InvalidOperationException>()
+			.WithMessage("Projection creation failed.");
+		store.Values.Should().BeEmpty();
+	}
+
+	[Fact]
 	public async Task Rejects_duplicate_Parameter_Numbers_before_accessing_the_Participant_Parameter_Store()
 	{
 		var store = new TrackingParticipantParameterStore();
@@ -116,6 +161,55 @@ public sealed class ParticipantParameterBootstrapperTests
 			return ValueTask.FromResult(value);
 		}
 
+		public sealed class TransactionalInMemoryParticipantParameterStore :
+			IParticipantParameterStore
+		{
+			private Dictionary<(ParameterTable Table, ParameterNumber Number), ParameterValue> values = [];
+
+			public IReadOnlyDictionary<(ParameterTable Table, ParameterNumber Number), ParameterValue>
+				Values => this.values;
+
+			public ValueTask<ParameterValue?> GetAsync(
+				ParameterTable parameterTable,
+				ParameterNumber parameterNumber,
+				CancellationToken cancellationToken = default)
+			{
+				this.values.TryGetValue((parameterTable, parameterNumber), out var value);
+
+				return ValueTask.FromResult(value);
+			}
+
+			public ValueTask StoreAsync(
+				ParameterTable parameterTable,
+				ParameterNumber parameterNumber,
+				ParameterValue parameterValue,
+				CancellationToken cancellationToken = default)
+			{
+				this.values[(parameterTable, parameterNumber)] = parameterValue;
+
+				return ValueTask.CompletedTask;
+			}
+
+			public async ValueTask<T> ExecuteInitializationAsync<T>(
+				Func<CancellationToken, ValueTask<T>> initialize,
+				CancellationToken cancellationToken = default)
+			{
+				var originalValues = this.values;
+				this.values = new Dictionary<(ParameterTable Table, ParameterNumber Number), ParameterValue>(
+					originalValues);
+
+				try
+				{
+					return await initialize(cancellationToken);
+				}
+				catch
+				{
+					this.values = originalValues;
+					throw;
+				}
+			}
+		}
+
 		public ValueTask StoreAsync(
 			ParameterTable parameterTable,
 			ParameterNumber parameterNumber,
@@ -126,6 +220,13 @@ public sealed class ParticipantParameterBootstrapperTests
 
 			return ValueTask.CompletedTask;
 		}
+
+		public ValueTask<T> ExecuteInitializationAsync<T>(
+			Func<CancellationToken, ValueTask<T>> initialize,
+			CancellationToken cancellationToken = default)
+		{
+			return initialize(cancellationToken);
+		}
 	}
 
 	private sealed class FailingParticipantParameterStore : IParticipantParameterStore
@@ -133,6 +234,13 @@ public sealed class ParticipantParameterBootstrapperTests
 		public ValueTask<ParameterValue?> GetAsync(
 			ParameterTable parameterTable,
 			ParameterNumber parameterNumber,
+			CancellationToken cancellationToken = default)
+		{
+			throw new InvalidOperationException("Participant Parameter Store is unavailable.");
+		}
+
+		public ValueTask<T> ExecuteInitializationAsync<T>(
+			Func<CancellationToken, ValueTask<T>> initialize,
 			CancellationToken cancellationToken = default)
 		{
 			throw new InvalidOperationException("Participant Parameter Store is unavailable.");
@@ -171,6 +279,14 @@ public sealed class ParticipantParameterBootstrapperTests
 			this.OperationCount++;
 
 			return ValueTask.CompletedTask;
+		}
+
+		public ValueTask<T> ExecuteInitializationAsync<T>(
+			Func<CancellationToken, ValueTask<T>> initialize,
+			CancellationToken cancellationToken = default)
+		{
+			this.OperationCount++;
+			return initialize(cancellationToken);
 		}
 	}
 }

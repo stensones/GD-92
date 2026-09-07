@@ -468,6 +468,7 @@ _Avoid_: retransmission, duplicate Message
 - A **Router**, **Message Transfer Agent**, or **User Agent** owns zero or more **Parameters**.
 - A **Parameter Table** belongs to exactly one **Router**, **Message Transfer Agent**, or **User Agent** port.
 - A **Participant Parameter Store** persists only its owning participant's Permanent and Non-Volatile **Parameter Tables**; physical database infrastructure may be shared without sharing Parameter ownership.
+- The first initialization of a **Participant Parameter Store** commits all bootstrap **Parameter** Values as one set.
 - A **Communications Node** has one **Node Parameter Set** maintained through its **Router**.
 - A **Communications Node Inventory** identifies the Router, zero or more **Message Transfer Agents**, and zero or more **User Agents** at one **Communications Node**.
 - A **Message Transfer Agent** or **User Agent** has one **Agent Type**.

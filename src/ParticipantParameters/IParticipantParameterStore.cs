@@ -15,4 +15,8 @@ public interface IParticipantParameterStore
 		ParameterNumber parameterNumber,
 		ParameterValue parameterValue,
 		CancellationToken cancellationToken = default);
+
+	ValueTask<T> ExecuteInitializationAsync<T>(
+		Func<CancellationToken, ValueTask<T>> initialize,
+		CancellationToken cancellationToken = default);
 }

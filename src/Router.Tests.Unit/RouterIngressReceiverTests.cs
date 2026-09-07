@@ -699,7 +699,8 @@ public sealed class RouterIngressReceiverTests
 		}
 	}
 
-	private sealed class InMemoryRouterParameterStore : IParticipantParameterStore
+	private sealed class InMemoryRouterParameterStore :
+		IParticipantParameterStore
 	{
 		private readonly Dictionary<(ParameterTable Table, ParameterNumber Number), ParameterValue> values = [];
 
@@ -720,6 +721,13 @@ public sealed class RouterIngressReceiverTests
 		{
 			this.values[(parameterTable, parameterNumber)] = parameterValue;
 			return ValueTask.CompletedTask;
+		}
+
+		public ValueTask<T> ExecuteInitializationAsync<T>(
+			Func<CancellationToken, ValueTask<T>> initialize,
+			CancellationToken cancellationToken = default)
+		{
+			return initialize(cancellationToken);
 		}
 	}
 }

@@ -19,7 +19,7 @@ public sealed class NodeManagerParameterBootstrapper
 	{
 		ArgumentNullException.ThrowIfNull(configuration);
 
-		var nonVolatileValues = await this.parameterBootstrapper.LoadNonVolatileValuesAsync(
+		return await this.parameterBootstrapper.InitializeAsync(
 		[
 			ParameterBootstrapValue.FromValues(
 				NodeManagerParameterCatalogue.PortNumber,
@@ -28,10 +28,10 @@ public sealed class NodeManagerParameterBootstrapper
 				NodeManagerParameterCatalogue.AgentType,
 				configuration.AgentType)
 		],
+		static (nonVolatileValues, _) => ValueTask.FromResult(
+			NodeManagerCurrentParameterProjection.FromNonVolatileParameters(
+				nonVolatileValues[NodeManagerParameterCatalogue.PortNumber],
+				nonVolatileValues[NodeManagerParameterCatalogue.AgentType])),
 		cancellationToken);
-
-		return NodeManagerCurrentParameterProjection.FromNonVolatileParameters(
-			nonVolatileValues[NodeManagerParameterCatalogue.PortNumber],
-			nonVolatileValues[NodeManagerParameterCatalogue.AgentType]);
 	}
 }

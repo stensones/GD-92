@@ -24,7 +24,7 @@ public sealed class RouterParameterBootstrapper
 	{
 		ArgumentNullException.ThrowIfNull(configuration);
 
-		var nonVolatileValues = await this.parameterBootstrapper.LoadNonVolatileValuesAsync(
+		return await this.parameterBootstrapper.InitializeAsync(
 		[
 			ParameterBootstrapValue.FromValues(
 				RouterParameterCatalogue.BrigadeOrAgency.Number,
@@ -42,9 +42,21 @@ public sealed class RouterParameterBootstrapper
 				RouterParameterCatalogue.Retries.Number,
 				RouterParameterCatalogue.Retries.Encode(configuration.Retries))
 		],
+		(nonVolatileValues, initializeCancellationToken) =>
+			this.CreateCurrentParameterProjectionAsync(
+				nonVolatileValues,
+				configuration.InitialLevel1Password,
+				initializeCancellationToken),
 		cancellationToken);
+	}
+
+	private async ValueTask<RouterCurrentParameterProjection> CreateCurrentParameterProjectionAsync(
+		IReadOnlyDictionary<ParameterNumber, ParameterValue> nonVolatileValues,
+		PasswordValue initialLevel1Password,
+		CancellationToken cancellationToken)
+	{
 		var level1PasswordVerifier = await this.LoadLevel1PasswordVerifierAsync(
-			configuration.InitialLevel1Password,
+			initialLevel1Password,
 			cancellationToken);
 
 		return RouterCurrentParameterProjection.FromNonVolatileParameters(

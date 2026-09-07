@@ -30,6 +30,7 @@ public sealed class RouterDbContext : DbContext
 			entity.ToTable("managed_entity");
 			entity.HasKey(managedEntity => managedEntity.Id);
 			entity.HasIndex(managedEntity => new { managedEntity.NodeId, managedEntity.Kind }).IsUnique();
+			entity.HasIndex(managedEntity => managedEntity.Kind).IsUnique();
 			entity.HasOne<CommunicationsNodeRecord>()
 				.WithMany()
 				.HasForeignKey(managedEntity => managedEntity.NodeId)
