@@ -198,7 +198,7 @@ public sealed class NodeManagerParameterPersistenceSteps
 
 		var rabbitMqConnectionString = await this.application!.GetConnectionStringAsync("RabbitMQ")
 			?? throw new InvalidOperationException("The test RabbitMQ connection string was not provided.");
-		var queueName = LocalParticipantIngressEndpoint.QueueNameFrom(this.remoteUserAgentAddress);
+		var queueName = UserAgentIngressEndpoint.QueueNameFrom(this.remoteUserAgentAddress);
 		this.responses = new ParameterResponseReceiver(rabbitMqConnectionString, queueName);
 		await this.StartRemoteUserAgentListenerAsync(rabbitMqConnectionString, queueName);
 
@@ -243,7 +243,7 @@ public sealed class NodeManagerParameterPersistenceSteps
 		var consumer = new AsyncEventingBasicConsumer(this.remoteUserAgentChannel);
 		consumer.ReceivedAsync += async (_, delivery) =>
 		{
-			var response = DecodeLocalParticipantIngressEnvelope(delivery.Body);
+			var response = DecodeUserAgentIngressEnvelope(delivery.Body);
 			await this.responses!.ReceiveAsync(response, delivery.CancellationToken);
 			await this.remoteUserAgentChannel.BasicAckAsync(
 				delivery.DeliveryTag,
@@ -319,17 +319,17 @@ public sealed class NodeManagerParameterPersistenceSteps
 		this.responses = null;
 	}
 
-	private static Envelope DecodeLocalParticipantIngressEnvelope(
+	private static Envelope DecodeUserAgentIngressEnvelope(
 		ReadOnlyMemory<byte> payload)
 	{
-		var message = (LocalParticipantIngressTransportMessage)
-			LocalParticipantIngressTransportMessage.Read(payload.ToArray());
+		var message = (UserAgentIngressTransportMessage)
+			UserAgentIngressTransportMessage.Read(payload.ToArray());
 		var buffer = new EncodedMessageBuffer(message.EnvelopeWireValue);
 		var envelope = Envelope.FromEncodedMessageBuffer(ref buffer);
 		if (buffer.RemainingBitCount != 0)
 		{
 			throw new InvalidOperationException(
-				"The encoded local participant ingress Envelope contains trailing bytes.");
+				"The encoded User-Agent ingress Envelope contains trailing bytes.");
 		}
 
 		return envelope;

@@ -50,9 +50,16 @@ public sealed class RouterIngressReceiver : IRouterIngressReceiver
 				response.Contents.Type.Value,
 				response.Destinations.Addresses[0]);
 		}
-		else if (this.IsForLocalParticipant(envelope))
+		else if (this.IsForLocalNonRouterDestination(envelope))
 		{
-			await this.localParticipantIngress.DeliverAsync(envelope, cancellationToken);
+			if (IsParticipantManagementRequest(envelope))
+			{
+				await this.localParticipantIngress.DeliverAsync(envelope, cancellationToken);
+			}
+			else
+			{
+				await this.userAgentIngress.DeliverAsync(envelope, cancellationToken);
+			}
 		}
 		else
 		{
@@ -63,7 +70,12 @@ public sealed class RouterIngressReceiver : IRouterIngressReceiver
 		}
 	}
 
-	private bool IsForLocalParticipant(Envelope envelope)
+	private static bool IsParticipantManagementRequest(Envelope envelope)
+	{
+		return envelope.Contents is ParameterRequest or ParameterRequestMultiple or SetParameter;
+	}
+
+	private bool IsForLocalNonRouterDestination(Envelope envelope)
 	{
 		if (envelope.Destinations.Addresses.Count != 1)
 		{

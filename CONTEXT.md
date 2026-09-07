@@ -46,6 +46,10 @@ _Avoid_: browser response, Message Transfer Agent Frame
 The delivery of a management Envelope from a local Router to an addressed Message Transfer Agent or User Agent.
 _Avoid_: User-Agent Ingress, browser response
 
+**Local Delivery Classification**:
+The Router-owned decision that directs a locally addressed Envelope to Router handling, User-Agent Ingress, or Local Participant Ingress.
+_Avoid_: RabbitMQ route, queue type
+
 **Message Transfer Agent (MTA)**:
 A Communications Entity that operates with a paired MTA to transfer messages reliably across a communications bearer.
 _Avoid_: router, User Agent
@@ -448,6 +452,9 @@ _Avoid_: retransmission, duplicate Message
 - A **User Agent** submits each outgoing **Envelope** to its local **Router** through **Router Ingress**.
 - A **Router** delivers an Envelope addressed to a local **User Agent** through **User-Agent Ingress**.
 - A **Router** delivers a management **Envelope** addressed to a local **Message Transfer Agent** or **User Agent** through **Local Participant Ingress**.
+- A **Router** performs **Local Delivery Classification** before delivering a locally addressed **Envelope**.
+- A **Router** delivers a single local non-Router **Parameter Request**, **Parameter Request Multiple**, or **Set Parameter** through **Local Participant Ingress**.
+- A **Router** delivers a locally addressed **Parameter Message**, **Acknowledgement**, or **Negative Acknowledgement** through **User-Agent Ingress**.
 - A **Message Transfer Agent** transfers messages only with its paired **Message Transfer Agent**.
 - A **Message Transfer Agent** transfers an encoded **Envelope** to its paired Message Transfer Agent in a **Frame**.
 - A **Router** and **User Agent** validate the **Block Check Character** of a received **Envelope**.
