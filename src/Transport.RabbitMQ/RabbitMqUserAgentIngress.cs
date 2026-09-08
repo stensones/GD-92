@@ -6,7 +6,7 @@ namespace Stensones.GD92.Transport.RabbitMQ;
 
 public sealed class RabbitMqUserAgentIngress(IMessageBus messageBus) : IUserAgentIngress
 {
-	private readonly IMessageBus messageBus = messageBus ?? throw new ArgumentNullException(nameof(messageBus));
+	private readonly IngressEnvelopeTransport transport = new(messageBus);
 
 	public async Task DeliverAsync(Envelope envelope, CancellationToken cancellationToken)
 	{
@@ -18,11 +18,10 @@ public sealed class RabbitMqUserAgentIngress(IMessageBus messageBus) : IUserAgen
 			throw new ArgumentException("A User-Agent ingress Envelope must have exactly one destination.", nameof(envelope));
 		}
 
-		var message = new UserAgentIngressTransportMessage(envelope.ToWireValue());
-		await this.messageBus
-			.EndpointFor(UserAgentIngressEndpoint.From(envelope.Destinations.Addresses[0]))
-			.SendAsync(message)
-			.AsTask()
-			.WaitAsync(cancellationToken);
+		await this.transport.SubmitAsync(
+			envelope,
+			UserAgentIngressEndpoint.From(envelope.Destinations.Addresses[0]),
+			wireValue => new UserAgentIngressTransportMessage(wireValue),
+			cancellationToken);
 	}
 }

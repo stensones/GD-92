@@ -46,6 +46,10 @@ _Avoid_: browser response, Message Transfer Agent Frame
 The delivery of a management Envelope from a local Router to an addressed Message Transfer Agent or User Agent.
 _Avoid_: User-Agent Ingress, browser response
 
+**Ingress Envelope Transport**:
+The RabbitMQ transport of one encoded Envelope through Router Ingress, User-Agent Ingress, or Local Participant Ingress, including wire validation and endpoint submission.
+_Avoid_: Router delivery classification, Message Transfer Agent Frame
+
 **Local Delivery Classification**:
 The Router-owned decision that directs a locally addressed Envelope to Router handling, User-Agent Ingress, or Local Participant Ingress.
 _Avoid_: RabbitMQ route, queue type
@@ -521,6 +525,9 @@ _Avoid_: retransmission, duplicate Message
 - A **Message** is represented by an **Envelope** containing exactly one set of **Contents**.
 - An **Envelope** and **Contents** are composed of **Protocol Fields**.
 - A Router or **User Agent** performs **Envelope Reception** before processing a received **Envelope**.
+- An **Ingress Envelope Transport** rejects an encoded Envelope with trailing bytes using one transport-wide validation error.
+- User-Agent Ingress and Local Participant Ingress require exactly one Envelope destination before deriving their address-specific RabbitMQ endpoint.
+- Router Ingress submits to its configured local Router endpoint; Router handling validates the submitted Envelope destination.
 - An **Envelope** with a known but unimplemented **Message Type** preserves its **Unsupported Message Contents** without interpreting them.
 - A Router or **User Agent** responds to an acknowledgement-requested, unsupported **Message Type** with a **Negative Acknowledgement** using the General Reason Code `inv_mess`; otherwise it discards the Envelope.
 - An **Envelope** derives its CountAndLength, Message Type, and Block Check Character from its Destinations and Message Contents.

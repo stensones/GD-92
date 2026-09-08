@@ -9,18 +9,25 @@ namespace Stensones.GD92.Transport.RabbitMQ.Tests.Unit;
 public sealed class RouterIngressTransportMessageHandlerTests
 {
 	[Fact]
+	public async Task Rejects_an_Envelope_with_trailing_bytes_using_the_transport_wide_error()
+	{
+		var wireValue = CreateEnvelope().ToWireValue().Append((byte)0).ToArray();
+		var receiver = new RecordingRouterIngressReceiver();
+		var handler = new RouterIngressTransportMessageHandler();
+
+		var handle = () => handler.HandleAsync(
+			new RouterIngressTransportMessage(wireValue),
+			new RecordingServiceScopeFactory(receiver),
+			CancellationToken.None);
+
+		var exception = await handle.Should().ThrowAsync<InvalidOperationException>();
+		exception.Which.Message.Should().Be("The encoded ingress Envelope contains trailing bytes.");
+	}
+
+	[Fact]
 	public async Task Delivers_the_exact_decoded_Envelope_to_the_Router_receiver()
 	{
-		var envelope = Envelope.FromValues(
-			Address(brigade: 26, node: 100, port: 25),
-			Destinations.FromAddresses(Address(brigade: 26, node: 101, port: 0)),
-			ProtocolAndPriority.FromValues(
-				MessagePriority.FromValue(MessagePriorityLevel.FromValue(3)),
-				ProtocolVersion.FromValue(ProtocolVersionNumber.FromValue(2))),
-			AcknowledgementAndSequence.FromValues(
-				SequenceNumber.FromValue(MessageSequenceIdentifier.FromValue(7)),
-				AcknowledgementRequest.Requested),
-			ParameterRequest.FromFields(ParameterTable.Current, ParameterNumber.FromValue(1)));
+		var envelope = CreateEnvelope();
 		var receiver = new RecordingRouterIngressReceiver();
 		var scopeFactory = new RecordingServiceScopeFactory(receiver);
 		var handler = new RouterIngressTransportMessageHandler();
@@ -35,6 +42,20 @@ public sealed class RouterIngressTransportMessageHandlerTests
 		receiver.ReceivedEnvelope.Should().NotBeNull();
 		receiver.ReceivedEnvelope.Should().NotBeSameAs(envelope);
 		receiver.ReceivedEnvelope!.ToWireValue().Should().Equal(envelope.ToWireValue());
+	}
+
+	private static Envelope CreateEnvelope()
+	{
+		return Envelope.FromValues(
+			Address(brigade: 26, node: 100, port: 25),
+			Destinations.FromAddresses(Address(brigade: 26, node: 101, port: 0)),
+			ProtocolAndPriority.FromValues(
+				MessagePriority.FromValue(MessagePriorityLevel.FromValue(3)),
+				ProtocolVersion.FromValue(ProtocolVersionNumber.FromValue(2))),
+			AcknowledgementAndSequence.FromValues(
+				SequenceNumber.FromValue(MessageSequenceIdentifier.FromValue(7)),
+				AcknowledgementRequest.Requested),
+			ParameterRequest.FromFields(ParameterTable.Current, ParameterNumber.FromValue(1)));
 	}
 
 	private static CommunicationsAddress Address(byte brigade, ushort node, byte port)

@@ -7,7 +7,7 @@ namespace Stensones.GD92.Transport.RabbitMQ;
 
 public sealed class RabbitMqRouterIngress : IRouterIngress
 {
-	private readonly IMessageBus messageBus;
+	private readonly IngressEnvelopeTransport transport;
 	private readonly CommunicationsAddress localRouter;
 
 	public RabbitMqRouterIngress(
@@ -17,7 +17,7 @@ public sealed class RabbitMqRouterIngress : IRouterIngress
 		ArgumentNullException.ThrowIfNull(messageBus);
 		ArgumentNullException.ThrowIfNull(localRouter);
 
-		this.messageBus = messageBus;
+		this.transport = new IngressEnvelopeTransport(messageBus);
 		this.localRouter = localRouter;
 	}
 
@@ -26,11 +26,10 @@ public sealed class RabbitMqRouterIngress : IRouterIngress
 		ArgumentNullException.ThrowIfNull(envelope);
 		cancellationToken.ThrowIfCancellationRequested();
 
-		var message = new RouterIngressTransportMessage(envelope.ToWireValue());
-		await messageBus
-			.EndpointFor(RouterIngressEndpoint.From(localRouter))
-			.SendAsync(message)
-			.AsTask()
-			.WaitAsync(cancellationToken);
+		await this.transport.SubmitAsync(
+			envelope,
+			RouterIngressEndpoint.From(this.localRouter),
+			wireValue => new RouterIngressTransportMessage(wireValue),
+			cancellationToken);
 	}
 }

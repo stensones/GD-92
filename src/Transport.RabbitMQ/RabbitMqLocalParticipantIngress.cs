@@ -6,19 +6,24 @@ namespace Stensones.GD92.Transport.RabbitMQ;
 
 public sealed class RabbitMqLocalParticipantIngress(IMessageBus messageBus) : ILocalParticipantIngress
 {
-	private readonly IMessageBus messageBus = messageBus ??
-		throw new ArgumentNullException(nameof(messageBus));
+	private readonly IngressEnvelopeTransport transport = new(messageBus);
 
 	public async Task DeliverAsync(Envelope envelope, CancellationToken cancellationToken)
 	{
 		ArgumentNullException.ThrowIfNull(envelope);
 		cancellationToken.ThrowIfCancellationRequested();
 
-		var message = new LocalParticipantIngressTransportMessage(envelope.ToWireValue());
-		await this.messageBus
-			.EndpointFor(LocalParticipantIngressEndpoint.From(envelope.Destinations.Addresses[0]))
-			.SendAsync(message)
-			.AsTask()
-			.WaitAsync(cancellationToken);
+		if (envelope.Destinations.Addresses.Count != 1)
+		{
+			throw new ArgumentException(
+				"A Local Participant ingress Envelope must have exactly one destination.",
+				nameof(envelope));
+		}
+
+		await this.transport.SubmitAsync(
+			envelope,
+			LocalParticipantIngressEndpoint.From(envelope.Destinations.Addresses[0]),
+			wireValue => new LocalParticipantIngressTransportMessage(wireValue),
+			cancellationToken);
 	}
 }

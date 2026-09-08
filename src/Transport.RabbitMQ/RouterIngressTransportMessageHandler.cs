@@ -1,7 +1,5 @@
 using Microsoft.Extensions.DependencyInjection;
-using Stensones.GD92.Fields;
 using Stensones.GD92.Messages;
-using Envelope = Stensones.GD92.Messages.Envelope;
 
 namespace Stensones.GD92.Transport.RabbitMQ;
 
@@ -16,13 +14,7 @@ public sealed class RouterIngressTransportMessageHandler
 		ArgumentNullException.ThrowIfNull(serviceScopeFactory);
 		cancellationToken.ThrowIfCancellationRequested();
 
-		var buffer = new EncodedMessageBuffer(message.EnvelopeWireValue);
-		var envelope = Envelope.FromEncodedMessageBuffer(ref buffer);
-
-		if (buffer.RemainingBitCount != 0)
-		{
-			throw new InvalidOperationException("The encoded Router ingress Envelope contains trailing bytes.");
-		}
+		var envelope = IngressEnvelopeTransport.DecodeEnvelope(message.EnvelopeWireValue);
 
 		using var scope = serviceScopeFactory.CreateScope();
 		var receiver = scope.ServiceProvider.GetRequiredService<IRouterIngressReceiver>();

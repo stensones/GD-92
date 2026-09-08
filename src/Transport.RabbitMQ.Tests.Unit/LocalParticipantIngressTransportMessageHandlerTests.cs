@@ -8,6 +8,31 @@ namespace Stensones.GD92.Transport.RabbitMQ.Tests.Unit;
 public sealed class LocalParticipantIngressTransportMessageHandlerTests
 {
 	[Fact]
+	public async Task Rejects_an_Envelope_with_trailing_bytes_using_the_transport_wide_error()
+	{
+		var envelope = Envelope.FromValues(
+			Address(brigade: 26, node: 100, port: 25),
+			Destinations.FromAddresses(Address(brigade: 26, node: 100, port: 24)),
+			ProtocolAndPriority.FromValues(
+				MessagePriority.FromValue(MessagePriorityLevel.FromValue(3)),
+				ProtocolVersion.FromValue(ProtocolVersionNumber.FromValue(2))),
+			AcknowledgementAndSequence.FromValues(
+				SequenceNumber.FromValue(MessageSequenceIdentifier.FromValue(7)),
+				AcknowledgementRequest.NotRequested),
+			Parameter.FromFields(MoreValues.No, ParameterValue.FromWireValue([25])));
+		var wireValue = envelope.ToWireValue().Append((byte)0).ToArray();
+		var handler = new LocalParticipantIngressTransportMessageHandler();
+
+		var handle = () => handler.HandleAsync(
+			new LocalParticipantIngressTransportMessage(wireValue),
+			new RecordingLocalParticipantIngressReceiver(),
+			CancellationToken.None);
+
+		var exception = await handle.Should().ThrowAsync<InvalidOperationException>();
+		exception.Which.Message.Should().Be("The encoded ingress Envelope contains trailing bytes.");
+	}
+
+	[Fact]
 	public async Task Strictly_decodes_and_delivers_the_Parameter_response_Envelope_to_the_local_Participant_receiver()
 	{
 		var envelope = Envelope.FromValues(
