@@ -1,9 +1,9 @@
 namespace NodeManager.Router.Parameters;
 
-public sealed class NodeLoginRetryDelay : INodeLoginRetryDelay
+public sealed class ManagementTransactionRetryDelay : IManagementTransactionRetryDelay
 {
 	public Task WaitAsync(
-		NodeLoginNoAcknowledgementTimeout timeout,
+		ManagementTransactionNoAcknowledgementTimeout timeout,
 		CancellationToken cancellationToken)
 	{
 		ArgumentNullException.ThrowIfNull(timeout);

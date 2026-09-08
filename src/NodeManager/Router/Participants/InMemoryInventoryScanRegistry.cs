@@ -58,6 +58,24 @@ public sealed class InMemoryInventoryScanRegistry : IInventoryScanRegistry
 		}
 	}
 
+	public void RecordDeliveryFailure(InventoryScanStatusIdentifier identifier)
+	{
+		ArgumentNullException.ThrowIfNull(identifier);
+
+		lock (this.synchronizationLock)
+		{
+			var status = this.statuses.GetValueOrDefault(identifier.Value) ??
+				throw new InvalidOperationException("The Inventory Scan does not exist.");
+			var summary = status.Summary;
+
+			this.statuses[identifier.Value] = status with
+			{
+				CompletedProbeCount = status.CompletedProbeCount + 1,
+				Summary = summary with { DeliveryFailureCount = summary.DeliveryFailureCount + 1 }
+			};
+		}
+	}
+
 	public void RecordNegativeAcknowledgement(
 		InventoryScanStatusIdentifier identifier,
 		ReasonCode reasonCode)

@@ -12,6 +12,7 @@ public interface IInventoryScanRegistry
 		byte port,
 		ParameterValue agentType);
 	void RecordTimeout(InventoryScanStatusIdentifier identifier);
+	void RecordDeliveryFailure(InventoryScanStatusIdentifier identifier);
 	void RecordNegativeAcknowledgement(
 		InventoryScanStatusIdentifier identifier,
 		ReasonCode reasonCode);

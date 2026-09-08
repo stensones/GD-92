@@ -7,7 +7,7 @@ namespace NodeManager.Router.Parameters;
 [Route("router/parameters")]
 public sealed class RouterParametersController(
 	IRouterParameterRequestService routerParameterRequests,
-	IPendingDeliveryRegistry pendingDeliveries) : Controller
+	IManagementTransactionStatusReader managementTransactions) : Controller
 {
 	[HttpPost("brigade-or-agency-number")]
 	public async Task<IActionResult> RequestBrigadeOrAgencyNumber(CancellationToken cancellationToken)
@@ -59,7 +59,7 @@ public sealed class RouterParametersController(
 			return this.NotFound();
 		}
 
-		var status = pendingDeliveries.GetStatus(statusIdentifier);
+		var status = managementTransactions.GetStatus(statusIdentifier);
 
 		if (status is null)
 		{
@@ -110,7 +110,7 @@ public sealed class RouterParametersController(
 				InvalidPasswordNodeLoginStatus invalidPassword => invalidPassword.State,
 				RejectedNodeLoginStatus rejectedNodeLogin => rejectedNodeLogin.State,
 				TimedOutNodeLoginStatus timedOutNodeLogin => timedOutNodeLogin.State,
-				_ => throw new InvalidOperationException("The Router Parameter Request status is unknown.")
+				_ => throw new InvalidOperationException("The Management Transaction status is unknown.")
 			},
 			brigadeOrAgencyNumber,
 			userAgentAddress);

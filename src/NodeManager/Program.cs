@@ -1,4 +1,4 @@
-﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore;
 using NodeManager.Persistence;
 using NodeManager.Router.Parameters;
 using NodeManager.Router.Participants;
@@ -30,11 +30,16 @@ builder.Services.AddWolverine(options =>
 });
 
 builder.Services.AddSingleton(requestSettings);
+builder.Services.AddSingleton(requestSettings.ManagementTransactionRetryPolicy);
 builder.AddNpgsqlDbContext<NodeManagerDbContext>("node-manager-database");
 builder.Services.AddScoped<IParticipantParameterStore, EfNodeManagerParameterStore>();
 builder.Services.AddScoped<NodeManagerParameterBootstrapper>();
 builder.Services.AddSingleton<NodeManagerCurrentParameterProjectionSource>();
-builder.Services.AddSingleton<IPendingDeliveryRegistry, InMemoryPendingDeliveryRegistry>();
+builder.Services.AddSingleton<InMemoryManagementTransactionRegistry>();
+builder.Services.AddSingleton<IManagementTransactionRegistry>(serviceProvider =>
+	serviceProvider.GetRequiredService<InMemoryManagementTransactionRegistry>());
+builder.Services.AddSingleton<IManagementTransactionStatusReader>(serviceProvider =>
+	serviceProvider.GetRequiredService<InMemoryManagementTransactionRegistry>());
 builder.Services.AddSingleton<IInventoryScanRegistry, InMemoryInventoryScanRegistry>();
 builder.Services.AddSingleton<IInventoryScanRunner, InventoryScanRunner>();
 builder.Services.AddSingleton<RouterParameterResponseReceiver>();
@@ -42,14 +47,8 @@ builder.Services.AddSingleton<IUserAgentIngressReceiver>(serviceProvider =>
 	serviceProvider.GetRequiredService<RouterParameterResponseReceiver>());
 builder.Services.AddScoped<ILocalParticipantIngressReceiver, NodeManagerParticipantIngressReceiver>();
 builder.Services.AddScoped<IRouterIngress, NodeManagerRouterIngress>();
-builder.Services.AddSingleton<INodeLoginRetryDelay, NodeLoginRetryDelay>();
-builder.Services.AddSingleton<INodeLoginRetryScheduler>(serviceProvider =>
-	new NodeLoginRetryScheduler(
-		requestSettings.NodeLoginRetryPolicy,
-		serviceProvider.GetRequiredService<IPendingDeliveryRegistry>(),
-		serviceProvider.GetRequiredService<IServiceScopeFactory>(),
-		serviceProvider.GetRequiredService<INodeLoginRetryDelay>(),
-		serviceProvider.GetRequiredService<IHostApplicationLifetime>().ApplicationStopping));
+builder.Services.AddSingleton<IManagementTransactionRetryDelay, ManagementTransactionRetryDelay>();
+builder.Services.AddScoped<IManagementTransactionService, ManagementTransactionService>();
 builder.Services.AddScoped<IRouterParameterRequestService, RouterParameterRequestService>();
 
 var app = builder.Build();

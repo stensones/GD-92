@@ -3,9 +3,10 @@ using Stensones.GD92.Messages;
 
 namespace NodeManager.Router.Parameters;
 
-public interface IPendingDeliveryRegistry
+public interface IManagementTransactionRegistry :
+	IManagementTransactionStatusReader
 {
-	RouterParameterRequestStatusIdentifier Reserve(
+	RouterParameterRequestStatusIdentifier ReserveParameterRequest(
 		CommunicationsAddress source,
 		CommunicationsAddress destination);
 
@@ -18,10 +19,9 @@ public interface IPendingDeliveryRegistry
 		CommunicationsAddress source,
 		CommunicationsAddress destination);
 
-	bool IsPending(RouterParameterRequestStatusIdentifier statusIdentifier);
+	bool IsActive(RouterParameterRequestStatusIdentifier statusIdentifier);
 
-	RouterParameterRequestStatus? GetStatus(
-		RouterParameterRequestStatusIdentifier statusIdentifier);
+	bool IsAwaitingFinalResponse(RouterParameterRequestStatusIdentifier statusIdentifier);
 
 	bool TryCompleteParameterResponse(Envelope envelope);
 
@@ -29,10 +29,8 @@ public interface IPendingDeliveryRegistry
 
 	bool TryCompleteNegativeAcknowledgement(Envelope envelope);
 
-	bool TryTimeoutParameterRequest(RouterParameterRequestStatusIdentifier statusIdentifier);
+	bool TryTimeout(RouterParameterRequestStatusIdentifier statusIdentifier);
 
-	bool TryRecordParameterRequestDeliveryFailure(
+	bool TryRecordDeliveryFailure(
 		RouterParameterRequestStatusIdentifier statusIdentifier);
-
-	bool TryTimeoutNodeLogin(RouterParameterRequestStatusIdentifier statusIdentifier);
 }

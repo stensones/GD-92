@@ -1,6 +1,7 @@
 using AwesomeAssertions;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Logging.Abstractions;
 using NodeManager.Router.Parameters;
 using NodeManager.Router.Participants;
 using Reqnroll;
@@ -23,11 +24,22 @@ public sealed class InventoryScanNegativeAcknowledgementSteps
 	{
 		var nodeManager = Address(brigade: 26, node: 100, port: 25);
 		var router = Address(brigade: 26, node: 100, port: 0);
-		var pendingDeliveries = new InMemoryPendingDeliveryRegistry();
-		var responses = new RouterParameterResponseReceiver(pendingDeliveries);
+		var transactions = new InMemoryManagementTransactionRegistry();
+		var responses = new RouterParameterResponseReceiver(transactions);
 		var services = new ServiceCollection();
 		services.AddScoped<IRouterIngress>(_ =>
 			new NegativeAcknowledgingRouterIngress(responses));
+		services.AddScoped<IManagementTransactionService>(serviceProvider =>
+			new ManagementTransactionService(
+				transactions,
+				ManagementTransactionRetryPolicy.FromValues(
+					ManagementTransactionNoAcknowledgementTimeout.FromValue(Word8.FromValue(1)),
+					ManagementTransactionTotalSends.FromValue(Word8.FromValue(1))),
+				serviceProvider.GetRequiredService<IRouterIngress>(),
+				serviceProvider.GetRequiredService<IServiceScopeFactory>(),
+				new ImmediatelyCompletingRetryDelay(),
+				new NonStoppingApplicationLifetime(),
+				NullLogger<ManagementTransactionService>.Instance));
 		this.serviceProvider = services.BuildServiceProvider(
 			new ServiceProviderOptions { ValidateScopes = true });
 		this.inventoryScans = new InMemoryInventoryScanRegistry();
@@ -35,13 +47,11 @@ public sealed class InventoryScanNegativeAcknowledgementSteps
 			new RouterParameterRequestSettings(
 				nodeManager,
 				router,
-				NodeLoginRetryPolicy.FromValues(
-					NodeLoginNoAcknowledgementTimeout.FromValue(Word8.FromValue(1)),
-					NodeLoginTotalSends.FromValue(Word8.FromValue(1)))),
+				ManagementTransactionRetryPolicy.FromValues(
+					ManagementTransactionNoAcknowledgementTimeout.FromValue(Word8.FromValue(1)),
+					ManagementTransactionTotalSends.FromValue(Word8.FromValue(1)))),
 			this.inventoryScans,
-			pendingDeliveries,
 			this.serviceProvider.GetRequiredService<IServiceScopeFactory>(),
-			new ImmediatelyCompletingRetryDelay(),
 			new NonStoppingApplicationLifetime());
 	}
 
@@ -120,10 +130,10 @@ public sealed class InventoryScanNegativeAcknowledgementSteps
 		}
 	}
 
-	private sealed class ImmediatelyCompletingRetryDelay : INodeLoginRetryDelay
+	private sealed class ImmediatelyCompletingRetryDelay : IManagementTransactionRetryDelay
 	{
 		public Task WaitAsync(
-			NodeLoginNoAcknowledgementTimeout timeout,
+			ManagementTransactionNoAcknowledgementTimeout timeout,
 			CancellationToken cancellationToken)
 		{
 			return Task.CompletedTask;

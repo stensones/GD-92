@@ -1,6 +1,8 @@
 using AwesomeAssertions;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Logging.Abstractions;
 using NodeManager.Router.Parameters;
 using Reqnroll;
 using Stensones.GD92.Fields;
@@ -22,27 +24,27 @@ public sealed class DeferredParameterRequestSteps
 	{
 		var nodeManager = Address(brigade: 26, node: 100, port: 25);
 		var router = Address(brigade: 26, node: 100, port: 0);
-		var pendingDeliveries = new InMemoryPendingDeliveryRegistry();
-		var responses = new RouterParameterResponseReceiver(pendingDeliveries);
+		var transactions = new InMemoryManagementTransactionRegistry();
+		var responses = new RouterParameterResponseReceiver(transactions);
 		this.routerIngress = new DeferredRouterIngress(responses);
 		var services = new ServiceCollection();
 		services.AddScoped<IRouterIngress>(_ => this.routerIngress);
 		this.serviceProvider = services.BuildServiceProvider(
 			new ServiceProviderOptions { ValidateScopes = true });
-		var scheduler = new NodeLoginRetryScheduler(
-			NodeLoginRetryPolicy.FromValues(
-				NodeLoginNoAcknowledgementTimeout.FromValue(Word8.FromValue(1)),
-				NodeLoginTotalSends.FromValue(Word8.FromValue(3))),
-			pendingDeliveries,
+		var managementTransactions = new ManagementTransactionService(
+			transactions,
+			ManagementTransactionRetryPolicy.FromValues(
+				ManagementTransactionNoAcknowledgementTimeout.FromValue(Word8.FromValue(1)),
+				ManagementTransactionTotalSends.FromValue(Word8.FromValue(3))),
+			this.routerIngress,
 			this.serviceProvider.GetRequiredService<IServiceScopeFactory>(),
 			new ImmediatelyCompletingRetryDelay(),
-			CancellationToken.None);
+			new NonStoppingApplicationLifetime(),
+			NullLogger<ManagementTransactionService>.Instance);
 		var requests = new RouterParameterRequestService(
 			new RouterParameterRequestSettings(nodeManager, router),
-			pendingDeliveries,
-			this.routerIngress,
-			scheduler);
-		this.controller = new RouterParametersController(requests, pendingDeliveries);
+			managementTransactions);
+		this.controller = new RouterParametersController(requests, transactions);
 	}
 
 	[When(@"an awaiting NodeManager user requests the local Router brigade or agency number")]
@@ -73,6 +75,7 @@ public sealed class DeferredParameterRequestSteps
 				.Should().BeOfType<RouterParameterRequestStatusResponse>().Which;
 			if (response.State == "timed-out")
 			{
+				this.routerIngress!.SubmitCount.Should().Be(1);
 				return;
 			}
 
@@ -122,13 +125,24 @@ public sealed class DeferredParameterRequestSteps
 		}
 	}
 
-	private sealed class ImmediatelyCompletingRetryDelay : INodeLoginRetryDelay
+	private sealed class ImmediatelyCompletingRetryDelay : IManagementTransactionRetryDelay
 	{
 		public Task WaitAsync(
-			NodeLoginNoAcknowledgementTimeout timeout,
+			ManagementTransactionNoAcknowledgementTimeout timeout,
 			CancellationToken cancellationToken)
 		{
 			return Task.CompletedTask;
+		}
+	}
+
+	private sealed class NonStoppingApplicationLifetime : IHostApplicationLifetime
+	{
+		public CancellationToken ApplicationStarted => CancellationToken.None;
+		public CancellationToken ApplicationStopping => CancellationToken.None;
+		public CancellationToken ApplicationStopped => CancellationToken.None;
+
+		public void StopApplication()
+		{
 		}
 	}
 }

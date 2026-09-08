@@ -3,19 +3,20 @@ using Stensones.GD92.Messages;
 
 namespace NodeManager.Router.Parameters;
 
-public sealed class InMemoryPendingDeliveryRegistry : IPendingDeliveryRegistry
+public sealed class InMemoryManagementTransactionRegistry :
+	IManagementTransactionRegistry
 {
 	private const ushort MaximumSequenceNumber = 32767;
 	private readonly object synchronizationLock = new();
-	private readonly Dictionary<UniqueSystemWideReference, RouterParameterRequestStatus> deliveries = [];
-	private readonly Dictionary<CommunicationsAddress, HashSet<ushort>> pendingSequencesByDestination = [];
+	private readonly Dictionary<UniqueSystemWideReference, RouterParameterRequestStatus> transactions = [];
+	private readonly Dictionary<CommunicationsAddress, HashSet<ushort>> activeSequencesByDestination = [];
 	private readonly Dictionary<CommunicationsAddress, ushort> nextSequenceByDestination = [];
 
-	public RouterParameterRequestStatusIdentifier Reserve(
+	public RouterParameterRequestStatusIdentifier ReserveParameterRequest(
 		CommunicationsAddress source,
 		CommunicationsAddress destination)
 	{
-		return this.Reserve(
+		return this.ReserveTransaction(
 			source,
 			destination,
 			static identifier => new PendingRouterParameterRequestStatus(identifier));
@@ -28,7 +29,7 @@ public sealed class InMemoryPendingDeliveryRegistry : IPendingDeliveryRegistry
 	{
 		ArgumentNullException.ThrowIfNull(userAgentAddress);
 
-		return this.Reserve(
+		return this.ReserveTransaction(
 			source,
 			destination,
 			identifier => new PendingNodeLoginStatus(identifier, userAgentAddress));
@@ -38,13 +39,13 @@ public sealed class InMemoryPendingDeliveryRegistry : IPendingDeliveryRegistry
 		CommunicationsAddress source,
 		CommunicationsAddress destination)
 	{
-		return this.Reserve(
+		return this.ReserveTransaction(
 			source,
 			destination,
 			static identifier => new PendingNodeLogoffStatus(identifier));
 	}
 
-	private RouterParameterRequestStatusIdentifier Reserve(
+	private RouterParameterRequestStatusIdentifier ReserveTransaction(
 		CommunicationsAddress source,
 		CommunicationsAddress destination,
 		Func<RouterParameterRequestStatusIdentifier, RouterParameterRequestStatus> createPendingStatus)
@@ -55,19 +56,19 @@ public sealed class InMemoryPendingDeliveryRegistry : IPendingDeliveryRegistry
 
 		lock (this.synchronizationLock)
 		{
-			var pendingSequences = this.GetPendingSequences(destination);
+			var activeSequences = this.GetActiveSequences(destination);
 			var candidate = this.nextSequenceByDestination.GetValueOrDefault(destination);
 
 			for (var attempts = 0; attempts <= MaximumSequenceNumber; attempts++)
 			{
-				if (!pendingSequences.Contains(candidate))
+				if (!activeSequences.Contains(candidate))
 				{
 					var sequenceNumber = SequenceNumber.FromValue(MessageSequenceIdentifier.FromValue(candidate));
 					var uswr = new UniqueSystemWideReference(source, destination, sequenceNumber);
 					var identifier = new RouterParameterRequestStatusIdentifier(uswr);
 
-					pendingSequences.Add(candidate);
-					this.deliveries.Add(
+					activeSequences.Add(candidate);
+					this.transactions.Add(
 						uswr,
 						createPendingStatus(identifier));
 					this.nextSequenceByDestination[destination] =
@@ -83,14 +84,15 @@ public sealed class InMemoryPendingDeliveryRegistry : IPendingDeliveryRegistry
 		throw new InvalidOperationException("All sequence numbers for the destination are pending.");
 	}
 
-	public bool IsPending(RouterParameterRequestStatusIdentifier statusIdentifier)
+	public bool IsActive(RouterParameterRequestStatusIdentifier statusIdentifier)
 	{
 		ArgumentNullException.ThrowIfNull(statusIdentifier);
 
 		lock (this.synchronizationLock)
 		{
-			return this.deliveries.TryGetValue(statusIdentifier.USWR, out var status) &&
-				status is PendingRouterParameterRequestStatus or PendingNodeLoginStatus or PendingNodeLogoffStatus;
+			return this.transactions.TryGetValue(statusIdentifier.USWR, out var status) &&
+				status is PendingRouterParameterRequestStatus or DeferredRouterParameterRequestStatus or
+					PendingNodeLoginStatus or PendingNodeLogoffStatus;
 		}
 	}
 
@@ -101,7 +103,19 @@ public sealed class InMemoryPendingDeliveryRegistry : IPendingDeliveryRegistry
 
 		lock (this.synchronizationLock)
 		{
-			return this.deliveries.GetValueOrDefault(statusIdentifier.USWR);
+			return this.transactions.GetValueOrDefault(statusIdentifier.USWR);
+		}
+	}
+
+	public bool IsAwaitingFinalResponse(
+		RouterParameterRequestStatusIdentifier statusIdentifier)
+	{
+		ArgumentNullException.ThrowIfNull(statusIdentifier);
+
+		lock (this.synchronizationLock)
+		{
+			return this.transactions.GetValueOrDefault(statusIdentifier.USWR) is
+				DeferredRouterParameterRequestStatus;
 		}
 	}
 
@@ -122,17 +136,18 @@ public sealed class InMemoryPendingDeliveryRegistry : IPendingDeliveryRegistry
 
 		lock (this.synchronizationLock)
 		{
-			if (!this.deliveries.TryGetValue(uswr, out var status) ||
-				status is not PendingRouterParameterRequestStatus)
+			if (!this.transactions.TryGetValue(uswr, out var status) ||
+				status is not (PendingRouterParameterRequestStatus or
+					DeferredRouterParameterRequestStatus))
 			{
 				return false;
 			}
 
 			var parameter = (Parameter)envelope.Contents;
-			this.deliveries[uswr] = new ReceivedRouterParameterRequestStatus(
+			this.transactions[uswr] = new ReceivedRouterParameterRequestStatus(
 				new RouterParameterRequestStatusIdentifier(uswr),
 				parameter.ParameterValue);
-			this.GetPendingSequences(uswr.Destination).Remove(uswr.SequenceNumber.Value);
+			this.GetActiveSequences(uswr.Destination).Remove(uswr.SequenceNumber.Value);
 
 			return true;
 		}
@@ -155,7 +170,7 @@ public sealed class InMemoryPendingDeliveryRegistry : IPendingDeliveryRegistry
 
 		lock (this.synchronizationLock)
 		{
-			if (!this.deliveries.TryGetValue(uswr, out var status))
+			if (!this.transactions.TryGetValue(uswr, out var status))
 			{
 				return false;
 			}
@@ -163,19 +178,19 @@ public sealed class InMemoryPendingDeliveryRegistry : IPendingDeliveryRegistry
 			switch (status)
 			{
 				case PendingNodeLoginStatus pendingNodeLogin:
-					this.deliveries[uswr] = new LoggedOnNodeLoginStatus(
+					this.transactions[uswr] = new LoggedOnNodeLoginStatus(
 						new RouterParameterRequestStatusIdentifier(uswr),
 						pendingNodeLogin.UserAgentAddress);
 					break;
 				case PendingNodeLogoffStatus:
-					this.deliveries[uswr] = new LoggedOffNodeLoginStatus(
+					this.transactions[uswr] = new LoggedOffNodeLoginStatus(
 						new RouterParameterRequestStatusIdentifier(uswr));
 					break;
 				default:
 					return false;
 			}
 
-			this.GetPendingSequences(uswr.Destination).Remove(uswr.SequenceNumber.Value);
+			this.GetActiveSequences(uswr.Destination).Remove(uswr.SequenceNumber.Value);
 
 			return true;
 		}
@@ -205,7 +220,7 @@ public sealed class InMemoryPendingDeliveryRegistry : IPendingDeliveryRegistry
 
 		lock (this.synchronizationLock)
 		{
-			if (!this.deliveries.TryGetValue(uswr, out var status))
+			if (!this.transactions.TryGetValue(uswr, out var status))
 			{
 				return false;
 			}
@@ -213,7 +228,7 @@ public sealed class InMemoryPendingDeliveryRegistry : IPendingDeliveryRegistry
 			switch (status)
 			{
 				case PendingNodeLoginStatus pendingNodeLogin:
-					this.deliveries[uswr] =
+					this.transactions[uswr] =
 						negativeAcknowledgement.ReasonCode.ParameterReasonCode == ParameterReasonCode.InvalidPassword
 							? new InvalidPasswordNodeLoginStatus(
 								new RouterParameterRequestStatusIdentifier(uswr),
@@ -223,7 +238,17 @@ public sealed class InMemoryPendingDeliveryRegistry : IPendingDeliveryRegistry
 								pendingNodeLogin.UserAgentAddress);
 					break;
 				case PendingRouterParameterRequestStatus:
-					this.deliveries[uswr] = new RejectedRouterParameterRequestStatus(
+					this.transactions[uswr] =
+						negativeAcknowledgement.ReasonCode.GeneralReasonCode ==
+						GeneralReasonCode.WaitForAcknowledgement
+							? new DeferredRouterParameterRequestStatus(
+								new RouterParameterRequestStatusIdentifier(uswr))
+							: new RejectedRouterParameterRequestStatus(
+								new RouterParameterRequestStatusIdentifier(uswr),
+								negativeAcknowledgement.ReasonCode);
+					break;
+				case PendingNodeLogoffStatus:
+					this.transactions[uswr] = new RejectedRouterParameterRequestStatus(
 						new RouterParameterRequestStatusIdentifier(uswr),
 						negativeAcknowledgement.ReasonCode);
 					break;
@@ -231,84 +256,70 @@ public sealed class InMemoryPendingDeliveryRegistry : IPendingDeliveryRegistry
 					return false;
 			}
 
-			this.GetPendingSequences(uswr.Destination).Remove(uswr.SequenceNumber.Value);
+			this.GetActiveSequences(uswr.Destination).Remove(uswr.SequenceNumber.Value);
 
 			return true;
 		}
 	}
 
-	public bool TryTimeoutParameterRequest(RouterParameterRequestStatusIdentifier statusIdentifier)
+	public bool TryTimeout(RouterParameterRequestStatusIdentifier statusIdentifier)
 	{
 		ArgumentNullException.ThrowIfNull(statusIdentifier);
 
 		lock (this.synchronizationLock)
 		{
-			if (!this.deliveries.TryGetValue(statusIdentifier.USWR, out var status) ||
-				status is not PendingRouterParameterRequestStatus)
+			if (!this.transactions.TryGetValue(statusIdentifier.USWR, out var status) ||
+				status is not (PendingRouterParameterRequestStatus or
+					DeferredRouterParameterRequestStatus or PendingNodeLoginStatus or
+					PendingNodeLogoffStatus))
 			{
 				return false;
 			}
 
-			this.deliveries[statusIdentifier.USWR] =
-				new TimedOutRouterParameterRequestStatus(statusIdentifier);
-			this.GetPendingSequences(statusIdentifier.USWR.Destination)
+			this.transactions[statusIdentifier.USWR] = status switch
+			{
+				PendingNodeLoginStatus pendingNodeLogin => new TimedOutNodeLoginStatus(
+					statusIdentifier,
+					pendingNodeLogin.UserAgentAddress),
+				_ => new TimedOutRouterParameterRequestStatus(statusIdentifier)
+			};
+			this.GetActiveSequences(statusIdentifier.USWR.Destination)
 				.Remove(statusIdentifier.USWR.SequenceNumber.Value);
 			return true;
 		}
 	}
 
-	public bool TryRecordParameterRequestDeliveryFailure(
+	public bool TryRecordDeliveryFailure(
 		RouterParameterRequestStatusIdentifier statusIdentifier)
 	{
 		ArgumentNullException.ThrowIfNull(statusIdentifier);
 
 		lock (this.synchronizationLock)
 		{
-			if (!this.deliveries.TryGetValue(statusIdentifier.USWR, out var status) ||
-				status is not PendingRouterParameterRequestStatus)
+			if (!this.transactions.TryGetValue(statusIdentifier.USWR, out var status) ||
+				status is not (PendingRouterParameterRequestStatus or
+					PendingNodeLoginStatus or PendingNodeLogoffStatus))
 			{
 				return false;
 			}
 
-			this.deliveries[statusIdentifier.USWR] =
+			this.transactions[statusIdentifier.USWR] =
 				new DeliveryFailedRouterParameterRequestStatus(statusIdentifier);
-			this.GetPendingSequences(statusIdentifier.USWR.Destination)
+			this.GetActiveSequences(statusIdentifier.USWR.Destination)
 				.Remove(statusIdentifier.USWR.SequenceNumber.Value);
 			return true;
 		}
 	}
 
-	public bool TryTimeoutNodeLogin(RouterParameterRequestStatusIdentifier statusIdentifier)
+	private HashSet<ushort> GetActiveSequences(CommunicationsAddress destination)
 	{
-		ArgumentNullException.ThrowIfNull(statusIdentifier);
-
-		lock (this.synchronizationLock)
+		if (this.activeSequencesByDestination.TryGetValue(destination, out var activeSequences))
 		{
-			if (!this.deliveries.TryGetValue(statusIdentifier.USWR, out var status) ||
-				status is not PendingNodeLoginStatus pendingNodeLogin)
-			{
-				return false;
-			}
-
-			this.deliveries[statusIdentifier.USWR] = new TimedOutNodeLoginStatus(
-				statusIdentifier,
-				pendingNodeLogin.UserAgentAddress);
-			this.GetPendingSequences(statusIdentifier.USWR.Destination)
-				.Remove(statusIdentifier.USWR.SequenceNumber.Value);
-
-			return true;
-		}
-	}
-
-	private HashSet<ushort> GetPendingSequences(CommunicationsAddress destination)
-	{
-		if (this.pendingSequencesByDestination.TryGetValue(destination, out var pendingSequences))
-		{
-			return pendingSequences;
+			return activeSequences;
 		}
 
-		pendingSequences = [];
-		this.pendingSequencesByDestination.Add(destination, pendingSequences);
-		return pendingSequences;
+		activeSequences = [];
+		this.activeSequencesByDestination.Add(destination, activeSequences);
+		return activeSequences;
 	}
 }

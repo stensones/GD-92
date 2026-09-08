@@ -12,10 +12,10 @@ public sealed class RouterParameterRequestSettingsTests
 	{
 		var settings = RouterParameterRequestSettings.FromConfiguration(CreateConfiguration());
 
-		settings.NodeLoginRetryPolicy.NoAcknowledgementTimeout.Should().Be(
-			NodeLoginNoAcknowledgementTimeout.FromValue(Word8.FromValue(5)));
-		settings.NodeLoginRetryPolicy.TotalSends.Should().Be(
-			NodeLoginTotalSends.FromValue(Word8.FromValue(3)));
+		settings.ManagementTransactionRetryPolicy.NoAcknowledgementTimeout.Should().Be(
+			ManagementTransactionNoAcknowledgementTimeout.FromValue(Word8.FromValue(5)));
+		settings.ManagementTransactionRetryPolicy.TotalSends.Should().Be(
+			ManagementTransactionTotalSends.FromValue(Word8.FromValue(3)));
 	}
 
 	private static IConfiguration CreateConfiguration()

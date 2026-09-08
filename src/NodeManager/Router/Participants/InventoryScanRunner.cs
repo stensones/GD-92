@@ -9,9 +9,7 @@ namespace NodeManager.Router.Participants;
 public sealed class InventoryScanRunner(
 	RouterParameterRequestSettings settings,
 	IInventoryScanRegistry inventoryScans,
-	IPendingDeliveryRegistry pendingDeliveries,
 	IServiceScopeFactory serviceScopeFactory,
-	INodeLoginRetryDelay retryDelay,
 	IHostApplicationLifetime applicationLifetime) : IInventoryScanRunner
 {
 	private const int FirstParticipantPort = 1;
@@ -21,12 +19,8 @@ public sealed class InventoryScanRunner(
 		throw new ArgumentNullException(nameof(settings));
 	private readonly IInventoryScanRegistry inventoryScans = inventoryScans ??
 		throw new ArgumentNullException(nameof(inventoryScans));
-	private readonly IPendingDeliveryRegistry pendingDeliveries = pendingDeliveries ??
-		throw new ArgumentNullException(nameof(pendingDeliveries));
 	private readonly IServiceScopeFactory serviceScopeFactory = serviceScopeFactory ??
 		throw new ArgumentNullException(nameof(serviceScopeFactory));
-	private readonly INodeLoginRetryDelay retryDelay = retryDelay ??
-		throw new ArgumentNullException(nameof(retryDelay));
 	private readonly CancellationToken applicationStopping = applicationLifetime?.ApplicationStopping ??
 		throw new ArgumentNullException(nameof(applicationLifetime));
 
@@ -67,56 +61,51 @@ public sealed class InventoryScanRunner(
 			this.settings.LocalRouter.Brigade,
 			this.settings.LocalRouter.Node,
 			Port.FromValue(PortIdentifier.FromValue(port)));
-		var statusIdentifier = this.pendingDeliveries.Reserve(
-			this.settings.MessageOriginator,
-			participantAddress);
-		var envelope = Envelope.FromValues(
-			this.settings.MessageOriginator,
-			Destinations.FromAddresses(participantAddress),
-			ProtocolAndPriority.FromValues(
-				MessagePriority.FromValue(MessagePriorityLevel.FromValue(3)),
-				ProtocolVersion.FromValue(ProtocolVersionNumber.FromValue(2))),
-			AcknowledgementAndSequence.FromValues(
-				statusIdentifier.USWR.SequenceNumber,
-				AcknowledgementRequest.Requested),
-			ParameterRequest.FromFields(
-				ParameterTable.Current,
-				ParameterNumber.FromValue(2)));
+		using var scope = this.serviceScopeFactory.CreateScope();
+		var managementTransactions = scope.ServiceProvider
+			.GetRequiredService<IManagementTransactionService>();
+		var statusIdentifier = await managementTransactions.SubmitAsync(
+			new ManagementTransactionRequest(
+				this.settings.MessageOriginator,
+				participantAddress,
+				sequenceNumber => Envelope.FromValues(
+					this.settings.MessageOriginator,
+					Destinations.FromAddresses(participantAddress),
+					ProtocolAndPriority.FromValues(
+						MessagePriority.FromValue(MessagePriorityLevel.FromValue(3)),
+						ProtocolVersion.FromValue(ProtocolVersionNumber.FromValue(2))),
+					AcknowledgementAndSequence.FromValues(
+						sequenceNumber,
+						AcknowledgementRequest.Requested),
+					ParameterRequest.FromFields(
+						ParameterTable.Current,
+						ParameterNumber.FromValue(2))),
+				ManagementTransactionKind.ParameterRequest),
+			cancellationToken);
+		var status = await managementTransactions.WaitForCompletionAsync(
+			statusIdentifier,
+			cancellationToken);
 
-		for (var send = 0; send < this.settings.NodeLoginRetryPolicy.TotalSends.Value.Value; send++)
+		if (status is ReceivedRouterParameterRequestStatus receivedResponse)
 		{
-			using var scope = this.serviceScopeFactory.CreateScope();
-			var routerIngress = scope.ServiceProvider.GetRequiredService<IRouterIngress>();
-			await routerIngress.SubmitAsync(envelope, cancellationToken);
-			await this.retryDelay.WaitAsync(
-				this.settings.NodeLoginRetryPolicy.NoAcknowledgementTimeout,
-				cancellationToken);
-
-			if (!this.pendingDeliveries.IsPending(statusIdentifier))
-			{
-				if (this.pendingDeliveries.GetStatus(statusIdentifier) is
-					ReceivedRouterParameterRequestStatus receivedResponse)
-				{
-					this.inventoryScans.RecordParticipant(
-						inventoryScanIdentifier,
-						port,
-						receivedResponse.ParameterValue);
-				}
-				else if (this.pendingDeliveries.GetStatus(statusIdentifier) is
-					RejectedRouterParameterRequestStatus rejectedResponse)
-				{
-					this.inventoryScans.RecordNegativeAcknowledgement(
-						inventoryScanIdentifier,
-						rejectedResponse.ReasonCode);
-				}
-
-				return;
-			}
+			this.inventoryScans.RecordParticipant(
+				inventoryScanIdentifier,
+				port,
+				receivedResponse.ParameterValue);
 		}
-
-		if (this.pendingDeliveries.TryTimeoutParameterRequest(statusIdentifier))
+		else if (status is RejectedRouterParameterRequestStatus rejectedResponse)
+		{
+			this.inventoryScans.RecordNegativeAcknowledgement(
+				inventoryScanIdentifier,
+				rejectedResponse.ReasonCode);
+		}
+		else if (status is TimedOutRouterParameterRequestStatus)
 		{
 			this.inventoryScans.RecordTimeout(inventoryScanIdentifier);
+		}
+		else if (status is DeliveryFailedRouterParameterRequestStatus)
+		{
+			this.inventoryScans.RecordDeliveryFailure(inventoryScanIdentifier);
 		}
 	}
 }

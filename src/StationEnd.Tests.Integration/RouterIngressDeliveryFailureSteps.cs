@@ -1,5 +1,8 @@
 using AwesomeAssertions;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Logging.Abstractions;
 using NodeManager.Router.Parameters;
 using Reqnroll;
 using Stensones.GD92.Fields;
@@ -20,14 +23,24 @@ public sealed class RouterIngressDeliveryFailureSteps
 	{
 		var nodeManager = Address(brigade: 26, node: 100, port: 25);
 		var router = Address(brigade: 26, node: 100, port: 0);
-		var pendingDeliveries = new InMemoryPendingDeliveryRegistry();
+		var transactions = new InMemoryManagementTransactionRegistry();
+		var ingress = new FailingRouterIngress();
+		var services = new ServiceCollection();
+		services.AddScoped<IRouterIngress>(_ => ingress);
+		var serviceProvider = services.BuildServiceProvider();
+		var managementTransactions = new ManagementTransactionService(
+			transactions,
+			RouterParameterRequestSettings.DefaultManagementTransactionRetryPolicy,
+			ingress,
+			serviceProvider.GetRequiredService<IServiceScopeFactory>(),
+			new ManagementTransactionRetryDelay(),
+			new NonStoppingApplicationLifetime(),
+			NullLogger<ManagementTransactionService>.Instance);
 		var service = new RouterParameterRequestService(
 			new RouterParameterRequestSettings(nodeManager, router),
-			pendingDeliveries,
-			new FailingRouterIngress(),
-			NoOpNodeLoginRetryScheduler.Instance);
+			managementTransactions);
 
-		this.controller = new RouterParametersController(service, pendingDeliveries);
+		this.controller = new RouterParametersController(service, transactions);
 	}
 
 	[When(@"the NodeManager user requests the local Router brigade or agency number")]
@@ -71,13 +84,13 @@ public sealed class RouterIngressDeliveryFailureSteps
 		}
 	}
 
-	private sealed class NoOpNodeLoginRetryScheduler : INodeLoginRetryScheduler
+	private sealed class NonStoppingApplicationLifetime : IHostApplicationLifetime
 	{
-		public static NoOpNodeLoginRetryScheduler Instance { get; } = new();
+		public CancellationToken ApplicationStarted => CancellationToken.None;
+		public CancellationToken ApplicationStopping => CancellationToken.None;
+		public CancellationToken ApplicationStopped => CancellationToken.None;
 
-		public void Schedule(
-			RouterParameterRequestStatusIdentifier statusIdentifier,
-			Envelope envelope)
+		public void StopApplication()
 		{
 		}
 	}

@@ -5,7 +5,6 @@ using NodeManager.Router.Parameters;
 using NodeManager.Router.Participants;
 using Stensones.GD92.Fields;
 using Stensones.GD92.Messages;
-using Stensones.GD92.Transport.RabbitMQ;
 
 namespace NodeManager.Tests.Unit.Router.Participants;
 
@@ -14,31 +13,18 @@ public sealed class InventoryScanRunnerTests
 	[Fact]
 	public async Task Records_a_rejected_probe_as_a_Negative_Acknowledgement()
 	{
-		var nodeManager = Address(brigade: 26, node: 100, port: 25);
-		var router = Address(brigade: 26, node: 100, port: 0);
-		var pendingDeliveries = new InMemoryPendingDeliveryRegistry();
-		var responses = new RouterParameterResponseReceiver(pendingDeliveries);
+		var registry = new InMemoryInventoryScanRegistry();
 		var services = new ServiceCollection();
-		services.AddScoped<IRouterIngress>(_ =>
-			new NegativeAcknowledgingRouterIngress(responses));
-		await using var serviceProvider = services.BuildServiceProvider(
-			new ServiceProviderOptions { ValidateScopes = true });
-		var inventoryScans = new InMemoryInventoryScanRegistry();
+		services.AddScoped<IManagementTransactionService, RejectingTransactionService>();
+		await using var serviceProvider = services.BuildServiceProvider();
 		var runner = new InventoryScanRunner(
-			new RouterParameterRequestSettings(
-				nodeManager,
-				router,
-				NodeLoginRetryPolicy.FromValues(
-					NodeLoginNoAcknowledgementTimeout.FromValue(Word8.FromValue(1)),
-					NodeLoginTotalSends.FromValue(Word8.FromValue(1)))),
-			inventoryScans,
-			pendingDeliveries,
+			new RouterParameterRequestSettings(Address(25), Address(0)),
+			registry,
 			serviceProvider.GetRequiredService<IServiceScopeFactory>(),
-			new ImmediatelyCompletingRetryDelay(),
 			new NonStoppingApplicationLifetime());
 
 		var identifier = runner.Start();
-		var status = await WaitForCompletedScanAsync(inventoryScans, identifier);
+		var status = await WaitForCompletedScanAsync(registry, identifier);
 
 		status.Summary.NegativeAcknowledgements.Should().ContainSingle()
 			.Which.Should().Be(new KeyValuePair<string, int>("parameter:invalid_syntax", 1));
@@ -63,42 +49,33 @@ public sealed class InventoryScanRunnerTests
 		throw new Xunit.Sdk.XunitException("The Inventory Scan did not complete.");
 	}
 
-	private static CommunicationsAddress Address(byte brigade, ushort node, byte port)
-	{
-		return CommunicationsAddress.FromValues(
-			Brigade.FromValue(BrigadeOrAgencyIdentifier.FromValue(brigade)),
-			Node.FromValue(NodeIdentifier.FromValue(node)),
+	private static CommunicationsAddress Address(byte port) =>
+		CommunicationsAddress.FromValues(
+			Brigade.FromValue(BrigadeOrAgencyIdentifier.FromValue(26)),
+			Node.FromValue(NodeIdentifier.FromValue(100)),
 			Port.FromValue(PortIdentifier.FromValue(port)));
-	}
 
-	private sealed class NegativeAcknowledgingRouterIngress(
-		RouterParameterResponseReceiver responses) : IRouterIngress
+	private sealed class RejectingTransactionService : IManagementTransactionService
 	{
-		public Task SubmitAsync(Envelope envelope, CancellationToken cancellationToken)
-		{
-			if (envelope.Destinations.Addresses.Single().Port.Value != 3)
-			{
-				return Task.CompletedTask;
-			}
+		public Task<RouterParameterRequestStatusIdentifier> SubmitAsync(
+			ManagementTransactionRequest request,
+			CancellationToken cancellationToken) =>
+			Task.FromResult(new RouterParameterRequestStatusIdentifier(
+				new UniqueSystemWideReference(
+					request.Source,
+					request.Destination,
+					SequenceNumber.FromValue(MessageSequenceIdentifier.FromValue(1)))));
 
-			return responses.ReceiveAsync(
-				Envelope.CreateNegativeAcknowledgement(
-					envelope,
-					envelope.Destinations.Addresses.Single(),
-					envelope.ProtocolAndPriority.ProtocolVersion,
-					Destinations.FromAddresses(envelope.Destinations.Addresses.Single()),
-					ReasonCode.FromParameterReasonCode(ParameterReasonCode.InvalidSyntax)),
-				cancellationToken);
-		}
-	}
-
-	private sealed class ImmediatelyCompletingRetryDelay : INodeLoginRetryDelay
-	{
-		public Task WaitAsync(
-			NodeLoginNoAcknowledgementTimeout timeout,
+		public Task<RouterParameterRequestStatus> WaitForCompletionAsync(
+			RouterParameterRequestStatusIdentifier statusIdentifier,
 			CancellationToken cancellationToken)
 		{
-			return Task.CompletedTask;
+			return Task.FromResult<RouterParameterRequestStatus>(
+				statusIdentifier.USWR.Destination.Port.Value == 3
+					? new RejectedRouterParameterRequestStatus(
+						statusIdentifier,
+						ReasonCode.FromParameterReasonCode(ParameterReasonCode.InvalidSyntax))
+					: new TimedOutRouterParameterRequestStatus(statusIdentifier));
 		}
 	}
 

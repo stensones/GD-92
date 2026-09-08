@@ -4,21 +4,21 @@ using Stensones.GD92.Transport.RabbitMQ;
 namespace NodeManager.Router.Parameters;
 
 public sealed class RouterParameterResponseReceiver(
-	IPendingDeliveryRegistry pendingDeliveries) : IUserAgentIngressReceiver
+	IManagementTransactionRegistry transactions) : IUserAgentIngressReceiver
 {
-	private readonly IPendingDeliveryRegistry pendingDeliveries = pendingDeliveries ??
-		throw new ArgumentNullException(nameof(pendingDeliveries));
+	private readonly IManagementTransactionRegistry transactions = transactions ??
+		throw new ArgumentNullException(nameof(transactions));
 
 	public Task ReceiveAsync(Envelope envelope, CancellationToken cancellationToken)
 	{
 		ArgumentNullException.ThrowIfNull(envelope);
 		cancellationToken.ThrowIfCancellationRequested();
 
-		if (!this.pendingDeliveries.TryCompleteParameterResponse(envelope))
+		if (!this.transactions.TryCompleteParameterResponse(envelope))
 		{
-			if (!this.pendingDeliveries.TryCompleteAcknowledgement(envelope))
+			if (!this.transactions.TryCompleteAcknowledgement(envelope))
 			{
-				this.pendingDeliveries.TryCompleteNegativeAcknowledgement(envelope);
+				this.transactions.TryCompleteNegativeAcknowledgement(envelope);
 			}
 		}
 

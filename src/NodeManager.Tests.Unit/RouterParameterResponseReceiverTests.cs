@@ -12,13 +12,13 @@ public sealed class RouterParameterResponseReceiverTests
 	{
 		var userAgent = Address(brigade: 26, node: 100, port: 25);
 		var router = Address(brigade: 26, node: 100, port: 0);
-		var pendingDeliveries = new InMemoryPendingDeliveryRegistry();
-		var identifier = pendingDeliveries.Reserve(userAgent, router);
+		var pendingDeliveries = new InMemoryManagementTransactionRegistry();
+		var identifier = pendingDeliveries.ReserveParameterRequest(userAgent, router);
 		var receiver = new RouterParameterResponseReceiver(pendingDeliveries);
 
 		await receiver.ReceiveAsync(CreateParameterResponse(router, userAgent, identifier.USWR.SequenceNumber), CancellationToken.None);
 
-		pendingDeliveries.IsPending(identifier).Should().BeFalse();
+		pendingDeliveries.IsActive(identifier).Should().BeFalse();
 		var status = pendingDeliveries.GetStatus(identifier)
 			.Should().BeOfType<ReceivedRouterParameterRequestStatus>().Which;
 		status.ParameterValue.ToWireValue().Should().Equal([26]);
@@ -29,7 +29,7 @@ public sealed class RouterParameterResponseReceiverTests
 	{
 		var userAgent = Address(brigade: 26, node: 100, port: 25);
 		var router = Address(brigade: 26, node: 100, port: 0);
-		var pendingDeliveries = new InMemoryPendingDeliveryRegistry();
+		var pendingDeliveries = new InMemoryManagementTransactionRegistry();
 		var identifier = pendingDeliveries.ReserveNodeLogin(userAgent, router, userAgent);
 		var receiver = new RouterParameterResponseReceiver(pendingDeliveries);
 
@@ -46,7 +46,7 @@ public sealed class RouterParameterResponseReceiverTests
 				Acknowledgement.Create()),
 			CancellationToken.None);
 
-		pendingDeliveries.IsPending(identifier).Should().BeFalse();
+		pendingDeliveries.IsActive(identifier).Should().BeFalse();
 		var status = pendingDeliveries.GetStatus(identifier)
 			.Should().BeOfType<LoggedOnNodeLoginStatus>().Which;
 		status.UserAgentAddress.Should().Be(userAgent);
@@ -58,7 +58,7 @@ public sealed class RouterParameterResponseReceiverTests
 	{
 		var userAgent = Address(brigade: 26, node: 100, port: 25);
 		var router = Address(brigade: 26, node: 100, port: 0);
-		var pendingDeliveries = new InMemoryPendingDeliveryRegistry();
+		var pendingDeliveries = new InMemoryManagementTransactionRegistry();
 		var identifier = pendingDeliveries.ReserveNodeLogin(userAgent, router, userAgent);
 		var receiver = new RouterParameterResponseReceiver(pendingDeliveries);
 
@@ -77,7 +77,7 @@ public sealed class RouterParameterResponseReceiverTests
 					ReasonCode.FromParameterReasonCode(ParameterReasonCode.InvalidSyntax))),
 			CancellationToken.None);
 
-		pendingDeliveries.IsPending(identifier).Should().BeFalse();
+		pendingDeliveries.IsActive(identifier).Should().BeFalse();
 		pendingDeliveries.GetStatus(identifier).Should().BeOfType<RejectedNodeLoginStatus>();
 	}
 
@@ -86,8 +86,8 @@ public sealed class RouterParameterResponseReceiverTests
 	{
 		var userAgent = Address(brigade: 26, node: 100, port: 25);
 		var router = Address(brigade: 26, node: 100, port: 0);
-		var pendingDeliveries = new InMemoryPendingDeliveryRegistry();
-		var identifier = pendingDeliveries.Reserve(userAgent, router);
+		var pendingDeliveries = new InMemoryManagementTransactionRegistry();
+		var identifier = pendingDeliveries.ReserveParameterRequest(userAgent, router);
 		var receiver = new RouterParameterResponseReceiver(pendingDeliveries);
 
 		await receiver.ReceiveAsync(
@@ -105,8 +105,68 @@ public sealed class RouterParameterResponseReceiverTests
 					ReasonCode.FromParameterReasonCode(ParameterReasonCode.InvalidSyntax))),
 			CancellationToken.None);
 
-		pendingDeliveries.IsPending(identifier).Should().BeFalse();
+		pendingDeliveries.IsActive(identifier).Should().BeFalse();
 		pendingDeliveries.GetStatus(identifier).Should().NotBeNull();
+	}
+
+	[Fact]
+	public async Task Keeps_a_matching_Parameter_Request_pending_after_a_wait_ack_NAK()
+	{
+		var userAgent = Address(brigade: 26, node: 100, port: 25);
+		var router = Address(brigade: 26, node: 100, port: 0);
+		var pendingDeliveries = new InMemoryManagementTransactionRegistry();
+		var identifier = pendingDeliveries.ReserveParameterRequest(userAgent, router);
+		var receiver = new RouterParameterResponseReceiver(pendingDeliveries);
+
+		await receiver.ReceiveAsync(
+			Envelope.FromValues(
+				router,
+				Destinations.FromAddresses(userAgent),
+				ProtocolAndPriority.FromValues(
+					MessagePriority.FromValue(MessagePriorityLevel.FromValue(3)),
+					ProtocolVersion.FromValue(ProtocolVersionNumber.FromValue(2))),
+				AcknowledgementAndSequence.FromValues(
+					identifier.USWR.SequenceNumber,
+					AcknowledgementRequest.NotRequested),
+				NegativeAcknowledgement.FromValues(
+					Destinations.FromAddresses(router),
+					ReasonCode.FromGeneralReasonCode(
+						GeneralReasonCode.WaitForAcknowledgement))),
+			CancellationToken.None);
+
+		pendingDeliveries.IsActive(identifier).Should().BeTrue();
+	}
+
+	[Fact]
+	public async Task Completes_a_deferred_Parameter_Request_with_its_final_Parameter_Message()
+	{
+		var userAgent = Address(brigade: 26, node: 100, port: 25);
+		var router = Address(brigade: 26, node: 100, port: 0);
+		var pendingDeliveries = new InMemoryManagementTransactionRegistry();
+		var identifier = pendingDeliveries.ReserveParameterRequest(userAgent, router);
+		var receiver = new RouterParameterResponseReceiver(pendingDeliveries);
+		await receiver.ReceiveAsync(
+			Envelope.FromValues(
+				router,
+				Destinations.FromAddresses(userAgent),
+				ProtocolAndPriority.FromValues(
+					MessagePriority.FromValue(MessagePriorityLevel.FromValue(3)),
+					ProtocolVersion.FromValue(ProtocolVersionNumber.FromValue(2))),
+				AcknowledgementAndSequence.FromValues(
+					identifier.USWR.SequenceNumber,
+					AcknowledgementRequest.NotRequested),
+				NegativeAcknowledgement.FromValues(
+					Destinations.FromAddresses(router),
+					ReasonCode.FromGeneralReasonCode(
+						GeneralReasonCode.WaitForAcknowledgement))),
+			CancellationToken.None);
+
+		await receiver.ReceiveAsync(
+			CreateParameterResponse(router, userAgent, identifier.USWR.SequenceNumber),
+			CancellationToken.None);
+
+		pendingDeliveries.GetStatus(identifier)
+			.Should().BeOfType<ReceivedRouterParameterRequestStatus>();
 	}
 
 	[Theory]
@@ -120,8 +180,8 @@ public sealed class RouterParameterResponseReceiverTests
 	{
 		var userAgent = Address(brigade: 26, node: 100, port: 25);
 		var router = Address(brigade: 26, node: 100, port: 0);
-		var pendingDeliveries = new InMemoryPendingDeliveryRegistry();
-		var identifier = pendingDeliveries.Reserve(userAgent, router);
+		var pendingDeliveries = new InMemoryManagementTransactionRegistry();
+		var identifier = pendingDeliveries.ReserveParameterRequest(userAgent, router);
 		var receiver = new RouterParameterResponseReceiver(pendingDeliveries);
 
 		await receiver.ReceiveAsync(
@@ -133,7 +193,7 @@ public sealed class RouterParameterResponseReceiverTests
 					: identifier.USWR.SequenceNumber),
 			CancellationToken.None);
 
-		pendingDeliveries.IsPending(identifier).Should().BeTrue();
+		pendingDeliveries.IsActive(identifier).Should().BeTrue();
 		pendingDeliveries.GetStatus(identifier).Should().BeOfType<PendingRouterParameterRequestStatus>();
 	}
 
@@ -142,8 +202,8 @@ public sealed class RouterParameterResponseReceiverTests
 	{
 		var userAgent = Address(brigade: 26, node: 100, port: 25);
 		var router = Address(brigade: 26, node: 100, port: 0);
-		var pendingDeliveries = new InMemoryPendingDeliveryRegistry();
-		var identifier = pendingDeliveries.Reserve(userAgent, router);
+		var pendingDeliveries = new InMemoryManagementTransactionRegistry();
+		var identifier = pendingDeliveries.ReserveParameterRequest(userAgent, router);
 		var receiver = new RouterParameterResponseReceiver(pendingDeliveries);
 		var acknowledgement = Envelope.CreateAcknowledgement(
 			Envelope.FromValues(
@@ -161,7 +221,7 @@ public sealed class RouterParameterResponseReceiverTests
 
 		await receiver.ReceiveAsync(acknowledgement, CancellationToken.None);
 
-		pendingDeliveries.IsPending(identifier).Should().BeTrue();
+		pendingDeliveries.IsActive(identifier).Should().BeTrue();
 	}
 
 	private static Envelope CreateParameterResponse(

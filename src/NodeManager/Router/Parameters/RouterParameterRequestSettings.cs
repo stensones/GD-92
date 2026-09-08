@@ -6,19 +6,19 @@ namespace NodeManager.Router.Parameters;
 public sealed record RouterParameterRequestSettings(
 	CommunicationsAddress MessageOriginator,
 	CommunicationsAddress LocalRouter,
-	NodeLoginRetryPolicy NodeLoginRetryPolicy)
+	ManagementTransactionRetryPolicy ManagementTransactionRetryPolicy)
 {
 	public RouterParameterRequestSettings(
 		CommunicationsAddress messageOriginator,
 		CommunicationsAddress localRouter) :
-		this(messageOriginator, localRouter, DefaultNodeLoginRetryPolicy)
+		this(messageOriginator, localRouter, DefaultManagementTransactionRetryPolicy)
 	{
 	}
 
-	public static NodeLoginRetryPolicy DefaultNodeLoginRetryPolicy { get; } =
-		NodeLoginRetryPolicy.FromValues(
-			NodeLoginNoAcknowledgementTimeout.FromValue(Word8.FromValue(5)),
-			NodeLoginTotalSends.FromValue(Word8.FromValue(3)));
+	public static ManagementTransactionRetryPolicy DefaultManagementTransactionRetryPolicy { get; } =
+		ManagementTransactionRetryPolicy.FromValues(
+			ManagementTransactionNoAcknowledgementTimeout.FromValue(Word8.FromValue(5)),
+			ManagementTransactionTotalSends.FromValue(Word8.FromValue(3)));
 
 	public static RouterParameterRequestSettings FromConfiguration(IConfiguration configuration)
 	{
@@ -30,10 +30,10 @@ public sealed record RouterParameterRequestSettings(
 		return new RouterParameterRequestSettings(
 			CreateAddress(requestConfiguration.GetRequiredSection("MessageOriginator")),
 			CreateAddress(requestConfiguration.GetRequiredSection("LocalRouter")),
-			NodeLoginRetryPolicy.FromValues(
-				NodeLoginNoAcknowledgementTimeout.FromValue(Word8.FromValue(
+			ManagementTransactionRetryPolicy.FromValues(
+				ManagementTransactionNoAcknowledgementTimeout.FromValue(Word8.FromValue(
 					ParseByteOrDefault(gd92Configuration["no_ack_timeout"], 5, "GD92:no_ack_timeout"))),
-				NodeLoginTotalSends.FromValue(Word8.FromValue(
+				ManagementTransactionTotalSends.FromValue(Word8.FromValue(
 					ParseByteOrDefault(gd92Configuration["retries"], 3, "GD92:retries")))));
 	}
 
