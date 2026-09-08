@@ -9,257 +9,110 @@ namespace Router.Tests.Unit;
 public sealed class RouterParameterRequestHandlerTests
 {
 	[Fact]
-	public void Returns_the_local_brigade_identifier_for_current_parameter_one()
+	public async Task Dispatches_a_local_Current_Parameter_Request_to_the_Router_Parameter_Read()
 	{
-		var routerAddress = CreateAddress(26, 100, 0);
-		var routerProtocolVersion = ProtocolVersion.FromValue(ProtocolVersionNumber.FromValue(1));
-		var requestSource = CreateAddress(26, 100, 25);
-		var handler = new RouterParameterRequestHandler(
-			routerAddress,
-			routerProtocolVersion);
-
-		var result = handler.Handle(CreateParameterRequest(requestSource, routerAddress));
-
-		result.Status.Should().Be(RouterEnvelopeHandlingStatus.Responded);
-		result.Response.Should().NotBeNull();
-		var response = result.Response!;
-		response.Source.Should().Be(routerAddress);
-		response.Destinations.Addresses.Should().ContainSingle().Which.Should().Be(requestSource);
-		response.ProtocolAndPriority.Priority.Should().Be(
-			MessagePriority.FromValue(MessagePriorityLevel.FromValue(3)));
-		response.ProtocolAndPriority.ProtocolVersion.Should().Be(routerProtocolVersion);
-		response.AcknowledgementAndSequence.SequenceNumber.Should().Be(
-			SequenceNumber.FromValue(MessageSequenceIdentifier.FromValue(7)));
-		response.AcknowledgementAndSequence.AcknowledgementRequest.Should().Be(AcknowledgementRequest.NotRequested);
-		var parameter = response.Contents.Should().BeOfType<Parameter>().Subject;
-		parameter.MoreValues.Should().Be(MoreValues.No);
-		parameter.ParameterValue.ToWireValue().Should().Equal(new byte[] { 26 });
-	}
-
-	[Fact]
-	public void Returns_current_parameter_one_from_its_current_parameter_projection()
-	{
-		var routerAddress = CreateAddress(26, 100, 0);
-		var requestSource = CreateAddress(26, 100, 25);
-		var handler = new RouterParameterRequestHandler(
-			routerAddress,
-			ProtocolVersion.FromValue(ProtocolVersionNumber.FromValue(2)),
-			CreateCurrentParameterProjection(42));
-
-		var result = handler.Handle(CreateParameterRequest(requestSource, routerAddress));
-
-		result.Response.Should().NotBeNull();
-		var response = result.Response!;
-		var parameter = response.Contents.Should().BeOfType<Parameter>().Subject;
-		parameter.ParameterValue.ToWireValue().Should().Equal(new byte[] { 42 });
-	}
-
-	[Fact]
-	public void Returns_current_parameter_one_from_the_projection_published_at_startup()
-	{
-		var routerAddress = CreateAddress(26, 100, 0);
-		var currentParameters = new RouterCurrentParameterProjectionSource();
-		currentParameters.Publish(CreateCurrentParameterProjection(42));
-		var handler = new RouterParameterRequestHandler(
-			routerAddress,
-			ProtocolVersion.FromValue(ProtocolVersionNumber.FromValue(2)),
-			currentParameters);
-
-		var result = handler.Handle(CreateParameterRequest(CreateAddress(26, 100, 25), routerAddress));
-
-		result.Response.Should().NotBeNull();
-		var parameter = result.Response!.Contents.Should().BeOfType<Parameter>().Subject;
-		parameter.ParameterValue.ToWireValue().Should().Equal([42]);
-	}
-
-	[Fact]
-	public void Rejects_an_invalid_current_parameter_four_level_one_password_with_the_parameter_invalid_password_NAK()
-	{
-		var routerAddress = CreateAddress(26, 100, 0);
-		var source = new RouterCurrentParameterProjectionSource();
-		source.Publish(CreateCurrentParameterProjection(
-			26,
-			PasswordValue.FromValue(SevenBitAsciiString.FromValue("FIRE1"))));
-		var handler = new RouterParameterRequestHandler(
-			routerAddress,
-			ProtocolVersion.FromValue(ProtocolVersionNumber.FromValue(2)),
-			source);
-		var userAgentAddress = CreateAddress(26, 100, 25);
+		var localAddress = CreateAddress(26, 100, 0);
+		var parameterRead = new CapturingRouterParameterRead();
+		var handler = CreateHandler(localAddress, parameterRead, new CapturingNodeLogin(), new CapturingLevel1PasswordModification());
 		var request = Envelope.FromValues(
-			userAgentAddress,
-			Destinations.FromAddresses(routerAddress),
-			ProtocolAndPriority.FromValues(
-				MessagePriority.FromValue(MessagePriorityLevel.FromValue(3)),
-				ProtocolVersion.FromValue(ProtocolVersionNumber.FromValue(2))),
-			AcknowledgementAndSequence.FromValues(
-				SequenceNumber.FromValue(MessageSequenceIdentifier.FromValue(7)),
-				AcknowledgementRequest.Requested),
-			SetParameter.FromFields(
-				ParameterTable.Current,
-				ParameterNumber.FromValue(4),
-				ParameterValue.FromWireValue(
-					PasswordParameter.FromFields(
-						PasswordLevel.FromValue(PasswordLevelNumber.Level1),
-						Password.FromValue(
-							PasswordValue.FromValue(SevenBitAsciiString.FromValue("WATER"))),
-						userAgentAddress).ToWireValue())));
-
-		var result = handler.Handle(request);
-
-		result.Status.Should().Be(RouterEnvelopeHandlingStatus.Responded);
-		result.Response.Should().NotBeNull();
-		var response = result.Response!;
-		response.Source.Should().Be(routerAddress);
-		response.Destinations.Addresses.Should().ContainSingle().Which.Should().Be(userAgentAddress);
-		response.AcknowledgementAndSequence.SequenceNumber.Should().Be(request.AcknowledgementAndSequence.SequenceNumber);
-		var negativeAcknowledgement = response.Contents.Should().BeOfType<NegativeAcknowledgement>().Subject;
-		negativeAcknowledgement.Destinations.Addresses.Should().ContainSingle().Which.Should().Be(routerAddress);
-		negativeAcknowledgement.ReasonCode.ToWireValue().Should().Equal([0x04, 0x04]);
-	}
-
-	[Fact]
-	public void Acknowledges_a_level_zero_current_password_and_clears_the_active_Node_Login()
-	{
-		var routerAddress = CreateAddress(26, 100, 0);
-		var source = new RouterCurrentParameterProjectionSource();
-		source.Publish(CreateCurrentParameterProjection(
-			26,
-			PasswordValue.FromValue(SevenBitAsciiString.FromValue("FIRE1"))));
-		var handler = new RouterParameterRequestHandler(
-			routerAddress,
-			ProtocolVersion.FromValue(ProtocolVersionNumber.FromValue(2)),
-			source);
-		var requestSource = CreateAddress(26, 100, 25);
-		source.TryLogOnAtLevelOne(PasswordParameter.FromFields(
-			PasswordLevel.FromValue(PasswordLevelNumber.Level1),
-			Password.FromValue(
-				PasswordValue.FromValue(SevenBitAsciiString.FromValue("FIRE1"))),
-			requestSource)).Should().BeTrue();
-		var ignoredAddress = CreateAddress(42, 200, 7);
-		var request = Envelope.FromValues(
-			requestSource,
-			Destinations.FromAddresses(routerAddress),
-			ProtocolAndPriority.FromValues(
-				MessagePriority.FromValue(MessagePriorityLevel.FromValue(3)),
-				ProtocolVersion.FromValue(ProtocolVersionNumber.FromValue(2))),
-			AcknowledgementAndSequence.FromValues(
-				SequenceNumber.FromValue(MessageSequenceIdentifier.FromValue(7)),
-				AcknowledgementRequest.Requested),
-			SetParameter.FromFields(
-				ParameterTable.Current,
-				ParameterNumber.FromValue(4),
-				ParameterValue.FromWireValue(
-					PasswordParameter.FromFields(
-						PasswordLevel.FromValue(PasswordLevelNumber.Unauthenticated),
-						Password.FromValue(
-							PasswordValue.FromValue(SevenBitAsciiString.FromValue("ignored"))),
-						ignoredAddress).ToWireValue())));
-
-		var result = handler.Handle(request);
-
-		result.Status.Should().Be(RouterEnvelopeHandlingStatus.Responded);
-		result.Response!.Contents.Should().BeOfType<Acknowledgement>();
-		var currentPassword = source.GetCurrent().CurrentPassword;
-		currentPassword.Level.Should().Be(
-			PasswordLevel.FromValue(PasswordLevelNumber.Unauthenticated));
-		currentPassword.Password.Value.Value.Value.Should().BeEmpty();
-		currentPassword.CommunicationsAddress.Should().Be(routerAddress);
-	}
-
-	[Fact]
-	public void Does_not_respond_to_a_Parameter_Request_addressed_outside_the_local_Router()
-	{
-		var routerAddress = CreateAddress(26, 100, 0);
-		var handler = new RouterParameterRequestHandler(
-			routerAddress,
-			ProtocolVersion.FromValue(ProtocolVersionNumber.FromValue(2)));
-
-		var result = handler.Handle(CreateParameterRequest(
 			CreateAddress(26, 100, 25),
-			CreateAddress(26, 100, 1)));
-
-		result.Status.Should().Be(RouterEnvelopeHandlingStatus.DestinationNotHandled);
-		result.Response.Should().BeNull();
-	}
-
-	[Fact]
-	public void Does_not_respond_to_a_Parameter_Request_with_multiple_destinations()
-	{
-		var routerAddress = CreateAddress(26, 100, 0);
-		var handler = new RouterParameterRequestHandler(
-			routerAddress,
-			ProtocolVersion.FromValue(ProtocolVersionNumber.FromValue(2)));
-
-		var result = handler.Handle(CreateParameterRequest(
-			CreateAddress(26, 100, 25),
-			routerAddress,
-			CreateAddress(26, 100, 1)));
-
-		result.Status.Should().Be(RouterEnvelopeHandlingStatus.DestinationNotHandled);
-		result.Response.Should().BeNull();
-	}
-
-	[Fact]
-	public void Does_not_respond_to_a_non_Parameter_Request()
-	{
-		var routerAddress = CreateAddress(26, 100, 0);
-		var handler = new RouterParameterRequestHandler(
-			routerAddress,
-			ProtocolVersion.FromValue(ProtocolVersionNumber.FromValue(2)));
-		var source = CreateAddress(26, 100, 25);
-
-		var result = handler.Handle(Envelope.FromValues(
-			source,
-			Destinations.FromAddresses(routerAddress),
-			ProtocolAndPriority.FromValues(
-				MessagePriority.FromValue(MessagePriorityLevel.FromValue(3)),
-				ProtocolVersion.FromValue(ProtocolVersionNumber.FromValue(2))),
-			AcknowledgementAndSequence.FromValues(
-				SequenceNumber.FromValue(MessageSequenceIdentifier.FromValue(7)),
-				AcknowledgementRequest.NotRequested),
-			Parameter.FromFields(MoreValues.No, ParameterValue.FromWireValue([26]))));
-
-		result.Status.Should().Be(RouterEnvelopeHandlingStatus.MessageTypeNotHandled);
-		result.Response.Should().BeNull();
-	}
-
-	[Fact]
-	public void Does_not_respond_to_an_unsupported_Parameter_Request()
-	{
-		var routerAddress = CreateAddress(26, 100, 0);
-		var handler = new RouterParameterRequestHandler(
-			routerAddress,
-			ProtocolVersion.FromValue(ProtocolVersionNumber.FromValue(2)));
-
-		var result = handler.Handle(Envelope.FromValues(
-			CreateAddress(26, 100, 25),
-			Destinations.FromAddresses(routerAddress),
-			ProtocolAndPriority.FromValues(
-				MessagePriority.FromValue(MessagePriorityLevel.FromValue(3)),
-				ProtocolVersion.FromValue(ProtocolVersionNumber.FromValue(2))),
-			AcknowledgementAndSequence.FromValues(
-				SequenceNumber.FromValue(MessageSequenceIdentifier.FromValue(7)),
-				AcknowledgementRequest.Requested),
-			ParameterRequest.FromFields(ParameterTable.Permanent, ParameterNumber.FromValue(1))));
-
-		result.Status.Should().Be(RouterEnvelopeHandlingStatus.ParameterNotHandled);
-		result.Response.Should().BeNull();
-	}
-
-	private static Envelope CreateParameterRequest(
-		CommunicationsAddress source,
-		params CommunicationsAddress[] destinations)
-	{
-		return Envelope.FromValues(
-			source,
-			Destinations.FromAddresses(destinations),
-			ProtocolAndPriority.FromValues(
-				MessagePriority.FromValue(MessagePriorityLevel.FromValue(3)),
-				ProtocolVersion.FromValue(ProtocolVersionNumber.FromValue(2))),
-			AcknowledgementAndSequence.FromValues(
-				SequenceNumber.FromValue(MessageSequenceIdentifier.FromValue(7)),
-				AcknowledgementRequest.Requested),
+			Destinations.FromAddresses(localAddress),
+			CreateProtocolAndPriority(),
+			CreateAcknowledgementAndSequence(),
 			ParameterRequest.FromFields(ParameterTable.Current, ParameterNumber.FromValue(1)));
+
+		var result = await handler.HandleAsync(request, CancellationToken.None);
+
+		result.Should().BeSameAs(parameterRead.Result);
+		parameterRead.Envelope.Should().BeSameAs(request);
+	}
+
+	[Fact]
+	public async Task Dispatches_a_local_Current_Password_to_Node_Login()
+	{
+		var localAddress = CreateAddress(26, 100, 0);
+		var nodeLogin = new CapturingNodeLogin();
+		var handler = CreateHandler(localAddress, new CapturingRouterParameterRead(), nodeLogin, new CapturingLevel1PasswordModification());
+		var request = Envelope.FromValues(
+			CreateAddress(26, 100, 25),
+			Destinations.FromAddresses(localAddress),
+			CreateProtocolAndPriority(),
+			CreateAcknowledgementAndSequence(),
+			SetParameter.FromFields(
+				ParameterTable.Current,
+				RouterParameterCatalogue.CurrentPassword.Number,
+				ParameterValue.FromWireValue([0])));
+
+		var result = await handler.HandleAsync(request, CancellationToken.None);
+
+		result.Should().BeSameAs(nodeLogin.Result);
+		nodeLogin.Envelope.Should().BeSameAs(request);
+	}
+
+	[Fact]
+	public async Task Dispatches_a_local_Level1_Password_change_to_Level1_Password_Modification()
+	{
+		var localAddress = CreateAddress(26, 100, 0);
+		var passwordModification = new CapturingLevel1PasswordModification();
+		var handler = CreateHandler(localAddress, new CapturingRouterParameterRead(), new CapturingNodeLogin(), passwordModification);
+		var request = Envelope.FromValues(
+			CreateAddress(26, 100, 25),
+			Destinations.FromAddresses(localAddress),
+			CreateProtocolAndPriority(),
+			CreateAcknowledgementAndSequence(),
+			SetParameter.FromFields(
+				ParameterTable.NonVolatile,
+				RouterParameterCatalogue.Level1PasswordNumber,
+				ParameterValue.FromWireValue([0])));
+
+		var result = await handler.HandleAsync(request, CancellationToken.None);
+
+		result.Should().BeSameAs(passwordModification.Result);
+		passwordModification.Envelope.Should().BeSameAs(request);
+	}
+
+	[Fact]
+	public async Task Does_not_dispatch_an_unaddressed_or_non_management_Envelope()
+	{
+		var localAddress = CreateAddress(26, 100, 0);
+		var parameterRead = new CapturingRouterParameterRead();
+		var nodeLogin = new CapturingNodeLogin();
+		var passwordModification = new CapturingLevel1PasswordModification();
+		var handler = CreateHandler(localAddress, parameterRead, nodeLogin, passwordModification);
+		var unaddressedRequest = Envelope.FromValues(
+			CreateAddress(26, 100, 25),
+			Destinations.FromAddresses(CreateAddress(26, 100, 1)),
+			CreateProtocolAndPriority(),
+			CreateAcknowledgementAndSequence(),
+			ParameterRequest.FromFields(ParameterTable.Current, ParameterNumber.FromValue(1)));
+		var nonManagementEnvelope = Envelope.FromValues(
+			CreateAddress(26, 100, 25),
+			Destinations.FromAddresses(localAddress),
+			CreateProtocolAndPriority(),
+			CreateAcknowledgementAndSequence(),
+			Parameter.FromFields(MoreValues.No, ParameterValue.FromWireValue([26])));
+
+		var destinationResult = await handler.HandleAsync(unaddressedRequest, CancellationToken.None);
+		var messageTypeResult = await handler.HandleAsync(nonManagementEnvelope, CancellationToken.None);
+
+		destinationResult.Status.Should().Be(RouterEnvelopeHandlingStatus.DestinationNotHandled);
+		messageTypeResult.Status.Should().Be(RouterEnvelopeHandlingStatus.MessageTypeNotHandled);
+		parameterRead.Envelope.Should().BeNull();
+		nodeLogin.Envelope.Should().BeNull();
+		passwordModification.Envelope.Should().BeNull();
+	}
+
+	private static RouterParameterRequestHandler CreateHandler(
+		CommunicationsAddress localAddress,
+		IRouterParameterRead parameterRead,
+		INodeLogin nodeLogin,
+		ILevel1PasswordModification passwordModification)
+	{
+		return new RouterParameterRequestHandler(
+			localAddress,
+			parameterRead,
+			nodeLogin,
+			passwordModification);
 	}
 
 	private static CommunicationsAddress CreateAddress(byte brigade, ushort node, byte port)
@@ -270,23 +123,62 @@ public sealed class RouterParameterRequestHandlerTests
 			Port.FromValue(PortIdentifier.FromValue(port)));
 	}
 
-	private static RouterCurrentParameterProjection CreateCurrentParameterProjection(
-		byte brigade,
-		PasswordValue? levelOnePassword = null)
+	private static ProtocolAndPriority CreateProtocolAndPriority()
 	{
-		var localAddress = CreateAddress(brigade, 100, 0);
+		return ProtocolAndPriority.FromValues(
+			MessagePriority.FromValue(MessagePriorityLevel.FromValue(3)),
+			ProtocolVersion.FromValue(ProtocolVersionNumber.FromValue(2)));
+	}
 
-		return RouterCurrentParameterProjection.FromNonVolatileParameters(
-			BrigadeOrAgencyIdentifier.FromValue(brigade),
-			PasswordParameter.FromFields(
-				PasswordLevel.FromValue(PasswordLevelNumber.Unauthenticated),
-				Password.FromValue(
-					PasswordValue.FromValue(SevenBitAsciiString.FromValue(string.Empty))),
-				localAddress),
-			PasswordVerifier.Create(
-				levelOnePassword ?? PasswordValue.FromValue(SevenBitAsciiString.FromValue("FIRE")),
-				PasswordVerifierWorkFactor.Default),
-			NoAcknowledgementTimeout.FromValue(Word8.FromValue(5)),
-			Retries.FromValue(Word8.FromValue(3)));
+	private static AcknowledgementAndSequence CreateAcknowledgementAndSequence()
+	{
+		return AcknowledgementAndSequence.FromValues(
+			SequenceNumber.FromValue(MessageSequenceIdentifier.FromValue(7)),
+			AcknowledgementRequest.Requested);
+	}
+
+	private sealed class CapturingRouterParameterRead : IRouterParameterRead
+	{
+		public Envelope? Envelope { get; private set; }
+		public RouterEnvelopeHandlingResult Result { get; } =
+			RouterEnvelopeHandlingResult.NotHandled(RouterEnvelopeHandlingStatus.ParameterNotHandled);
+
+		public ValueTask<RouterEnvelopeHandlingResult> HandleAsync(
+			Envelope envelope,
+			CancellationToken cancellationToken)
+		{
+			this.Envelope = envelope;
+			return ValueTask.FromResult(this.Result);
+		}
+	}
+
+	private sealed class CapturingNodeLogin : INodeLogin
+	{
+		public Envelope? Envelope { get; private set; }
+		public RouterEnvelopeHandlingResult Result { get; } =
+			RouterEnvelopeHandlingResult.NotHandled(RouterEnvelopeHandlingStatus.ParameterNotHandled);
+
+		public ValueTask<RouterEnvelopeHandlingResult> HandleAsync(
+			Envelope envelope,
+			CancellationToken cancellationToken)
+		{
+			this.Envelope = envelope;
+			return ValueTask.FromResult(this.Result);
+		}
+	}
+
+	private sealed class CapturingLevel1PasswordModification : ILevel1PasswordModification
+	{
+		public Envelope? Envelope { get; private set; }
+		public RouterEnvelopeHandlingResult Result { get; } =
+			RouterEnvelopeHandlingResult.NotHandled(RouterEnvelopeHandlingStatus.ParameterNotHandled);
+
+		public ValueTask<RouterEnvelopeHandlingResult> HandleAsync(
+			Envelope envelope,
+			CancellationToken cancellationToken)
+		{
+			this.Envelope = envelope;
+			return ValueTask.FromResult(this.Result);
+		}
 	}
 }

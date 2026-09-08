@@ -21,7 +21,7 @@ public sealed class RouterIngressReceiverTests
 		currentParameters.Publish(CreateCurrentParameterProjection(routerAddress));
 		var ingress = new CapturingUserAgentIngress();
 		var receiver = new RouterIngressReceiver(
-			new RouterParameterRequestHandler(
+			RouterParameterRequestHandlerFactory.Create(
 				routerAddress,
 				ProtocolVersion.FromValue(ProtocolVersionNumber.FromValue(2)),
 				currentParameters),
@@ -70,7 +70,7 @@ public sealed class RouterIngressReceiverTests
 		var passwordVerifierStore = new CapturingPasswordVerifierStore();
 		var ingress = new CapturingUserAgentIngress();
 		var receiver = new RouterIngressReceiver(
-			new RouterParameterRequestHandler(
+			RouterParameterRequestHandlerFactory.Create(
 				routerAddress,
 				ProtocolVersion.FromValue(ProtocolVersionNumber.FromValue(2)),
 				currentParameters,
@@ -122,7 +122,7 @@ public sealed class RouterIngressReceiverTests
 			requestSource)).Should().BeTrue();
 		var ingress = new CapturingUserAgentIngress();
 		var receiver = new RouterIngressReceiver(
-			new RouterParameterRequestHandler(
+			RouterParameterRequestHandlerFactory.Create(
 				routerAddress,
 				ProtocolVersion.FromValue(ProtocolVersionNumber.FromValue(2)),
 				currentParameters,
@@ -167,7 +167,7 @@ public sealed class RouterIngressReceiverTests
 		var passwordVerifierStore = new CapturingPasswordVerifierStore();
 		var ingress = new CapturingUserAgentIngress();
 		var receiver = new RouterIngressReceiver(
-			new RouterParameterRequestHandler(
+			RouterParameterRequestHandlerFactory.Create(
 				routerAddress,
 				ProtocolVersion.FromValue(ProtocolVersionNumber.FromValue(2)),
 				currentParameters,
@@ -202,7 +202,7 @@ public sealed class RouterIngressReceiverTests
 		var passwordVerifierStore = new CapturingPasswordVerifierStore();
 		var ingress = new CapturingUserAgentIngress();
 		var receiver = new RouterIngressReceiver(
-			new RouterParameterRequestHandler(
+			RouterParameterRequestHandlerFactory.Create(
 				routerAddress,
 				ProtocolVersion.FromValue(ProtocolVersionNumber.FromValue(2)),
 				currentParameters,
@@ -234,7 +234,7 @@ public sealed class RouterIngressReceiverTests
 		var routerAddress = CreateAddress(26, 100, 0);
 		var ingress = new BlockingUserAgentIngress();
 		var receiver = new RouterIngressReceiver(
-			new RouterParameterRequestHandler(
+			RouterParameterRequestHandlerFactory.Create(
 				routerAddress,
 				ProtocolVersion.FromValue(ProtocolVersionNumber.FromValue(2))),
 			ingress,
@@ -259,7 +259,7 @@ public sealed class RouterIngressReceiverTests
 		var userAgentIngress = new CapturingUserAgentIngress();
 		var localParticipantIngress = new CapturingLocalParticipantIngress();
 		var receiver = new RouterIngressReceiver(
-			new RouterParameterRequestHandler(
+			RouterParameterRequestHandlerFactory.Create(
 				routerAddress,
 				ProtocolVersion.FromValue(ProtocolVersionNumber.FromValue(2))),
 			userAgentIngress,
@@ -280,7 +280,7 @@ public sealed class RouterIngressReceiverTests
 		var userAgentIngress = new CapturingUserAgentIngress();
 		var localParticipantIngress = new CapturingLocalParticipantIngress();
 		var receiver = new RouterIngressReceiver(
-			new RouterParameterRequestHandler(
+			RouterParameterRequestHandlerFactory.Create(
 				routerAddress,
 				ProtocolVersion.FromValue(ProtocolVersionNumber.FromValue(2))),
 			userAgentIngress,
@@ -310,7 +310,7 @@ public sealed class RouterIngressReceiverTests
 		var userAgentIngress = new CapturingUserAgentIngress();
 		var localParticipantIngress = new CapturingLocalParticipantIngress();
 		var receiver = new RouterIngressReceiver(
-			new RouterParameterRequestHandler(
+			RouterParameterRequestHandlerFactory.Create(
 				routerAddress,
 				ProtocolVersion.FromValue(ProtocolVersionNumber.FromValue(2))),
 			userAgentIngress,
@@ -340,7 +340,7 @@ public sealed class RouterIngressReceiverTests
 		var userAgentIngress = new CapturingUserAgentIngress();
 		var localParticipantIngress = new CapturingLocalParticipantIngress();
 		var receiver = new RouterIngressReceiver(
-			new RouterParameterRequestHandler(
+			RouterParameterRequestHandlerFactory.Create(
 				routerAddress,
 				ProtocolVersion.FromValue(ProtocolVersionNumber.FromValue(2))),
 			userAgentIngress,
@@ -372,7 +372,7 @@ public sealed class RouterIngressReceiverTests
 		var userAgentIngress = new CapturingUserAgentIngress();
 		var localParticipantIngress = new CapturingLocalParticipantIngress();
 		var receiver = new RouterIngressReceiver(
-			new RouterParameterRequestHandler(
+			RouterParameterRequestHandlerFactory.Create(
 				routerAddress,
 				ProtocolVersion.FromValue(ProtocolVersionNumber.FromValue(2))),
 			userAgentIngress,
@@ -405,7 +405,7 @@ public sealed class RouterIngressReceiverTests
 		var userAgentIngress = new CapturingUserAgentIngress();
 		var localParticipantIngress = new CapturingLocalParticipantIngress();
 		var receiver = new RouterIngressReceiver(
-			new RouterParameterRequestHandler(
+			RouterParameterRequestHandlerFactory.Create(
 				routerAddress,
 				ProtocolVersion.FromValue(ProtocolVersionNumber.FromValue(2))),
 			userAgentIngress,
@@ -438,7 +438,7 @@ public sealed class RouterIngressReceiverTests
 		var userAgentIngress = new CapturingUserAgentIngress();
 		var localParticipantIngress = new CapturingLocalParticipantIngress();
 		var receiver = new RouterIngressReceiver(
-			new RouterParameterRequestHandler(
+			RouterParameterRequestHandlerFactory.Create(
 				routerAddress,
 				ProtocolVersion.FromValue(ProtocolVersionNumber.FromValue(2))),
 			userAgentIngress,
@@ -471,7 +471,7 @@ public sealed class RouterIngressReceiverTests
 		var userAgentIngress = new CapturingUserAgentIngress();
 		var localParticipantIngress = new CapturingLocalParticipantIngress();
 		var receiver = new RouterIngressReceiver(
-			new RouterParameterRequestHandler(
+			RouterParameterRequestHandlerFactory.Create(
 				routerAddress,
 				ProtocolVersion.FromValue(ProtocolVersionNumber.FromValue(2))),
 			userAgentIngress,
@@ -503,7 +503,7 @@ public sealed class RouterIngressReceiverTests
 		var userAgentIngress = new CapturingUserAgentIngress();
 		var localParticipantIngress = new CapturingLocalParticipantIngress();
 		var receiver = new RouterIngressReceiver(
-			new RouterParameterRequestHandler(
+			RouterParameterRequestHandlerFactory.Create(
 				routerAddress,
 				ProtocolVersion.FromValue(ProtocolVersionNumber.FromValue(2))),
 			userAgentIngress,

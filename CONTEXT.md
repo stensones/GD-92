@@ -184,6 +184,14 @@ A NodeManager-initiated local Router request comprising an outgoing management E
 A Node Login, local Router Parameter Request, and each Inventory Scan probe are Management Transactions.
 _Avoid_: HTTP request, RabbitMQ delivery
 
+**Router Parameter Read**:
+Router-owned processing of a Current Parameter Request that validates the addressed Router Parameter and returns its Current Parameter Value.
+_Avoid_: persistence query, generic Parameter handler
+
+**Level 1 Password Modification**:
+Router-owned authorization, validation, verifier creation, and optional Non-Volatile persistence for a change to the Level 1 Password.
+_Avoid_: Node Login, raw password storage
+
 **Current Password**:
 Router Parameter 4, whose volatile Current value represents the single active Node Login's Password Level and supplied User-Agent Communications Address.
 _Avoid_: durable password, browser session
@@ -481,6 +489,10 @@ _Avoid_: retransmission, duplicate Message
 - A **Communications Node Inventory** is produced by one **Inventory Scan** and includes its **Inventory Scan Summary**.
 - A **Current Parameter Table** is initialized from its **Non-Volatile Parameter Table** on normal startup.
 - A **Permanent Parameter Table** supplies fallback Parameter values when a **Non-Volatile Parameter Table** is corrupted.
+- A Router dispatches locally addressed, single-destination Parameter management Envelopes to its **Router Parameter Read**, **Node Login**, or **Level 1 Password Modification** Module.
+- A **Router Parameter Read** returns only a Router-owned Current Parameter Value; unsupported Router Parameters remain unhandled by the Router.
+- A **Node Login** Module owns Current Password logon and logoff behavior and does not persist Node Login state.
+- A **Level 1 Password Modification** acknowledges a Non-Volatile change only after its Router-owned password verifier is durably stored.
 - Every **Management Transaction** uses the NodeManager's configured retry policy and retains a terminal timeout outcome when its attempts are exhausted.
 - A **Management Transaction** owns its response correlation and exposes its status or terminal outcome without exposing its correlation records.
 - A Router Ingress submission failure is a terminal **Management Transaction** delivery failure.

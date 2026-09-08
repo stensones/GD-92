@@ -1,272 +1,68 @@
 using Stensones.GD92.Fields;
 using Stensones.GD92.Messages;
-using Router.Persistence;
 
 namespace Router;
 
 public sealed class RouterParameterRequestHandler
 {
 	private readonly CommunicationsAddress localAddress;
-	private readonly ProtocolVersion protocolVersion;
-	private readonly RouterCurrentParameterProjection? currentParameters;
-	private readonly RouterCurrentParameterProjectionSource? currentParameterSource;
-	private readonly IRouterLevel1PasswordVerifierStore? passwordVerifierStore;
-	private static readonly PasswordLevel LevelZero =
-		PasswordLevel.FromValue(PasswordLevelNumber.Unauthenticated);
-	private static readonly PasswordLevel LevelOne =
-		PasswordLevel.FromValue(PasswordLevelNumber.Level1);
+	private readonly IRouterParameterRead routerParameterRead;
+	private readonly INodeLogin nodeLogin;
+	private readonly ILevel1PasswordModification level1PasswordModification;
+
 	internal CommunicationsAddress LocalAddress => this.localAddress;
 
-	public RouterParameterRequestHandler(
+	internal RouterParameterRequestHandler(
 		CommunicationsAddress localAddress,
-		ProtocolVersion protocolVersion)
+		IRouterParameterRead routerParameterRead,
+		INodeLogin nodeLogin,
+		ILevel1PasswordModification level1PasswordModification)
 	{
 		this.localAddress = localAddress ?? throw new ArgumentNullException(nameof(localAddress));
-		this.protocolVersion = protocolVersion ?? throw new ArgumentNullException(nameof(protocolVersion));
+		this.routerParameterRead = routerParameterRead ??
+			throw new ArgumentNullException(nameof(routerParameterRead));
+		this.nodeLogin = nodeLogin ?? throw new ArgumentNullException(nameof(nodeLogin));
+		this.level1PasswordModification = level1PasswordModification ??
+			throw new ArgumentNullException(nameof(level1PasswordModification));
 	}
 
-	public RouterParameterRequestHandler(
-		CommunicationsAddress localAddress,
-		ProtocolVersion protocolVersion,
-		RouterCurrentParameterProjection currentParameters)
-	{
-		this.localAddress = localAddress ?? throw new ArgumentNullException(nameof(localAddress));
-		this.protocolVersion = protocolVersion ?? throw new ArgumentNullException(nameof(protocolVersion));
-		this.currentParameters = currentParameters ?? throw new ArgumentNullException(nameof(currentParameters));
-	}
-
-	public RouterParameterRequestHandler(
-		CommunicationsAddress localAddress,
-		ProtocolVersion protocolVersion,
-		RouterCurrentParameterProjectionSource currentParameterSource)
-	{
-		this.localAddress = localAddress ?? throw new ArgumentNullException(nameof(localAddress));
-		this.protocolVersion = protocolVersion ?? throw new ArgumentNullException(nameof(protocolVersion));
-		this.currentParameterSource = currentParameterSource ??
-			throw new ArgumentNullException(nameof(currentParameterSource));
-	}
-
-	public RouterParameterRequestHandler(
-		CommunicationsAddress localAddress,
-		ProtocolVersion protocolVersion,
-		RouterCurrentParameterProjectionSource currentParameterSource,
-		IRouterLevel1PasswordVerifierStore passwordVerifierStore)
-	{
-		this.localAddress = localAddress ?? throw new ArgumentNullException(nameof(localAddress));
-		this.protocolVersion = protocolVersion ?? throw new ArgumentNullException(nameof(protocolVersion));
-		this.currentParameterSource = currentParameterSource ??
-			throw new ArgumentNullException(nameof(currentParameterSource));
-		this.passwordVerifierStore = passwordVerifierStore ??
-			throw new ArgumentNullException(nameof(passwordVerifierStore));
-	}
-
-	internal RouterEnvelopeHandlingResult Handle(Envelope envelope)
-	{
-		ArgumentNullException.ThrowIfNull(envelope);
-
-		if (envelope.Contents is ParameterRequest parameterRequest)
-		{
-			return this.HandleParameterRequest(envelope, parameterRequest);
-		}
-
-		if (envelope.Contents is SetParameter setParameter)
-		{
-			return this.HandleSetParameter(envelope, setParameter);
-		}
-
-		return RouterEnvelopeHandlingResult.NotHandled(
-			RouterEnvelopeHandlingStatus.MessageTypeNotHandled);
-	}
-
-	internal async ValueTask<RouterEnvelopeHandlingResult> HandleAsync(
+	internal ValueTask<RouterEnvelopeHandlingResult> HandleAsync(
 		Envelope envelope,
 		CancellationToken cancellationToken)
 	{
 		ArgumentNullException.ThrowIfNull(envelope);
 
-		if (envelope.Contents is SetParameter setParameter &&
-			setParameter.ParameterNumber == RouterParameterCatalogue.Level1PasswordNumber)
+		if (envelope.Contents is not ParameterRequest and not SetParameter)
 		{
-			return await this.HandleLevel1PasswordChangeAsync(
-				envelope,
-				setParameter,
-				cancellationToken);
+			return ValueTask.FromResult(RouterEnvelopeHandlingResult.NotHandled(
+				RouterEnvelopeHandlingStatus.MessageTypeNotHandled));
 		}
 
-		return this.Handle(envelope);
-	}
-
-	private RouterEnvelopeHandlingResult HandleParameterRequest(
-		Envelope envelope,
-		ParameterRequest parameterRequest)
-	{
 		if (envelope.Destinations.Addresses.Count != 1 ||
 			envelope.Destinations.Addresses[0] != this.localAddress)
 		{
-			return RouterEnvelopeHandlingResult.NotHandled(
-				RouterEnvelopeHandlingStatus.DestinationNotHandled);
+			return ValueTask.FromResult(RouterEnvelopeHandlingResult.NotHandled(
+				RouterEnvelopeHandlingStatus.DestinationNotHandled));
 		}
 
-		if (parameterRequest.ParameterTable != ParameterTable.Current ||
-			parameterRequest.ParameterNumber != RouterParameterCatalogue.BrigadeOrAgency.Number)
+		return envelope.Contents switch
 		{
-			return RouterEnvelopeHandlingResult.NotHandled(
-				RouterEnvelopeHandlingStatus.ParameterNotHandled);
-		}
-
-		var response = Envelope.CreateParameterResponse(
-			envelope,
-			this.localAddress,
-			this.protocolVersion,
-			Parameter.FromFields(
-				MoreValues.No,
-				ParameterValue.FromWireValue(
-					(this.currentParameterSource?.GetCurrent()?.BrigadeOrAgencyIdentifier ??
-						this.currentParameters?.BrigadeOrAgencyIdentifier ??
-						this.localAddress.Brigade.Value)
-						.ToWireValue())));
-
-		return RouterEnvelopeHandlingResult.Responded(response);
-	}
-
-	private RouterEnvelopeHandlingResult HandleSetParameter(
-		Envelope envelope,
-		SetParameter setParameter)
-	{
-		if (envelope.Destinations.Addresses.Count != 1 ||
-			envelope.Destinations.Addresses[0] != this.localAddress)
-		{
-			return RouterEnvelopeHandlingResult.NotHandled(
-				RouterEnvelopeHandlingStatus.DestinationNotHandled);
-		}
-
-		if (setParameter.ParameterTable != ParameterTable.Current ||
-			setParameter.ParameterNumber != RouterParameterCatalogue.CurrentPassword.Number)
-		{
-			return RouterEnvelopeHandlingResult.NotHandled(
-				RouterEnvelopeHandlingStatus.ParameterNotHandled);
-		}
-
-		var valueBuffer = new EncodedMessageBuffer(setParameter.ParameterValue.ToWireValue());
-		var submittedPassword = PasswordParameter.FromEncodedMessageBuffer(ref valueBuffer);
-
-		if (this.currentParameterSource is null)
-		{
-			return RouterEnvelopeHandlingResult.NotHandled(
-				RouterEnvelopeHandlingStatus.ParameterNotHandled);
-		}
-
-		if (submittedPassword.Level == LevelZero)
-		{
-			this.currentParameterSource.TryLogOffAtLevelZero(this.localAddress);
-
-			return RouterEnvelopeHandlingResult.Responded(Envelope.CreateAcknowledgement(
-				envelope,
-				this.localAddress,
-				this.protocolVersion));
-		}
-
-		if (submittedPassword.Level != LevelOne)
-		{
-			return RouterEnvelopeHandlingResult.NotHandled(
-				RouterEnvelopeHandlingStatus.ParameterNotHandled);
-		}
-
-		if (!this.currentParameterSource.TryLogOnAtLevelOne(submittedPassword))
-		{
-			return RouterEnvelopeHandlingResult.Responded(Envelope.CreateNegativeAcknowledgement(
-				envelope,
-				this.localAddress,
-				this.protocolVersion,
-				envelope.Destinations,
-				ReasonCode.FromParameterReasonCode(ParameterReasonCode.InvalidPassword)));
-		}
-
-		return RouterEnvelopeHandlingResult.Responded(Envelope.CreateAcknowledgement(
-			envelope,
-			this.localAddress,
-			this.protocolVersion));
-	}
-
-	private async ValueTask<RouterEnvelopeHandlingResult> HandleLevel1PasswordChangeAsync(
-		Envelope envelope,
-		SetParameter setParameter,
-		CancellationToken cancellationToken)
-	{
-		if (envelope.Destinations.Addresses.Count != 1 ||
-			envelope.Destinations.Addresses[0] != this.localAddress)
-		{
-			return RouterEnvelopeHandlingResult.NotHandled(
-				RouterEnvelopeHandlingStatus.DestinationNotHandled);
-		}
-
-		if (setParameter.ParameterTable == ParameterTable.Permanent)
-		{
-			return this.CreateParameterNegativeAcknowledgement(
-				envelope,
-				ParameterReasonCode.NoModificationAccess);
-		}
-
-		if (setParameter.ParameterTable != ParameterTable.Current &&
-			setParameter.ParameterTable != ParameterTable.NonVolatile)
-		{
-			return RouterEnvelopeHandlingResult.NotHandled(
-				RouterEnvelopeHandlingStatus.ParameterNotHandled);
-		}
-
-		if (this.currentParameterSource is null ||
-			this.passwordVerifierStore is null ||
-			!this.currentParameterSource.HasActiveNodeLoginAtLevelOne())
-		{
-			return this.CreateParameterNegativeAcknowledgement(
-				envelope,
-				ParameterReasonCode.NoModificationAccess);
-		}
-
-		var valueBuffer = new EncodedMessageBuffer(setParameter.ParameterValue.ToWireValue());
-		var password = Password.FromEncodedMessageBuffer(ref valueBuffer);
-		if (valueBuffer.RemainingBitCount != 0)
-		{
-			return this.CreateParameterNegativeAcknowledgement(
-				envelope,
-				ParameterReasonCode.InvalidSyntax);
-		}
-
-		var passwordVerifier = PasswordVerifier.Create(
-			password.Value,
-			PasswordVerifierWorkFactor.Default);
-		if (setParameter.ParameterTable == ParameterTable.NonVolatile)
-		{
-			await this.passwordVerifierStore.StoreAsync(
-				ParameterTable.NonVolatile,
-				passwordVerifier,
-				cancellationToken);
-		}
-
-		if (setParameter.ParameterTable == ParameterTable.Current &&
-			!this.currentParameterSource.TryChangeLevel1Password(passwordVerifier))
-		{
-			return this.CreateParameterNegativeAcknowledgement(
-				envelope,
-				ParameterReasonCode.NoModificationAccess);
-		}
-
-		return RouterEnvelopeHandlingResult.Responded(Envelope.CreateAcknowledgement(
-			envelope,
-			this.localAddress,
-			this.protocolVersion));
-	}
-
-	private RouterEnvelopeHandlingResult CreateParameterNegativeAcknowledgement(
-		Envelope envelope,
-		ParameterReasonCode reasonCode)
-	{
-		return RouterEnvelopeHandlingResult.Responded(Envelope.CreateNegativeAcknowledgement(
-			envelope,
-			this.localAddress,
-			this.protocolVersion,
-			envelope.Destinations,
-			ReasonCode.FromParameterReasonCode(reasonCode)));
+			ParameterRequest => this.routerParameterRead.HandleAsync(envelope, cancellationToken),
+			SetParameter
+			{
+				ParameterTable: var table,
+				ParameterNumber: var number
+			} when table == ParameterTable.Current &&
+				number == Router.Persistence.RouterParameterCatalogue.CurrentPassword.Number =>
+				this.nodeLogin.HandleAsync(envelope, cancellationToken),
+			SetParameter
+			{
+				ParameterNumber: var number
+			} when number == Router.Persistence.RouterParameterCatalogue.Level1PasswordNumber =>
+				this.level1PasswordModification.HandleAsync(envelope, cancellationToken),
+			_ => ValueTask.FromResult(RouterEnvelopeHandlingResult.NotHandled(
+				RouterEnvelopeHandlingStatus.ParameterNotHandled))
+		};
 	}
 }
 

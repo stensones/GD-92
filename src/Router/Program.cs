@@ -24,12 +24,28 @@ builder.Services.AddScoped<IParticipantParameterStore, EfRouterParameterStore>()
 builder.Services.AddScoped<IRouterLevel1PasswordVerifierStore, EfRouterPasswordVerifierStore>();
 builder.Services.AddScoped<RouterParameterBootstrapper>();
 builder.Services.AddSingleton<RouterCurrentParameterProjectionSource>();
-builder.Services.AddScoped(serviceProvider =>
-	new RouterParameterRequestHandler(
+builder.Services.AddScoped<IRouterParameterRead>(serviceProvider =>
+	new RouterParameterRead(
+		routerSettings.LocalAddress,
+		routerSettings.ProtocolVersion,
+		serviceProvider.GetRequiredService<RouterCurrentParameterProjectionSource>()));
+builder.Services.AddScoped<INodeLogin>(serviceProvider =>
+	new NodeLogin(
+		routerSettings.LocalAddress,
+		routerSettings.ProtocolVersion,
+		serviceProvider.GetRequiredService<RouterCurrentParameterProjectionSource>()));
+builder.Services.AddScoped<ILevel1PasswordModification>(serviceProvider =>
+	new Level1PasswordModification(
 		routerSettings.LocalAddress,
 		routerSettings.ProtocolVersion,
 		serviceProvider.GetRequiredService<RouterCurrentParameterProjectionSource>(),
 		serviceProvider.GetRequiredService<IRouterLevel1PasswordVerifierStore>()));
+builder.Services.AddScoped(serviceProvider =>
+	new RouterParameterRequestHandler(
+		routerSettings.LocalAddress,
+		serviceProvider.GetRequiredService<IRouterParameterRead>(),
+		serviceProvider.GetRequiredService<INodeLogin>(),
+		serviceProvider.GetRequiredService<ILevel1PasswordModification>()));
 builder.Services.AddScoped<IUserAgentIngress, RabbitMqUserAgentIngress>();
 builder.Services.AddScoped<ILocalParticipantIngress, RabbitMqLocalParticipantIngress>();
 builder.Services.AddScoped<IRouterIngressReceiver, RouterIngressReceiver>();
