@@ -11,13 +11,15 @@ namespace Stensones.GD92.StationEnd.Tests.Integration;
 [Binding]
 public sealed class RouterParameterRequestSteps
 {
+	private static readonly RouterParameterRequestApplicationPool applications = new();
+
 	private DistributedApplication? application;
 	private HttpClient? client;
 	private HttpResponseMessage? response;
 	private string? level1Password;
 	private string? pageContent;
 	private Uri? inventoryScanStatusAddress;
-	private bool localRouterDoesNotRespond;
+	private RouterParameterRequestApplicationProfile applicationProfile;
 
 	[Given(@"NodeManager is the User Agent at Brigade (.*), Node (.*), and Port (.*)")]
 	public void GivenNodeManagerIsTheUserAgentAt(byte brigade, ushort node, byte port)
@@ -34,16 +36,13 @@ public sealed class RouterParameterRequestSteps
 	[Given(@"NodeManager's configured local Router does not respond")]
 	public void GivenNodeManagersConfiguredLocalRouterDoesNotRespond()
 	{
-		this.localRouterDoesNotRespond = true;
+		this.applicationProfile = RouterParameterRequestApplicationProfile.NonrespondingRouter;
 	}
 
 	[When(@"I request the local Router brigade or agency number")]
 	public async Task WhenIRequestTheLocalRouterBrigadeOrAgencyNumber()
 	{
-		if (this.application is null)
-		{
-			await this.StartApplicationAsync();
-		}
+		await this.EnsureApplicationStartedAsync();
 
 		this.response = await this.client!.PostAsync("/router/parameters/brigade-or-agency-number", null);
 	}
@@ -51,10 +50,7 @@ public sealed class RouterParameterRequestSteps
 	[When(@"I open NodeManager")]
 	public async Task WhenIOpenNodeManager()
 	{
-		if (this.application is null)
-		{
-			await this.StartApplicationAsync();
-		}
+		await this.EnsureApplicationStartedAsync();
 
 		this.response = await this.client!.GetAsync("/");
 		this.response.EnsureSuccessStatusCode();
@@ -108,10 +104,7 @@ public sealed class RouterParameterRequestSteps
 	[When(@"I select Discover local participants")]
 	public async Task WhenISelectDiscoverLocalParticipants()
 	{
-		if (this.application is null)
-		{
-			await this.StartApplicationAsync();
-		}
+		await this.EnsureApplicationStartedAsync();
 
 		this.response = await this.client!.PostAsync("/router/participants/discovery", null);
 	}
@@ -196,10 +189,7 @@ public sealed class RouterParameterRequestSteps
 		byte port,
 		string password)
 	{
-		if (this.application is null)
-		{
-			await this.StartApplicationAsync();
-		}
+		await this.EnsureApplicationStartedAsync();
 
 		this.response = await this.client!.PostAsync(
 			"/router/parameters/logon",
@@ -221,7 +211,8 @@ public sealed class RouterParameterRequestSteps
 	[Given(@"the Router persistent Parameter Tables are empty")]
 	public async Task GivenTheRouterPersistentParameterTablesAreEmpty()
 	{
-		await this.StartApplicationAsync();
+		this.applicationProfile = RouterParameterRequestApplicationProfile.FreshParameterTables;
+		await this.EnsureApplicationStartedAsync();
 	}
 
 	[Given(@"the Router Level 1 password is ""(.*)""")]
@@ -398,41 +389,57 @@ public sealed class RouterParameterRequestSteps
 	}
 
 	[AfterScenario]
-	public async Task DisposeApplication()
+	public void DisposeClient()
 	{
 		this.client?.Dispose();
-
-		if (this.application is not null)
-		{
-			await this.application.StopAsync();
-			await this.application.DisposeAsync();
-		}
 	}
 
-	private async Task StartApplicationAsync()
+	[AfterFeature]
+	public static async Task DisposeApplicationsAsync()
 	{
+		await applications.DisposeAsync();
+	}
+
+	private async Task EnsureApplicationStartedAsync()
+	{
+		if (this.application is not null)
+		{
+			return;
+		}
+
+		this.application = await applications.GetAsync(
+			this.applicationProfile,
+			StartApplicationAsync);
+		this.client = CreateClient(this.application);
+	}
+
+	private static async Task<DistributedApplication> StartApplicationAsync(
+		RouterParameterRequestApplicationProfile applicationProfile)
+	{
+		var localRouterDoesNotRespond =
+			applicationProfile == RouterParameterRequestApplicationProfile.NonrespondingRouter;
 		var appHost = await DistributedApplicationTestingBuilder
 			.CreateAsync<Projects.GD92_StationEnd_AppHost>(
 				[
 					"--Persistence:UsePersistentPostgres=false",
 					"--StationEnd:IncludeBusMTAAndIOUA=false",
-					this.localRouterDoesNotRespond
+					localRouterDoesNotRespond
 						? "--RouterParameterRequest:LocalRouter:Port=63"
 						: "--RouterParameterRequest:LocalRouter:Port=0",
-					this.localRouterDoesNotRespond
+					localRouterDoesNotRespond
 						? "--GD92:no_ack_timeout=1"
 						: "--GD92:no_ack_timeout=5",
-					this.localRouterDoesNotRespond
+					localRouterDoesNotRespond
 						? "--GD92:retries=1"
 						: "--GD92:retries=3",
-					$"--Parameters:router-level1-password={this.level1Password ?? "FIRE1"}"
+					"--Parameters:router-level1-password=FIRE1"
 				]);
 
-		this.application = await appHost.BuildAsync();
-		await this.application.StartAsync();
-		await this.application.ResourceNotifications.WaitForResourceHealthyAsync("Router");
-		await this.application.ResourceNotifications.WaitForResourceHealthyAsync("Node-Manager-UA");
-		this.client = CreateClient(this.application);
+		var application = await appHost.BuildAsync();
+		await application.StartAsync();
+		await application.ResourceNotifications.WaitForResourceHealthyAsync("Router");
+		await application.ResourceNotifications.WaitForResourceHealthyAsync("Node-Manager-UA");
+		return application;
 	}
 
 	private async Task<JsonDocument> WaitForInventoryScanStatusAsync(
@@ -467,5 +474,60 @@ public sealed class RouterParameterRequestSteps
 		{
 			BaseAddress = application.GetEndpoint("Node-Manager-UA")
 		};
+	}
+
+	private enum RouterParameterRequestApplicationProfile
+	{
+		Default,
+		NonrespondingRouter,
+		FreshParameterTables
+	}
+
+	private sealed class RouterParameterRequestApplicationPool : IAsyncDisposable
+	{
+		private readonly Dictionary<RouterParameterRequestApplicationProfile, DistributedApplication>
+			applications = [];
+		private readonly SemaphoreSlim gate = new(1, 1);
+
+		public async Task<DistributedApplication> GetAsync(
+			RouterParameterRequestApplicationProfile applicationProfile,
+			Func<RouterParameterRequestApplicationProfile, Task<DistributedApplication>> createApplication)
+		{
+			await this.gate.WaitAsync();
+			try
+			{
+				if (this.applications.TryGetValue(applicationProfile, out var application))
+				{
+					return application;
+				}
+
+				application = await createApplication(applicationProfile);
+				this.applications.Add(applicationProfile, application);
+				return application;
+			}
+			finally
+			{
+				this.gate.Release();
+			}
+		}
+
+		public async ValueTask DisposeAsync()
+		{
+			await this.gate.WaitAsync();
+			try
+			{
+				foreach (var application in this.applications.Values)
+				{
+					await application.StopAsync();
+					await application.DisposeAsync();
+				}
+
+				this.applications.Clear();
+			}
+			finally
+			{
+				this.gate.Release();
+			}
+		}
 	}
 }
