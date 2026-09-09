@@ -8,15 +8,17 @@ namespace NodeManager.Router.Participants;
 
 public sealed class InventoryScanRunner(
 	RouterParameterRequestSettings settings,
+	InventoryScanSettings inventoryScanSettings,
 	IInventoryScanRegistry inventoryScans,
 	IServiceScopeFactory serviceScopeFactory,
 	IHostApplicationLifetime applicationLifetime) : IInventoryScanRunner
 {
 	private const int FirstParticipantPort = 1;
 	private const int LastParticipantPort = 63;
-	private const int MaximumConcurrentProbes = 8;
 	private readonly RouterParameterRequestSettings settings = settings ??
 		throw new ArgumentNullException(nameof(settings));
+	private readonly InventoryScanSettings inventoryScanSettings = inventoryScanSettings ??
+		throw new ArgumentNullException(nameof(inventoryScanSettings));
 	private readonly IInventoryScanRegistry inventoryScans = inventoryScans ??
 		throw new ArgumentNullException(nameof(inventoryScans));
 	private readonly IServiceScopeFactory serviceScopeFactory = serviceScopeFactory ??
@@ -40,7 +42,7 @@ public sealed class InventoryScanRunner(
 				new ParallelOptions
 				{
 					CancellationToken = this.applicationStopping,
-					MaxDegreeOfParallelism = MaximumConcurrentProbes
+					MaxDegreeOfParallelism = this.inventoryScanSettings.MaximumConcurrentProbes
 				},
 				async (port, cancellationToken) =>
 				{

@@ -26,6 +26,8 @@ var routerLevel1Password = builder.AddParameterFromConfiguration(
 var includeBusMtaAndIoUa = builder.Configuration.GetValue(
 	"StationEnd:IncludeBusMTAAndIOUA",
 	true);
+var inventoryScanMaximumConcurrentProbes = builder.Configuration[
+	"InventoryScan:MaximumConcurrentProbes"] ?? "8";
 
 if (useExternalPostgres)
 {
@@ -51,6 +53,9 @@ if (useExternalPostgres)
 		.WithEnvironment(
 			"GD92__retries",
 			builder.Configuration["GD92:retries"] ?? "3")
+		.WithEnvironment(
+			"InventoryScan__MaximumConcurrentProbes",
+			inventoryScanMaximumConcurrentProbes)
 		.WaitFor(router);
 }
 else
@@ -92,6 +97,9 @@ else
 		.WithEnvironment(
 			"GD92__retries",
 			builder.Configuration["GD92:retries"] ?? "3")
+		.WithEnvironment(
+			"InventoryScan__MaximumConcurrentProbes",
+			inventoryScanMaximumConcurrentProbes)
 		.WaitFor(nodeManagerDatabase)
 		.WaitFor(router);
 }

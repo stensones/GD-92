@@ -1,4 +1,5 @@
 using AwesomeAssertions;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging.Abstractions;
@@ -50,6 +51,7 @@ public sealed class InventoryScanNegativeAcknowledgementSteps
 				ManagementTransactionRetryPolicy.FromValues(
 					ManagementTransactionNoAcknowledgementTimeout.FromValue(Word8.FromValue(1)),
 					ManagementTransactionTotalSends.FromValue(Word8.FromValue(1)))),
+			InventoryScanSettings.FromConfiguration(new ConfigurationBuilder().Build()),
 			this.inventoryScans,
 			this.serviceProvider.GetRequiredService<IServiceScopeFactory>(),
 			new NonStoppingApplicationLifetime());

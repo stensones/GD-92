@@ -30,6 +30,7 @@ Feature: Router Parameter Request
     When I open NodeManager
     Then NodeManager follows a Node Login status redirect
 
+  @HighConcurrencyInventoryScan
   Scenario: Discovering local participants
     Given NodeManager is the User Agent at Brigade 26, Node 100, and Port 25
     And its local Router is at Brigade 26, Node 100, and Port 0

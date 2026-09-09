@@ -21,6 +21,7 @@ builder.Services
 	});
 
 var requestSettings = RouterParameterRequestSettings.FromConfiguration(builder.Configuration);
+var inventoryScanSettings = InventoryScanSettings.FromConfiguration(builder.Configuration);
 
 builder.Services.AddWolverine(options =>
 {
@@ -31,6 +32,7 @@ builder.Services.AddWolverine(options =>
 
 builder.Services.AddSingleton(requestSettings);
 builder.Services.AddSingleton(requestSettings.ManagementTransactionRetryPolicy);
+builder.Services.AddSingleton(inventoryScanSettings);
 builder.AddNpgsqlDbContext<NodeManagerDbContext>("node-manager-database");
 builder.Services.AddScoped<IParticipantParameterStore, EfNodeManagerParameterStore>();
 builder.Services.AddScoped<NodeManagerParameterBootstrapper>();

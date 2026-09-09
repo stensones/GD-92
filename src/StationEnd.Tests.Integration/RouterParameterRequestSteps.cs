@@ -39,6 +39,12 @@ public sealed class RouterParameterRequestSteps
 		this.applicationProfile = RouterParameterRequestApplicationProfile.NonrespondingRouter;
 	}
 
+	[BeforeScenario("HighConcurrencyInventoryScan")]
+	public void UseHighConcurrencyInventoryScan()
+	{
+		this.applicationProfile = RouterParameterRequestApplicationProfile.HighConcurrencyInventoryScan;
+	}
+
 	[When(@"I request the local Router brigade or agency number")]
 	public async Task WhenIRequestTheLocalRouterBrigadeOrAgencyNumber()
 	{
@@ -418,6 +424,8 @@ public sealed class RouterParameterRequestSteps
 	{
 		var localRouterDoesNotRespond =
 			applicationProfile == RouterParameterRequestApplicationProfile.NonrespondingRouter;
+		var isHighConcurrencyInventoryScanProfile =
+			applicationProfile == RouterParameterRequestApplicationProfile.HighConcurrencyInventoryScan;
 		var appHost = await DistributedApplicationTestingBuilder
 			.CreateAsync<Projects.GD92_StationEnd_AppHost>(
 				[
@@ -432,6 +440,9 @@ public sealed class RouterParameterRequestSteps
 					localRouterDoesNotRespond
 						? "--GD92:retries=1"
 						: "--GD92:retries=3",
+					isHighConcurrencyInventoryScanProfile
+						? "--InventoryScan:MaximumConcurrentProbes=12"
+						: "--InventoryScan:MaximumConcurrentProbes=8",
 					"--Parameters:router-level1-password=FIRE1"
 				]);
 
@@ -480,6 +491,7 @@ public sealed class RouterParameterRequestSteps
 	{
 		Default,
 		NonrespondingRouter,
+		HighConcurrencyInventoryScan,
 		FreshParameterTables
 	}
 
@@ -499,6 +511,13 @@ public sealed class RouterParameterRequestSteps
 				if (this.applications.TryGetValue(applicationProfile, out var application))
 				{
 					return application;
+				}
+
+				foreach (var existingApplication in this.applications.ToArray())
+				{
+					await existingApplication.Value.StopAsync();
+					await existingApplication.Value.DisposeAsync();
+					this.applications.Remove(existingApplication.Key);
 				}
 
 				application = await createApplication(applicationProfile);

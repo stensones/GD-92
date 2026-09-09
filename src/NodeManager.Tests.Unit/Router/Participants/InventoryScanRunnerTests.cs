@@ -1,4 +1,5 @@
 using AwesomeAssertions;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using NodeManager.Router.Parameters;
@@ -19,6 +20,7 @@ public sealed class InventoryScanRunnerTests
 		await using var serviceProvider = services.BuildServiceProvider();
 		var runner = new InventoryScanRunner(
 			new RouterParameterRequestSettings(Address(25), Address(0)),
+			InventoryScanSettings.FromConfiguration(new ConfigurationBuilder().Build()),
 			registry,
 			serviceProvider.GetRequiredService<IServiceScopeFactory>(),
 			new NonStoppingApplicationLifetime());
@@ -29,6 +31,38 @@ public sealed class InventoryScanRunnerTests
 		status.Summary.NegativeAcknowledgements.Should().ContainSingle()
 			.Which.Should().Be(new KeyValuePair<string, int>("parameter:invalid_syntax", 1));
 		status.Summary.TimeoutCount.Should().Be(62);
+	}
+
+	[Fact]
+	public async Task Starts_all_probes_concurrently_when_configured_for_all_participant_ports()
+	{
+		var registry = new InMemoryInventoryScanRegistry();
+		var transactions = new BlockingTransactionService();
+		var services = new ServiceCollection();
+		services.AddSingleton(transactions);
+		services.AddScoped<IManagementTransactionService>(serviceProvider =>
+			serviceProvider.GetRequiredService<BlockingTransactionService>());
+		await using var serviceProvider = services.BuildServiceProvider();
+		var runner = new InventoryScanRunner(
+			new RouterParameterRequestSettings(Address(25), Address(0)),
+			InventoryScanSettings.FromConfiguration(
+				new ConfigurationBuilder()
+					.AddInMemoryCollection(new Dictionary<string, string?>
+					{
+						["InventoryScan:MaximumConcurrentProbes"] = "63"
+					})
+					.Build()),
+			registry,
+			serviceProvider.GetRequiredService<IServiceScopeFactory>(),
+			new NonStoppingApplicationLifetime());
+
+		var identifier = runner.Start();
+		await transactions.WaitForAllProbesAsync();
+
+		transactions.Complete();
+		var status = await WaitForCompletedScanAsync(registry, identifier);
+
+		status.CompletedProbeCount.Should().Be(63);
 	}
 
 	private static async Task<InventoryScanStatus> WaitForCompletedScanAsync(
@@ -76,6 +110,50 @@ public sealed class InventoryScanRunnerTests
 						statusIdentifier,
 						ReasonCode.FromParameterReasonCode(ParameterReasonCode.InvalidSyntax))
 					: new TimedOutRouterParameterRequestStatus(statusIdentifier));
+		}
+	}
+
+	private sealed class BlockingTransactionService : IManagementTransactionService
+	{
+		private const int TotalParticipantPorts = 63;
+		private readonly TaskCompletionSource allProbesSubmitted = new(
+			TaskCreationOptions.RunContinuationsAsynchronously);
+		private readonly TaskCompletionSource completion = new(
+			TaskCreationOptions.RunContinuationsAsynchronously);
+		private int submittedProbeCount;
+
+		public Task<RouterParameterRequestStatusIdentifier> SubmitAsync(
+			ManagementTransactionRequest request,
+			CancellationToken cancellationToken)
+		{
+			if (Interlocked.Increment(ref this.submittedProbeCount) == TotalParticipantPorts)
+			{
+				this.allProbesSubmitted.TrySetResult();
+			}
+
+			return Task.FromResult(new RouterParameterRequestStatusIdentifier(
+				new UniqueSystemWideReference(
+					request.Source,
+					request.Destination,
+					SequenceNumber.FromValue(MessageSequenceIdentifier.FromValue(1)))));
+		}
+
+		public async Task<RouterParameterRequestStatus> WaitForCompletionAsync(
+			RouterParameterRequestStatusIdentifier statusIdentifier,
+			CancellationToken cancellationToken)
+		{
+			await this.completion.Task.WaitAsync(cancellationToken);
+			return new TimedOutRouterParameterRequestStatus(statusIdentifier);
+		}
+
+		public async Task WaitForAllProbesAsync()
+		{
+			await this.allProbesSubmitted.Task.WaitAsync(TimeSpan.FromSeconds(5));
+		}
+
+		public void Complete()
+		{
+			this.completion.TrySetResult();
 		}
 	}
 
