@@ -1,6 +1,7 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 using ParticipantParameters;
 using Router;
 using Router.Persistence;
@@ -24,31 +25,37 @@ builder.Services.AddScoped<IParticipantParameterStore, EfRouterParameterStore>()
 builder.Services.AddScoped<IRouterLevel1PasswordVerifierStore, EfRouterPasswordVerifierStore>();
 builder.Services.AddScoped<RouterParameterBootstrapper>();
 builder.Services.AddSingleton<RouterCurrentParameterProjectionSource>();
-builder.Services.AddScoped<IRouterParameterRead>(serviceProvider =>
+builder.Services.AddScoped(serviceProvider =>
 	new RouterParameterRead(
 		routerSettings.LocalAddress,
 		routerSettings.ProtocolVersion,
 		serviceProvider.GetRequiredService<RouterCurrentParameterProjectionSource>()));
-builder.Services.AddScoped<INodeLogin>(serviceProvider =>
+builder.Services.AddScoped(serviceProvider =>
 	new NodeLogin(
 		routerSettings.LocalAddress,
 		routerSettings.ProtocolVersion,
 		serviceProvider.GetRequiredService<RouterCurrentParameterProjectionSource>()));
-builder.Services.AddScoped<ILevel1PasswordModification>(serviceProvider =>
+builder.Services.AddScoped(serviceProvider =>
 	new Level1PasswordModification(
 		routerSettings.LocalAddress,
 		routerSettings.ProtocolVersion,
 		serviceProvider.GetRequiredService<RouterCurrentParameterProjectionSource>(),
 		serviceProvider.GetRequiredService<IRouterLevel1PasswordVerifierStore>()));
 builder.Services.AddScoped(serviceProvider =>
-	new RouterParameterRequestHandler(
+	new RouterLocalDelivery(
 		routerSettings.LocalAddress,
-		serviceProvider.GetRequiredService<IRouterParameterRead>(),
-		serviceProvider.GetRequiredService<INodeLogin>(),
-		serviceProvider.GetRequiredService<ILevel1PasswordModification>()));
+		serviceProvider.GetRequiredService<RouterParameterRead>(),
+		serviceProvider.GetRequiredService<NodeLogin>(),
+		serviceProvider.GetRequiredService<Level1PasswordModification>(),
+		serviceProvider.GetRequiredService<IUserAgentIngress>(),
+		serviceProvider.GetRequiredService<ILocalParticipantIngress>(),
+		serviceProvider.GetRequiredService<ILogger<RouterLocalDelivery>>()));
 builder.Services.AddScoped<IUserAgentIngress, RabbitMqUserAgentIngress>();
 builder.Services.AddScoped<ILocalParticipantIngress, RabbitMqLocalParticipantIngress>();
-builder.Services.AddScoped<IRouterIngressReceiver, RouterIngressReceiver>();
+builder.Services.AddScoped<IRouterIngressReceiver>(serviceProvider =>
+	new RouterIngressReceiver(
+		serviceProvider.GetRequiredService<RouterLocalDelivery>(),
+		serviceProvider.GetRequiredService<ILogger<RouterIngressReceiver>>()));
 
 var host = builder.Build();
 

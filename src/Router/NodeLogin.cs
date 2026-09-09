@@ -4,7 +4,7 @@ using Stensones.GD92.Messages;
 
 namespace Router;
 
-internal sealed class NodeLogin : INodeLogin
+internal sealed class NodeLogin
 {
 	private static readonly PasswordLevel LevelZero =
 		PasswordLevel.FromValue(PasswordLevelNumber.Unauthenticated);
@@ -26,7 +26,7 @@ internal sealed class NodeLogin : INodeLogin
 			throw new ArgumentNullException(nameof(currentParameterSource));
 	}
 
-	public ValueTask<RouterEnvelopeHandlingResult> HandleAsync(
+	public ValueTask<Envelope?> HandleAsync(
 		Envelope envelope,
 		CancellationToken cancellationToken)
 	{
@@ -40,8 +40,7 @@ internal sealed class NodeLogin : INodeLogin
 			table != ParameterTable.Current ||
 			number != RouterParameterCatalogue.CurrentPassword.Number)
 		{
-			return ValueTask.FromResult(RouterEnvelopeHandlingResult.NotHandled(
-				RouterEnvelopeHandlingStatus.ParameterNotHandled));
+			return ValueTask.FromResult<Envelope?>(null);
 		}
 
 		var valueBuffer = new EncodedMessageBuffer(setParameter.ParameterValue.ToWireValue());
@@ -50,28 +49,27 @@ internal sealed class NodeLogin : INodeLogin
 		if (submittedPassword.Level == LevelZero)
 		{
 			this.currentParameterSource.TryLogOffAtLevelZero(this.localAddress);
-			return ValueTask.FromResult(RouterEnvelopeHandlingResult.Responded(
-				Envelope.CreateAcknowledgement(envelope, this.localAddress, this.protocolVersion)));
+			return ValueTask.FromResult<Envelope?>(
+				Envelope.CreateAcknowledgement(envelope, this.localAddress, this.protocolVersion));
 		}
 
 		if (submittedPassword.Level != LevelOne)
 		{
-			return ValueTask.FromResult(RouterEnvelopeHandlingResult.NotHandled(
-				RouterEnvelopeHandlingStatus.ParameterNotHandled));
+			return ValueTask.FromResult<Envelope?>(null);
 		}
 
 		if (!this.currentParameterSource.TryLogOnAtLevelOne(submittedPassword))
 		{
-			return ValueTask.FromResult(RouterEnvelopeHandlingResult.Responded(
+			return ValueTask.FromResult<Envelope?>(
 				Envelope.CreateNegativeAcknowledgement(
 					envelope,
 					this.localAddress,
 					this.protocolVersion,
 					envelope.Destinations,
-					ReasonCode.FromParameterReasonCode(ParameterReasonCode.InvalidPassword))));
+					ReasonCode.FromParameterReasonCode(ParameterReasonCode.InvalidPassword)));
 		}
 
-		return ValueTask.FromResult(RouterEnvelopeHandlingResult.Responded(
-			Envelope.CreateAcknowledgement(envelope, this.localAddress, this.protocolVersion)));
+		return ValueTask.FromResult<Envelope?>(
+			Envelope.CreateAcknowledgement(envelope, this.localAddress, this.protocolVersion));
 	}
 }

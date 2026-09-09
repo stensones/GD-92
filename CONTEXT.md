@@ -54,6 +54,10 @@ _Avoid_: Router delivery classification, Message Transfer Agent Frame
 The Router-owned decision that directs a locally addressed Envelope to Router handling, User-Agent Ingress, or Local Participant Ingress.
 _Avoid_: RabbitMQ route, queue type
 
+**Router Local Delivery**:
+The Router-owned Module that classifies and delivers a locally addressed Envelope through Router handling, User-Agent Ingress, or Local Participant Ingress.
+_Avoid_: Router Ingress, message forwarding
+
 **Message Transfer Agent (MTA)**:
 A Communications Entity that operates with a paired MTA to transfer messages reliably across a communications bearer.
 _Avoid_: router, User Agent

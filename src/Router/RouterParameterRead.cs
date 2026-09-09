@@ -4,7 +4,7 @@ using Stensones.GD92.Messages;
 
 namespace Router;
 
-internal sealed class RouterParameterRead : IRouterParameterRead
+internal sealed class RouterParameterRead
 {
 	private readonly CommunicationsAddress localAddress;
 	private readonly ProtocolVersion protocolVersion;
@@ -20,7 +20,7 @@ internal sealed class RouterParameterRead : IRouterParameterRead
 		this.currentParameterSource = currentParameterSource;
 	}
 
-	public ValueTask<RouterEnvelopeHandlingResult> HandleAsync(
+	public ValueTask<Envelope?> HandleAsync(
 		Envelope envelope,
 		CancellationToken cancellationToken)
 	{
@@ -34,8 +34,7 @@ internal sealed class RouterParameterRead : IRouterParameterRead
 			table != ParameterTable.Current ||
 			number != RouterParameterCatalogue.BrigadeOrAgency.Number)
 		{
-			return ValueTask.FromResult(RouterEnvelopeHandlingResult.NotHandled(
-				RouterEnvelopeHandlingStatus.ParameterNotHandled));
+			return ValueTask.FromResult<Envelope?>(null);
 		}
 
 		var brigadeOrAgencyIdentifier = this.currentParameterSource?.GetCurrent()
@@ -48,6 +47,6 @@ internal sealed class RouterParameterRead : IRouterParameterRead
 				MoreValues.No,
 				ParameterValue.FromWireValue(brigadeOrAgencyIdentifier.ToWireValue())));
 
-		return ValueTask.FromResult(RouterEnvelopeHandlingResult.Responded(response));
+		return ValueTask.FromResult<Envelope?>(response);
 	}
 }

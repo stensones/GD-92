@@ -4,7 +4,7 @@ using Stensones.GD92.Messages;
 
 namespace Router;
 
-internal sealed class Level1PasswordModification : ILevel1PasswordModification
+internal sealed class Level1PasswordModification
 {
 	private readonly CommunicationsAddress localAddress;
 	private readonly ProtocolVersion protocolVersion;
@@ -25,7 +25,7 @@ internal sealed class Level1PasswordModification : ILevel1PasswordModification
 			throw new ArgumentNullException(nameof(passwordVerifierStore));
 	}
 
-	public async ValueTask<RouterEnvelopeHandlingResult> HandleAsync(
+	public async ValueTask<Envelope?> HandleAsync(
 		Envelope envelope,
 		CancellationToken cancellationToken)
 	{
@@ -38,8 +38,7 @@ internal sealed class Level1PasswordModification : ILevel1PasswordModification
 			} setParameter ||
 			number != RouterParameterCatalogue.Level1PasswordNumber)
 		{
-			return RouterEnvelopeHandlingResult.NotHandled(
-				RouterEnvelopeHandlingStatus.ParameterNotHandled);
+			return null;
 		}
 
 		if (table == ParameterTable.Permanent)
@@ -51,8 +50,7 @@ internal sealed class Level1PasswordModification : ILevel1PasswordModification
 
 		if (table != ParameterTable.Current && table != ParameterTable.NonVolatile)
 		{
-			return RouterEnvelopeHandlingResult.NotHandled(
-				RouterEnvelopeHandlingStatus.ParameterNotHandled);
+			return null;
 		}
 
 		if (!this.currentParameterSource.HasActiveNodeLoginAtLevelOne())
@@ -90,19 +88,18 @@ internal sealed class Level1PasswordModification : ILevel1PasswordModification
 				ParameterReasonCode.NoModificationAccess);
 		}
 
-		return RouterEnvelopeHandlingResult.Responded(
-			Envelope.CreateAcknowledgement(envelope, this.localAddress, this.protocolVersion));
+		return Envelope.CreateAcknowledgement(envelope, this.localAddress, this.protocolVersion);
 	}
 
-	private RouterEnvelopeHandlingResult CreateNegativeAcknowledgement(
+	private Envelope CreateNegativeAcknowledgement(
 		Envelope envelope,
 		ParameterReasonCode reasonCode)
 	{
-		return RouterEnvelopeHandlingResult.Responded(Envelope.CreateNegativeAcknowledgement(
+		return Envelope.CreateNegativeAcknowledgement(
 			envelope,
 			this.localAddress,
 			this.protocolVersion,
 			envelope.Destinations,
-			ReasonCode.FromParameterReasonCode(reasonCode)));
+			ReasonCode.FromParameterReasonCode(reasonCode));
 	}
 }
