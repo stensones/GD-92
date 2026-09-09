@@ -5,13 +5,12 @@ namespace NodeManager.Router.Participants;
 
 [Route("router/participants")]
 public sealed class RouterParticipantsController(
-	IInventoryScanRunner inventoryScanRunner,
-	IInventoryScanRegistry inventoryScans) : Controller
+	InventoryScan inventoryScan) : Controller
 {
 	[HttpPost("discovery")]
 	public IActionResult StartDiscovery()
 	{
-		var identifier = inventoryScanRunner.Start();
+		var identifier = inventoryScan.Start();
 
 		return new SeeOtherRedirectResult($"/router/participants/discovery/status/{identifier}");
 	}
@@ -25,7 +24,7 @@ public sealed class RouterParticipantsController(
 			return this.NotFound();
 		}
 
-		var status = inventoryScans.Get(statusIdentifier);
+		var status = inventoryScan.Get(statusIdentifier);
 
 		return status is null ? this.NotFound() : this.Ok(status);
 	}

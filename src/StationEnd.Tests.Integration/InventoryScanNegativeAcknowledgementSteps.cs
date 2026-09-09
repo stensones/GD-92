@@ -16,8 +16,7 @@ namespace Stensones.GD92.StationEnd.Tests.Integration;
 public sealed class InventoryScanNegativeAcknowledgementSteps
 {
 	private ServiceProvider? serviceProvider;
-	private IInventoryScanRegistry? inventoryScans;
-	private IInventoryScanRunner? inventoryScanRunner;
+	private InventoryScan? inventoryScan;
 	private InventoryScanStatusIdentifier? scanIdentifier;
 
 	[Given(@"local participant port 3 rejects its Inventory Scan probe with invalid syntax")]
@@ -43,8 +42,7 @@ public sealed class InventoryScanNegativeAcknowledgementSteps
 				NullLogger<ManagementTransactionService>.Instance));
 		this.serviceProvider = services.BuildServiceProvider(
 			new ServiceProviderOptions { ValidateScopes = true });
-		this.inventoryScans = new InMemoryInventoryScanRegistry();
-		this.inventoryScanRunner = new InventoryScanRunner(
+		this.inventoryScan = new InventoryScan(
 			new RouterParameterRequestSettings(
 				nodeManager,
 				router,
@@ -52,7 +50,6 @@ public sealed class InventoryScanNegativeAcknowledgementSteps
 					ManagementTransactionNoAcknowledgementTimeout.FromValue(Word8.FromValue(1)),
 					ManagementTransactionTotalSends.FromValue(Word8.FromValue(1)))),
 			InventoryScanSettings.FromConfiguration(new ConfigurationBuilder().Build()),
-			this.inventoryScans,
 			this.serviceProvider.GetRequiredService<IServiceScopeFactory>(),
 			new NonStoppingApplicationLifetime());
 	}
@@ -60,7 +57,7 @@ public sealed class InventoryScanNegativeAcknowledgementSteps
 	[When(@"NodeManager starts an Inventory Scan")]
 	public void WhenNodeManagerStartsAnInventoryScan()
 	{
-		this.scanIdentifier = this.inventoryScanRunner!.Start();
+		this.scanIdentifier = this.inventoryScan!.Start();
 	}
 
 	[Then(@"the completed Inventory Scan summary records one invalid_syntax Negative Acknowledgement")]
@@ -90,7 +87,7 @@ public sealed class InventoryScanNegativeAcknowledgementSteps
 	{
 		for (var attempt = 0; attempt < 30; attempt++)
 		{
-			var status = this.inventoryScans!.Get(this.scanIdentifier!);
+			var status = this.inventoryScan!.Get(this.scanIdentifier!);
 			if (status?.CompletedProbeCount == 63)
 			{
 				return status;

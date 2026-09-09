@@ -42,8 +42,7 @@ builder.Services.AddSingleton<IManagementTransactionRegistry>(serviceProvider =>
 	serviceProvider.GetRequiredService<InMemoryManagementTransactionRegistry>());
 builder.Services.AddSingleton<IManagementTransactionStatusReader>(serviceProvider =>
 	serviceProvider.GetRequiredService<InMemoryManagementTransactionRegistry>());
-builder.Services.AddSingleton<IInventoryScanRegistry, InMemoryInventoryScanRegistry>();
-builder.Services.AddSingleton<IInventoryScanRunner, InventoryScanRunner>();
+builder.Services.AddSingleton<InventoryScan>();
 builder.Services.AddSingleton<RouterParameterResponseReceiver>();
 builder.Services.AddSingleton<IUserAgentIngressReceiver>(serviceProvider =>
 	serviceProvider.GetRequiredService<RouterParameterResponseReceiver>());
