@@ -470,6 +470,8 @@ _Avoid_: retransmission, duplicate Message
 - A **Router** delivers an Envelope addressed to a local **User Agent** through **User-Agent Ingress**.
 - A **Router** delivers a management **Envelope** addressed to a local **Message Transfer Agent** or **User Agent** through **Local Participant Ingress**.
 - A **Router** performs **Local Delivery Classification** before delivering a locally addressed **Envelope**.
+- **Local Delivery Classification** selects Router handling for a single Envelope addressed to the local Router, **Local Participant Ingress** for the established local Parameter management Message Types, **User-Agent Ingress** for other single local non-Router Envelopes, or an opaque not-locally-deliverable outcome.
+- **Local Delivery Classification** does not select forwarding; non-local and multi-destination Envelopes are not locally deliverable.
 - A **Router** delivers a single local non-Router **Parameter Request**, **Parameter Request Multiple**, or **Set Parameter** through **Local Participant Ingress**.
 - A **Router** delivers a locally addressed **Parameter Message**, **Acknowledgement**, or **Negative Acknowledgement** through **User-Agent Ingress**.
 - A **Message Transfer Agent** transfers messages only with its paired **Message Transfer Agent**.

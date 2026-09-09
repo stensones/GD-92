@@ -7,6 +7,7 @@ namespace Router;
 public sealed class RouterIngressReceiver : IRouterIngressReceiver
 {
 	private readonly RouterParameterRequestHandler parameterRequestHandler;
+	private readonly LocalDeliveryClassification localDeliveryClassification;
 	private readonly IUserAgentIngress userAgentIngress;
 	private readonly ILocalParticipantIngress localParticipantIngress;
 	private readonly ILogger<RouterIngressReceiver> logger;
@@ -19,6 +20,8 @@ public sealed class RouterIngressReceiver : IRouterIngressReceiver
 	{
 		this.parameterRequestHandler = parameterRequestHandler ??
 			throw new ArgumentNullException(nameof(parameterRequestHandler));
+		this.localDeliveryClassification = new LocalDeliveryClassification(
+			this.parameterRequestHandler.LocalAddress);
 		this.userAgentIngress = userAgentIngress ??
 			throw new ArgumentNullException(nameof(userAgentIngress));
 		this.localParticipantIngress = localParticipantIngress ??
@@ -37,56 +40,53 @@ public sealed class RouterIngressReceiver : IRouterIngressReceiver
 			envelope.Source,
 			envelope.Destinations.Addresses.Count);
 
-		var handling = await this.parameterRequestHandler.HandleAsync(
-			envelope,
-			cancellationToken);
-		var response = handling.Response;
+		switch (this.localDeliveryClassification.Classify(envelope))
+		{
+			case LocalDeliveryOutcome.RouterHandling:
+			{
+				var handling = await this.parameterRequestHandler.HandleAsync(
+					envelope,
+					cancellationToken);
+				var response = handling.Response;
 
-		if (response is not null)
-		{
-			await this.userAgentIngress.DeliverAsync(response, cancellationToken);
-			this.logger.LogInformation(
-				"Router returned Message Type {MessageType} to {Destination}.",
-				response.Contents.Type.Value,
-				response.Destinations.Addresses[0]);
-		}
-		else if (this.IsForLocalNonRouterDestination(envelope))
-		{
-			if (IsParticipantManagementRequest(envelope))
+				if (response is not null)
+				{
+					await this.userAgentIngress.DeliverAsync(response, cancellationToken);
+					this.logger.LogInformation(
+						"Router returned Message Type {MessageType} to {Destination}.",
+						response.Contents.Type.Value,
+						response.Destinations.Addresses[0]);
+				}
+				else
+				{
+					this.logger.LogWarning(
+						"Router did not handle Message Type {MessageType}: {HandlingStatus}.",
+						envelope.Contents.Type.Value,
+						handling.Status);
+				}
+
+				break;
+			}
+
+			case LocalDeliveryOutcome.LocalParticipantIngress:
 			{
 				await this.localParticipantIngress.DeliverAsync(envelope, cancellationToken);
+				break;
 			}
-			else
+
+			case LocalDeliveryOutcome.UserAgentIngress:
 			{
 				await this.userAgentIngress.DeliverAsync(envelope, cancellationToken);
+				break;
+			}
+
+			case LocalDeliveryOutcome.NotLocallyDeliverable:
+			{
+				this.logger.LogWarning(
+					"Router did not locally deliver Message Type {MessageType}.",
+					envelope.Contents.Type.Value);
+				break;
 			}
 		}
-		else
-		{
-			this.logger.LogWarning(
-				"Router did not handle Message Type {MessageType}: {HandlingStatus}.",
-				envelope.Contents.Type.Value,
-				handling.Status);
-		}
-	}
-
-	private static bool IsParticipantManagementRequest(Envelope envelope)
-	{
-		return envelope.Contents is ParameterRequest or ParameterRequestMultiple or SetParameter;
-	}
-
-	private bool IsForLocalNonRouterDestination(Envelope envelope)
-	{
-		if (envelope.Destinations.Addresses.Count != 1)
-		{
-			return false;
-		}
-
-		var destination = envelope.Destinations.Addresses[0];
-		var localAddress = this.parameterRequestHandler.LocalAddress;
-
-		return destination.Brigade == localAddress.Brigade &&
-			destination.Node == localAddress.Node &&
-			destination.Port.Value != 0;
 	}
 }
