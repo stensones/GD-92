@@ -1,6 +1,5 @@
 using AwesomeAssertions;
 using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.AspNetCore.Mvc;
 using NodeManager.Router.Parameters;
@@ -15,13 +14,10 @@ public sealed class RouterParticipantsControllerTests
 	[Fact]
 	public void Redirects_a_new_Inventory_Scan_to_its_status()
 	{
-		var services = new ServiceCollection();
-		services.AddScoped<IManagementTransactionService, TimedOutTransactionService>();
-		using var serviceProvider = services.BuildServiceProvider();
 		var inventoryScan = new InventoryScan(
 			new RouterParameterRequestSettings(Address(25), Address(0)),
 			InventoryScanSettings.FromConfiguration(new ConfigurationBuilder().Build()),
-			serviceProvider.GetRequiredService<IServiceScopeFactory>(),
+			new TimedOutTransactionService(),
 			new NonStoppingApplicationLifetime());
 		var controller = new RouterParticipantsController(inventoryScan);
 

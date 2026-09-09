@@ -21,9 +21,9 @@ public sealed class IngressReceiverVisibilityTests
 	public void User_agent_ingress_receivers_are_public_for_Wolverine_code_generation()
 	{
 		typeof(IUserAgentIngressReceiver)
-			.IsAssignableFrom(typeof(RouterParameterResponseReceiver))
+			.IsAssignableFrom(typeof(ManagementTransactions))
 			.Should()
 			.BeTrue();
-		typeof(RouterParameterResponseReceiver).IsPublic.Should().BeTrue();
+		typeof(ManagementTransactions).IsPublic.Should().BeTrue();
 	}
 }

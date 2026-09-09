@@ -23,24 +23,21 @@ public sealed class RouterIngressDeliveryFailureSteps
 	{
 		var nodeManager = Address(brigade: 26, node: 100, port: 25);
 		var router = Address(brigade: 26, node: 100, port: 0);
-		var transactions = new InMemoryManagementTransactionRegistry();
 		var ingress = new FailingRouterIngress();
 		var services = new ServiceCollection();
 		services.AddScoped<IRouterIngress>(_ => ingress);
 		var serviceProvider = services.BuildServiceProvider();
-		var managementTransactions = new ManagementTransactionService(
-			transactions,
+		var managementTransactions = new ManagementTransactions(
 			RouterParameterRequestSettings.DefaultManagementTransactionRetryPolicy,
-			ingress,
 			serviceProvider.GetRequiredService<IServiceScopeFactory>(),
 			new ManagementTransactionRetryDelay(),
 			new NonStoppingApplicationLifetime(),
-			NullLogger<ManagementTransactionService>.Instance);
+			NullLogger<ManagementTransactions>.Instance);
 		var service = new RouterParameterRequestService(
 			new RouterParameterRequestSettings(nodeManager, router),
 			managementTransactions);
 
-		this.controller = new RouterParametersController(service, transactions);
+		this.controller = new RouterParametersController(service, managementTransactions);
 	}
 
 	[When(@"the NodeManager user requests the local Router brigade or agency number")]

@@ -37,19 +37,15 @@ builder.AddNpgsqlDbContext<NodeManagerDbContext>("node-manager-database");
 builder.Services.AddScoped<IParticipantParameterStore, EfNodeManagerParameterStore>();
 builder.Services.AddScoped<NodeManagerParameterBootstrapper>();
 builder.Services.AddSingleton<NodeManagerCurrentParameterProjectionSource>();
-builder.Services.AddSingleton<InMemoryManagementTransactionRegistry>();
-builder.Services.AddSingleton<IManagementTransactionRegistry>(serviceProvider =>
-	serviceProvider.GetRequiredService<InMemoryManagementTransactionRegistry>());
-builder.Services.AddSingleton<IManagementTransactionStatusReader>(serviceProvider =>
-	serviceProvider.GetRequiredService<InMemoryManagementTransactionRegistry>());
 builder.Services.AddSingleton<InventoryScan>();
-builder.Services.AddSingleton<RouterParameterResponseReceiver>();
+builder.Services.AddSingleton<ManagementTransactions>();
+builder.Services.AddSingleton<IManagementTransactionService>(serviceProvider =>
+	serviceProvider.GetRequiredService<ManagementTransactions>());
 builder.Services.AddSingleton<IUserAgentIngressReceiver>(serviceProvider =>
-	serviceProvider.GetRequiredService<RouterParameterResponseReceiver>());
+	serviceProvider.GetRequiredService<ManagementTransactions>());
 builder.Services.AddScoped<ILocalParticipantIngressReceiver, NodeManagerParticipantIngressReceiver>();
 builder.Services.AddScoped<IRouterIngress, NodeManagerRouterIngress>();
 builder.Services.AddSingleton<IManagementTransactionRetryDelay, ManagementTransactionRetryDelay>();
-builder.Services.AddScoped<IManagementTransactionService, ManagementTransactionService>();
 builder.Services.AddScoped<IRouterParameterRequestService, RouterParameterRequestService>();
 
 var app = builder.Build();

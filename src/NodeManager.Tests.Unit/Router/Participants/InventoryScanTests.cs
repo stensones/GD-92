@@ -1,6 +1,5 @@
 using AwesomeAssertions;
 using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using NodeManager.Router.Parameters;
 using NodeManager.Router.Participants;
@@ -14,12 +13,10 @@ public sealed class InventoryScanTests
 	[Fact]
 	public void Does_not_find_an_unknown_Inventory_Scan()
 	{
-		var services = new ServiceCollection();
-		using var serviceProvider = services.BuildServiceProvider();
 		var inventoryScan = new InventoryScan(
 			new RouterParameterRequestSettings(Address(25), Address(0)),
 			InventoryScanSettings.FromConfiguration(new ConfigurationBuilder().Build()),
-			serviceProvider.GetRequiredService<IServiceScopeFactory>(),
+			new CompletingTransactionService(),
 			new NonStoppingApplicationLifetime());
 
 		var status = inventoryScan.Get(InventoryScanStatusIdentifier.Create());
@@ -31,15 +28,10 @@ public sealed class InventoryScanTests
 	public async Task Starts_with_the_local_Router_and_no_completed_probes()
 	{
 		var transactions = new BlockingTransactionService();
-		var services = new ServiceCollection();
-		services.AddSingleton(transactions);
-		services.AddScoped<IManagementTransactionService>(serviceProvider =>
-			serviceProvider.GetRequiredService<BlockingTransactionService>());
-		await using var serviceProvider = services.BuildServiceProvider();
 		var inventoryScan = new InventoryScan(
 			new RouterParameterRequestSettings(Address(25), Address(0)),
 			InventoryScanSettings.FromConfiguration(new ConfigurationBuilder().Build()),
-			serviceProvider.GetRequiredService<IServiceScopeFactory>(),
+			transactions,
 			new NonStoppingApplicationLifetime());
 
 		var identifier = inventoryScan.Start();
@@ -58,13 +50,10 @@ public sealed class InventoryScanTests
 	[Fact]
 	public async Task Summarizes_completed_probe_outcomes()
 	{
-		var services = new ServiceCollection();
-		services.AddScoped<IManagementTransactionService, CompletingTransactionService>();
-		await using var serviceProvider = services.BuildServiceProvider();
 		var inventoryScan = new InventoryScan(
 			new RouterParameterRequestSettings(Address(25), Address(0)),
 			InventoryScanSettings.FromConfiguration(new ConfigurationBuilder().Build()),
-			serviceProvider.GetRequiredService<IServiceScopeFactory>(),
+			new CompletingTransactionService(),
 			new NonStoppingApplicationLifetime());
 
 		var identifier = inventoryScan.Start();
@@ -85,11 +74,6 @@ public sealed class InventoryScanTests
 	public async Task Starts_all_probes_concurrently_when_configured_for_all_participant_ports()
 	{
 		var transactions = new BlockingTransactionService();
-		var services = new ServiceCollection();
-		services.AddSingleton(transactions);
-		services.AddScoped<IManagementTransactionService>(serviceProvider =>
-			serviceProvider.GetRequiredService<BlockingTransactionService>());
-		await using var serviceProvider = services.BuildServiceProvider();
 		var inventoryScan = new InventoryScan(
 			new RouterParameterRequestSettings(Address(25), Address(0)),
 			InventoryScanSettings.FromConfiguration(
@@ -99,7 +83,7 @@ public sealed class InventoryScanTests
 						["InventoryScan:MaximumConcurrentProbes"] = "63"
 					})
 					.Build()),
-			serviceProvider.GetRequiredService<IServiceScopeFactory>(),
+			transactions,
 			new NonStoppingApplicationLifetime());
 
 		var identifier = inventoryScan.Start();
@@ -115,15 +99,10 @@ public sealed class InventoryScanTests
 	public async Task Keeps_overlapping_Inventory_Scans_independently_addressable()
 	{
 		var transactions = new BlockingTransactionService();
-		var services = new ServiceCollection();
-		services.AddSingleton(transactions);
-		services.AddScoped<IManagementTransactionService>(serviceProvider =>
-			serviceProvider.GetRequiredService<BlockingTransactionService>());
-		await using var serviceProvider = services.BuildServiceProvider();
 		var inventoryScan = new InventoryScan(
 			new RouterParameterRequestSettings(Address(25), Address(0)),
 			InventoryScanSettings.FromConfiguration(new ConfigurationBuilder().Build()),
-			serviceProvider.GetRequiredService<IServiceScopeFactory>(),
+			transactions,
 			new NonStoppingApplicationLifetime());
 
 		var firstIdentifier = inventoryScan.Start();

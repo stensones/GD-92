@@ -24,27 +24,24 @@ public sealed class DeferredParameterRequestSteps
 	{
 		var nodeManager = Address(brigade: 26, node: 100, port: 25);
 		var router = Address(brigade: 26, node: 100, port: 0);
-		var transactions = new InMemoryManagementTransactionRegistry();
-		var responses = new RouterParameterResponseReceiver(transactions);
-		this.routerIngress = new DeferredRouterIngress(responses);
+		this.routerIngress = new DeferredRouterIngress();
 		var services = new ServiceCollection();
 		services.AddScoped<IRouterIngress>(_ => this.routerIngress);
 		this.serviceProvider = services.BuildServiceProvider(
 			new ServiceProviderOptions { ValidateScopes = true });
-		var managementTransactions = new ManagementTransactionService(
-			transactions,
+		var managementTransactions = new ManagementTransactions(
 			ManagementTransactionRetryPolicy.FromValues(
 				ManagementTransactionNoAcknowledgementTimeout.FromValue(Word8.FromValue(1)),
 				ManagementTransactionTotalSends.FromValue(Word8.FromValue(3))),
-			this.routerIngress,
 			this.serviceProvider.GetRequiredService<IServiceScopeFactory>(),
 			new ImmediatelyCompletingRetryDelay(),
 			new NonStoppingApplicationLifetime(),
-			NullLogger<ManagementTransactionService>.Instance);
+			NullLogger<ManagementTransactions>.Instance);
+		this.routerIngress.ManagementTransactions = managementTransactions;
 		var requests = new RouterParameterRequestService(
 			new RouterParameterRequestSettings(nodeManager, router),
 			managementTransactions);
-		this.controller = new RouterParametersController(requests, transactions);
+		this.controller = new RouterParametersController(requests, managementTransactions);
 	}
 
 	[When(@"an awaiting NodeManager user requests the local Router brigade or agency number")]
@@ -100,12 +97,12 @@ public sealed class DeferredParameterRequestSteps
 			Port.FromValue(PortIdentifier.FromValue(port)));
 	}
 
-	private sealed class DeferredRouterIngress(
-		RouterParameterResponseReceiver responses) : IRouterIngress
+	private sealed class DeferredRouterIngress : IRouterIngress
 	{
 		private int submitCount;
 
 		public int SubmitCount => this.submitCount;
+		public ManagementTransactions? ManagementTransactions { get; set; }
 
 		public Task SubmitAsync(Envelope envelope, CancellationToken cancellationToken)
 		{
@@ -114,7 +111,7 @@ public sealed class DeferredParameterRequestSteps
 				return Task.CompletedTask;
 			}
 
-			return responses.ReceiveAsync(
+			return this.ManagementTransactions!.ReceiveAsync(
 				Envelope.CreateNegativeAcknowledgement(
 					envelope,
 					envelope.Destinations.Addresses.Single(),

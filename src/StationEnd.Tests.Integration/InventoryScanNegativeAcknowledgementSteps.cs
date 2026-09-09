@@ -24,24 +24,20 @@ public sealed class InventoryScanNegativeAcknowledgementSteps
 	{
 		var nodeManager = Address(brigade: 26, node: 100, port: 25);
 		var router = Address(brigade: 26, node: 100, port: 0);
-		var transactions = new InMemoryManagementTransactionRegistry();
-		var responses = new RouterParameterResponseReceiver(transactions);
+		var ingress = new NegativeAcknowledgingRouterIngress();
 		var services = new ServiceCollection();
-		services.AddScoped<IRouterIngress>(_ =>
-			new NegativeAcknowledgingRouterIngress(responses));
-		services.AddScoped<IManagementTransactionService>(serviceProvider =>
-			new ManagementTransactionService(
-				transactions,
-				ManagementTransactionRetryPolicy.FromValues(
-					ManagementTransactionNoAcknowledgementTimeout.FromValue(Word8.FromValue(1)),
-					ManagementTransactionTotalSends.FromValue(Word8.FromValue(1))),
-				serviceProvider.GetRequiredService<IRouterIngress>(),
-				serviceProvider.GetRequiredService<IServiceScopeFactory>(),
-				new ImmediatelyCompletingRetryDelay(),
-				new NonStoppingApplicationLifetime(),
-				NullLogger<ManagementTransactionService>.Instance));
+		services.AddScoped<IRouterIngress>(_ => ingress);
 		this.serviceProvider = services.BuildServiceProvider(
 			new ServiceProviderOptions { ValidateScopes = true });
+		var managementTransactions = new ManagementTransactions(
+			ManagementTransactionRetryPolicy.FromValues(
+				ManagementTransactionNoAcknowledgementTimeout.FromValue(Word8.FromValue(1)),
+				ManagementTransactionTotalSends.FromValue(Word8.FromValue(1))),
+			this.serviceProvider.GetRequiredService<IServiceScopeFactory>(),
+			new ImmediatelyCompletingRetryDelay(),
+			new NonStoppingApplicationLifetime(),
+			NullLogger<ManagementTransactions>.Instance);
+		ingress.ManagementTransactions = managementTransactions;
 		this.inventoryScan = new InventoryScan(
 			new RouterParameterRequestSettings(
 				nodeManager,
@@ -50,7 +46,7 @@ public sealed class InventoryScanNegativeAcknowledgementSteps
 					ManagementTransactionNoAcknowledgementTimeout.FromValue(Word8.FromValue(1)),
 					ManagementTransactionTotalSends.FromValue(Word8.FromValue(1)))),
 			InventoryScanSettings.FromConfiguration(new ConfigurationBuilder().Build()),
-			this.serviceProvider.GetRequiredService<IServiceScopeFactory>(),
+			managementTransactions,
 			new NonStoppingApplicationLifetime());
 	}
 
@@ -108,9 +104,10 @@ public sealed class InventoryScanNegativeAcknowledgementSteps
 			Port.FromValue(PortIdentifier.FromValue(port)));
 	}
 
-	private sealed class NegativeAcknowledgingRouterIngress(
-		RouterParameterResponseReceiver responses) : IRouterIngress
+	private sealed class NegativeAcknowledgingRouterIngress : IRouterIngress
 	{
+		public ManagementTransactions? ManagementTransactions { get; set; }
+
 		public Task SubmitAsync(Envelope envelope, CancellationToken cancellationToken)
 		{
 			if (envelope.Destinations.Addresses.Single().Port.Value != 3)
@@ -118,7 +115,7 @@ public sealed class InventoryScanNegativeAcknowledgementSteps
 				return Task.CompletedTask;
 			}
 
-			return responses.ReceiveAsync(
+			return this.ManagementTransactions!.ReceiveAsync(
 				Envelope.CreateNegativeAcknowledgement(
 					envelope,
 					envelope.Destinations.Addresses.Single(),

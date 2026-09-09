@@ -9,18 +9,17 @@ using Stensones.GD92.Transport.RabbitMQ;
 
 namespace NodeManager.Tests.Unit;
 
-public sealed class ManagementTransactionServiceTests
+public sealed class ManagementTransactionLifecycleTests
 {
 	[Fact]
 	public async Task Retries_a_pending_Node_Login_with_its_original_Envelope_then_times_out()
 	{
 		var nodeManager = Address(25);
 		var router = Address(0);
-		var registry = new InMemoryManagementTransactionRegistry();
 		var ingress = new RecordingRouterIngress();
-		var service = CreateService(registry, ingress, out var retryDelay);
+		var transactions = CreateTransactions(ingress, out var retryDelay);
 
-		var identifier = await service.SubmitAsync(
+		var identifier = await transactions.SubmitAsync(
 			new ManagementTransactionRequest(
 				nodeManager,
 				router,
@@ -29,7 +28,7 @@ public sealed class ManagementTransactionServiceTests
 				nodeManager),
 			CancellationToken.None);
 
-		var status = await service.WaitForCompletionAsync(identifier, CancellationToken.None);
+		var status = await transactions.WaitForCompletionAsync(identifier, CancellationToken.None);
 
 		ingress.SubmittedEnvelopes.Should().HaveCount(3);
 		retryDelay.WaitCount.Should().Be(3);
@@ -39,29 +38,28 @@ public sealed class ManagementTransactionServiceTests
 	[Fact]
 	public async Task Retains_delivery_failure_when_initial_Router_Ingress_submission_fails()
 	{
-		var registry = new InMemoryManagementTransactionRegistry();
-		var service = CreateService(registry, new FailingRouterIngress(), out _);
+		var transactions = CreateTransactions(new FailingRouterIngress(), out _);
 
-		var identifier = await service.SubmitAsync(
+		var identifier = await transactions.SubmitAsync(
 			ParameterRequest(Address(25), Address(0)),
 			CancellationToken.None);
 
-		(await service.WaitForCompletionAsync(identifier, CancellationToken.None))
+		(await transactions.WaitForCompletionAsync(identifier, CancellationToken.None))
 			.Should().BeOfType<DeliveryFailedRouterParameterRequestStatus>();
 	}
 
 	[Fact]
 	public async Task Stops_retransmitting_a_deferred_Parameter_Request_then_times_it_out()
 	{
-		var registry = new InMemoryManagementTransactionRegistry();
-		var ingress = new DeferredRouterIngress(new RouterParameterResponseReceiver(registry));
-		var service = CreateService(registry, ingress, out var retryDelay);
+		var ingress = new DeferredRouterIngress();
+		var transactions = CreateTransactions(ingress, out var retryDelay);
+		ingress.Transactions = transactions;
 
-		var identifier = await service.SubmitAsync(
+		var identifier = await transactions.SubmitAsync(
 			ParameterRequest(Address(25), Address(0)),
 			CancellationToken.None);
 
-		var status = await service.WaitForCompletionAsync(identifier, CancellationToken.None);
+		var status = await transactions.WaitForCompletionAsync(identifier, CancellationToken.None);
 
 		ingress.SubmittedEnvelopes.Should().ContainSingle();
 		retryDelay.WaitCount.Should().Be(1);
@@ -71,11 +69,11 @@ public sealed class ManagementTransactionServiceTests
 	[Fact]
 	public async Task Stops_retrying_when_the_Node_Login_is_acknowledged()
 	{
-		var registry = new InMemoryManagementTransactionRegistry();
-		var ingress = new AcknowledgingRouterIngress(new RouterParameterResponseReceiver(registry));
-		var service = CreateService(registry, ingress, out _);
+		var ingress = new AcknowledgingRouterIngress();
+		var transactions = CreateTransactions(ingress, out _);
+		ingress.Transactions = transactions;
 
-		var identifier = await service.SubmitAsync(
+		var identifier = await transactions.SubmitAsync(
 			new ManagementTransactionRequest(
 				Address(25),
 				Address(0),
@@ -84,7 +82,7 @@ public sealed class ManagementTransactionServiceTests
 				Address(25)),
 			CancellationToken.None);
 
-		(await service.WaitForCompletionAsync(identifier, CancellationToken.None))
+		(await transactions.WaitForCompletionAsync(identifier, CancellationToken.None))
 			.Should().BeOfType<LoggedOnNodeLoginStatus>();
 		ingress.SubmittedEnvelopes.Should().ContainSingle();
 	}
@@ -107,8 +105,7 @@ public sealed class ManagementTransactionServiceTests
 					ParameterNumber.FromValue(1))),
 			ManagementTransactionKind.ParameterRequest);
 
-	private static ManagementTransactionService CreateService(
-		InMemoryManagementTransactionRegistry registry,
+	private static ManagementTransactions CreateTransactions(
 		IRouterIngress ingress,
 		out ImmediatelyCompletingRetryDelay retryDelay)
 	{
@@ -116,16 +113,14 @@ public sealed class ManagementTransactionServiceTests
 		services.AddScoped<IRouterIngress>(_ => ingress);
 		var serviceProvider = services.BuildServiceProvider();
 		retryDelay = new ImmediatelyCompletingRetryDelay();
-		return new ManagementTransactionService(
-			registry,
+		return new ManagementTransactions(
 			ManagementTransactionRetryPolicy.FromValues(
 				ManagementTransactionNoAcknowledgementTimeout.FromValue(Word8.FromValue(1)),
 				ManagementTransactionTotalSends.FromValue(Word8.FromValue(3))),
-			ingress,
 			serviceProvider.GetRequiredService<IServiceScopeFactory>(),
 			retryDelay,
 			new NonStoppingApplicationLifetime(),
-			NullLogger<ManagementTransactionService>.Instance);
+			NullLogger<ManagementTransactions>.Instance);
 	}
 
 	private static Envelope CreateNodeLogin(
@@ -167,16 +162,16 @@ public sealed class ManagementTransactionServiceTests
 			Task.FromException(new InvalidOperationException("Ingress failed."));
 	}
 
-	private sealed class DeferredRouterIngress(
-		RouterParameterResponseReceiver receiver) : IRouterIngress
+	private sealed class DeferredRouterIngress : IRouterIngress
 	{
+		public ManagementTransactions? Transactions { get; set; }
 		public List<Envelope> SubmittedEnvelopes { get; } = [];
 
 		public Task SubmitAsync(Envelope envelope, CancellationToken cancellationToken)
 		{
 			this.SubmittedEnvelopes.Add(envelope);
 			return this.SubmittedEnvelopes.Count == 1
-				? receiver.ReceiveAsync(
+				? this.Transactions!.ReceiveAsync(
 					Envelope.CreateNegativeAcknowledgement(
 						envelope,
 						envelope.Destinations.Addresses.Single(),
@@ -188,15 +183,15 @@ public sealed class ManagementTransactionServiceTests
 		}
 	}
 
-	private sealed class AcknowledgingRouterIngress(
-		RouterParameterResponseReceiver receiver) : IRouterIngress
+	private sealed class AcknowledgingRouterIngress : IRouterIngress
 	{
+		public ManagementTransactions? Transactions { get; set; }
 		public List<Envelope> SubmittedEnvelopes { get; } = [];
 
 		public Task SubmitAsync(Envelope envelope, CancellationToken cancellationToken)
 		{
 			this.SubmittedEnvelopes.Add(envelope);
-			return receiver.ReceiveAsync(
+			return this.Transactions!.ReceiveAsync(
 				Envelope.CreateAcknowledgement(
 					envelope,
 					envelope.Destinations.Addresses.Single(),

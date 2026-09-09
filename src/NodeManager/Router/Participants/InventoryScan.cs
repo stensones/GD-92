@@ -1,4 +1,3 @@
-using Microsoft.Extensions.DependencyInjection;
 using NodeManager.Router.Parameters;
 using Stensones.GD92.Fields;
 using Stensones.GD92.Messages;
@@ -9,7 +8,7 @@ namespace NodeManager.Router.Participants;
 public sealed class InventoryScan(
 	RouterParameterRequestSettings settings,
 	InventoryScanSettings inventoryScanSettings,
-	IServiceScopeFactory serviceScopeFactory,
+	IManagementTransactionService managementTransactions,
 	IHostApplicationLifetime applicationLifetime)
 {
 	private const int FirstParticipantPort = 1;
@@ -18,8 +17,8 @@ public sealed class InventoryScan(
 		throw new ArgumentNullException(nameof(settings));
 	private readonly InventoryScanSettings inventoryScanSettings = inventoryScanSettings ??
 		throw new ArgumentNullException(nameof(inventoryScanSettings));
-	private readonly IServiceScopeFactory serviceScopeFactory = serviceScopeFactory ??
-		throw new ArgumentNullException(nameof(serviceScopeFactory));
+	private readonly IManagementTransactionService managementTransactions = managementTransactions ??
+		throw new ArgumentNullException(nameof(managementTransactions));
 	private readonly CancellationToken applicationStopping = applicationLifetime?.ApplicationStopping ??
 		throw new ArgumentNullException(nameof(applicationLifetime));
 	private readonly object synchronizationLock = new();
@@ -86,10 +85,7 @@ public sealed class InventoryScan(
 			this.settings.LocalRouter.Brigade,
 			this.settings.LocalRouter.Node,
 			Port.FromValue(PortIdentifier.FromValue(port)));
-		using var scope = this.serviceScopeFactory.CreateScope();
-		var managementTransactions = scope.ServiceProvider
-			.GetRequiredService<IManagementTransactionService>();
-		var statusIdentifier = await managementTransactions.SubmitAsync(
+		var statusIdentifier = await this.managementTransactions.SubmitAsync(
 			new ManagementTransactionRequest(
 				this.settings.MessageOriginator,
 				participantAddress,
@@ -107,7 +103,7 @@ public sealed class InventoryScan(
 						ParameterNumber.FromValue(2))),
 				ManagementTransactionKind.ParameterRequest),
 			cancellationToken);
-		var status = await managementTransactions.WaitForCompletionAsync(
+		var status = await this.managementTransactions.WaitForCompletionAsync(
 			statusIdentifier,
 			cancellationToken);
 

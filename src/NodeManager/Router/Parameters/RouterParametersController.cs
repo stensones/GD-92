@@ -7,7 +7,7 @@ namespace NodeManager.Router.Parameters;
 [Route("router/parameters")]
 public sealed class RouterParametersController(
 	IRouterParameterRequestService routerParameterRequests,
-	IManagementTransactionStatusReader managementTransactions) : Controller
+	ManagementTransactions managementTransactions) : Controller
 {
 	[HttpPost("brigade-or-agency-number")]
 	public async Task<IActionResult> RequestBrigadeOrAgencyNumber(CancellationToken cancellationToken)
