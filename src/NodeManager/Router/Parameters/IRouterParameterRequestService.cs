@@ -7,6 +7,10 @@ public interface IRouterParameterRequestService
 	Task<RouterParameterRequestStatusIdentifier> RequestLocalRouterBrigadeOrAgencyNumber(
 		CancellationToken cancellationToken);
 
+	Task<RouterParameterRequestStatusIdentifier> RequestLocalRouterCurrentParameter(
+		ParameterNumber parameterNumber,
+		CancellationToken cancellationToken);
+
 	Task<RouterParameterRequestStatusIdentifier> RequestLocalRouterLogon(
 		CommunicationsAddress communicationsAddress,
 		PasswordValue password,

@@ -45,6 +45,117 @@ public sealed class RouterParameterReadTests
 
 		response.Should().BeNull();
 	}
+
+	[Fact]
+	public async Task Returns_the_Level1_Password_as_a_redacted_Password()
+	{
+		var localAddress = RouterParameterModuleTestSupport.CreateAddress(26, 100, 0);
+		var parameterRead = new RouterParameterRead(
+			localAddress,
+			RouterParameterModuleTestSupport.ProtocolVersion);
+		var request = Envelope.FromValues(
+			RouterParameterModuleTestSupport.CreateAddress(26, 100, 25),
+			Destinations.FromAddresses(localAddress),
+			ProtocolAndPriority.FromValues(
+				MessagePriority.FromValue(MessagePriorityLevel.FromValue(3)),
+				RouterParameterModuleTestSupport.ProtocolVersion),
+			AcknowledgementAndSequence.FromValues(
+				SequenceNumber.FromValue(MessageSequenceIdentifier.FromValue(7)),
+				AcknowledgementRequest.Requested),
+			ParameterRequest.FromFields(
+				ParameterTable.Current,
+				RouterParameterCatalogue.Level1PasswordNumber));
+
+		var response = await parameterRead.HandleAsync(request, CancellationToken.None);
+
+		var buffer = new EncodedMessageBuffer(
+			response!.Contents.Should().BeOfType<Parameter>().Which.ParameterValue.ToWireValue());
+		var password = Password.FromEncodedMessageBuffer(ref buffer);
+		password.Value.Value.Value.Should().Be("PASSWORD");
+	}
+
+	[Fact]
+	public async Task Returns_the_Current_Password_with_its_Password_redacted()
+	{
+		var localAddress = RouterParameterModuleTestSupport.CreateAddress(26, 100, 0);
+		var userAgentAddress = RouterParameterModuleTestSupport.CreateAddress(26, 100, 25);
+		var source = new RouterCurrentParameterProjectionSource();
+		source.Publish(RouterParameterModuleTestSupport.CreateCurrentParameters(localAddress));
+		source.TryLogOnAtLevelOne(
+			RouterParameterModuleTestSupport.CreatePasswordParameter(
+				PasswordLevelNumber.Level1,
+				"FIRE",
+				userAgentAddress)).Should().BeTrue();
+		var parameterRead = new RouterParameterRead(
+			localAddress,
+			RouterParameterModuleTestSupport.ProtocolVersion,
+			source);
+		var request = Envelope.FromValues(
+			userAgentAddress,
+			Destinations.FromAddresses(localAddress),
+			ProtocolAndPriority.FromValues(
+				MessagePriority.FromValue(MessagePriorityLevel.FromValue(3)),
+				RouterParameterModuleTestSupport.ProtocolVersion),
+			AcknowledgementAndSequence.FromValues(
+				SequenceNumber.FromValue(MessageSequenceIdentifier.FromValue(7)),
+				AcknowledgementRequest.Requested),
+			ParameterRequest.FromFields(
+				ParameterTable.Current,
+				RouterParameterCatalogue.CurrentPassword.Number));
+
+		var response = await parameterRead.HandleAsync(request, CancellationToken.None);
+
+		var buffer = new EncodedMessageBuffer(
+			response!.Contents.Should().BeOfType<Parameter>().Which.ParameterValue.ToWireValue());
+		var password = PasswordParameter.FromEncodedMessageBuffer(ref buffer);
+		password.Level.Should().Be(PasswordLevel.FromValue(PasswordLevelNumber.Level1));
+		password.CommunicationsAddress.Should().Be(userAgentAddress);
+		password.Password.Value.Value.Value.Should().Be("PASSWORD");
+	}
+
+	[Fact]
+	public async Task Returns_the_Current_No_Acknowledgement_Timeout_from_the_published_projection()
+	{
+		var localAddress = RouterParameterModuleTestSupport.CreateAddress(26, 100, 0);
+		var source = new RouterCurrentParameterProjectionSource();
+		source.Publish(RouterParameterModuleTestSupport.CreateCurrentParameters(localAddress));
+		var parameterRead = new RouterParameterRead(
+			localAddress,
+			RouterParameterModuleTestSupport.ProtocolVersion,
+			source);
+
+		var response = await parameterRead.HandleAsync(
+			RouterParameterModuleTestSupport.CreateParameterRequest(
+				localAddress,
+				ParameterTable.Current,
+				RouterParameterCatalogue.NoAcknowledgementTimeout.Number),
+			CancellationToken.None);
+
+		response!.Contents.Should().BeOfType<Parameter>().Which.ParameterValue.ToWireValue()
+			.Should().Equal([5]);
+	}
+
+	[Fact]
+	public async Task Returns_the_Current_Retries_from_the_published_projection()
+	{
+		var localAddress = RouterParameterModuleTestSupport.CreateAddress(26, 100, 0);
+		var source = new RouterCurrentParameterProjectionSource();
+		source.Publish(RouterParameterModuleTestSupport.CreateCurrentParameters(localAddress));
+		var parameterRead = new RouterParameterRead(
+			localAddress,
+			RouterParameterModuleTestSupport.ProtocolVersion,
+			source);
+
+		var response = await parameterRead.HandleAsync(
+			RouterParameterModuleTestSupport.CreateParameterRequest(
+				localAddress,
+				ParameterTable.Current,
+				RouterParameterCatalogue.Retries.Number),
+			CancellationToken.None);
+
+		response!.Contents.Should().BeOfType<Parameter>().Which.ParameterValue.ToWireValue()
+			.Should().Equal([3]);
+	}
 }
 
 public sealed class NodeLoginTests
@@ -210,6 +321,17 @@ internal static class RouterParameterModuleTestSupport
 		CommunicationsAddress destination,
 		ParameterTable parameterTable)
 	{
+		return CreateParameterRequest(
+			destination,
+			parameterTable,
+			RouterParameterCatalogue.BrigadeOrAgency.Number);
+	}
+
+	public static Envelope CreateParameterRequest(
+		CommunicationsAddress destination,
+		ParameterTable parameterTable,
+		ParameterNumber parameterNumber)
+	{
 		return Envelope.FromValues(
 			CreateAddress(26, 100, 25),
 			Destinations.FromAddresses(destination),
@@ -221,7 +343,7 @@ internal static class RouterParameterModuleTestSupport
 				AcknowledgementRequest.Requested),
 			ParameterRequest.FromFields(
 				parameterTable,
-				RouterParameterCatalogue.BrigadeOrAgency.Number));
+				parameterNumber));
 	}
 
 	public static Envelope CreateCurrentPasswordSet(

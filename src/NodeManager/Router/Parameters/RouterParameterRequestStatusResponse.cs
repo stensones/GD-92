@@ -4,4 +4,6 @@ public sealed record RouterParameterRequestStatusResponse(
 	string Identifier,
 	string State,
 	byte? BrigadeOrAgencyNumber,
-	string? UserAgentAddress);
+	string? UserAgentAddress,
+	byte? ParameterNumber,
+	string? ParameterValue);

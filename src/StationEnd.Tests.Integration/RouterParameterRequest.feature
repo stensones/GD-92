@@ -46,6 +46,20 @@ Feature: Router Parameter Request
     When I open NodeManager
     Then NodeManager presents Inventory Scan progress and result areas
 
+  @HighConcurrencyInventoryScan
+  Scenario: Listing the local Router Parameters from the discovered Router
+    Given NodeManager is the User Agent at Brigade 26, Node 100, and Port 25
+    And its local Router is at Brigade 26, Node 100, and Port 0
+    When I open NodeManager
+    And I select Discover local participants
+    Then I am redirected to a pending Inventory Scan status
+    And the completed Inventory Scan lists Router port 0, LAN MTA port 1, Printer User Agent port 2, and Network Management User Agent port 25
+    And NodeManager presents Router Parameter selection and result areas after Inventory Scan completion
+    When I select View parameters for the discovered Router
+    Then NodeManager lists the local Router Current Parameters with their received values
+    And NodeManager redacts the local Router Password Parameters
+    And NodeManager marks Parameter listing as unavailable for other discovered participants
+
   Scenario: Logging on a User-Agent at the local Router
     Given NodeManager is the User Agent at Brigade 26, Node 100, and Port 25
     And its local Router is at Brigade 26, Node 100, and Port 0

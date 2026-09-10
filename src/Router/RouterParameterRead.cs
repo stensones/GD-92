@@ -6,6 +6,8 @@ namespace Router;
 
 internal sealed class RouterParameterRead
 {
+	private static readonly Password RedactedPassword = Password.FromValue(
+		PasswordValue.FromValue(SevenBitAsciiString.FromValue("PASSWORD")));
 	private readonly CommunicationsAddress localAddress;
 	private readonly ProtocolVersion protocolVersion;
 	private readonly RouterCurrentParameterProjectionSource? currentParameterSource;
@@ -31,21 +33,47 @@ internal sealed class RouterParameterRead
 				ParameterTable: var table,
 				ParameterNumber: var number
 			} ||
-			table != ParameterTable.Current ||
-			number != RouterParameterCatalogue.BrigadeOrAgency.Number)
+			table != ParameterTable.Current)
 		{
 			return ValueTask.FromResult<Envelope?>(null);
 		}
 
-		var brigadeOrAgencyIdentifier = this.currentParameterSource?.GetCurrent()
-			.BrigadeOrAgencyIdentifier ?? this.localAddress.Brigade.Value;
+		var currentParameters = this.currentParameterSource?.GetCurrent();
+		var parameterValue = number == RouterParameterCatalogue.BrigadeOrAgency.Number
+			? RouterParameterCatalogue.BrigadeOrAgency.Encode(
+				currentParameters?.BrigadeOrAgencyIdentifier ?? this.localAddress.Brigade.Value)
+			: number == RouterParameterCatalogue.CurrentPassword.Number
+				? RouterParameterCatalogue.CurrentPassword.Encode(
+					PasswordParameter.FromFields(
+						currentParameters?.CurrentPassword.Level ??
+							PasswordLevel.FromValue(PasswordLevelNumber.Unauthenticated),
+						RedactedPassword,
+						currentParameters?.CurrentPassword.CommunicationsAddress ?? this.localAddress))
+				: number == RouterParameterCatalogue.Level1PasswordNumber
+					? ParameterValue.FromWireValue(RedactedPassword.ToWireValue())
+				: number == RouterParameterCatalogue.NoAcknowledgementTimeout.Number
+					? currentParameters is null
+						? null
+						: RouterParameterCatalogue.NoAcknowledgementTimeout.Encode(
+							currentParameters.NoAcknowledgementTimeout)
+				: number == RouterParameterCatalogue.Retries.Number
+					? currentParameters is null
+						? null
+						: RouterParameterCatalogue.Retries.Encode(currentParameters.Retries)
+				: null;
+
+		if (parameterValue is null)
+		{
+			return ValueTask.FromResult<Envelope?>(null);
+		}
+
 		var response = Envelope.CreateParameterResponse(
 			envelope,
 			this.localAddress,
 			this.protocolVersion,
 			Parameter.FromFields(
 				MoreValues.No,
-				ParameterValue.FromWireValue(brigadeOrAgencyIdentifier.ToWireValue())));
+				parameterValue));
 
 		return ValueTask.FromResult<Envelope?>(response);
 	}

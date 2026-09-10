@@ -59,11 +59,28 @@
                 <th scope="col">Port</th>
                 <th scope="col">Kind</th>
                 <th scope="col">Agent Type</th>
+                <th scope="col">Parameters</th>
             </tr>
         </thead>
         <tbody></tbody>
     </table>
     <div id="router-participant-discovery-summary" hidden></div>
+</section>
+
+<section aria-labelledby="router-parameter-list-heading">
+    <h2 id="router-parameter-list-heading">Router Parameters</h2>
+    <p id="router-parameter-list-status" role="status" hidden></p>
+    <table id="router-parameter-list" hidden>
+        <caption>Local Router Current Parameters</caption>
+        <thead>
+            <tr>
+                <th scope="col">Number</th>
+                <th scope="col">Parameter</th>
+                <th scope="col">Value</th>
+            </tr>
+        </thead>
+        <tbody></tbody>
+    </table>
 </section>
 
 <script>
@@ -77,6 +94,111 @@
     const discoveryResults = document.getElementById("router-participant-discovery-results");
     const discoveryResultRows = discoveryResults.querySelector("tbody");
     const discoverySummary = document.getElementById("router-participant-discovery-summary");
+    const routerParameterList = document.getElementById("router-parameter-list");
+    const routerParameterListStatus = document.getElementById("router-parameter-list-status");
+    const routerParameterListRows = routerParameterList.querySelector("tbody");
+    const redactedPasswordMarker = "PASSWORD";
+    const routerCurrentParameters = [
+        { number: 1, name: "Brigade or Agency" },
+        { number: 4, name: "Current Password" },
+        { number: 5, name: "Level 1 Password" },
+        { number: 12, name: "No Acknowledgement Timeout" },
+        { number: 19, name: "Retries" }
+    ];
+
+    const renderPendingRouterParameters = () => {
+        routerParameterList.hidden = false;
+        routerParameterListStatus.hidden = false;
+        routerParameterListStatus.textContent = "Router Parameters selected.";
+        routerParameterListRows.replaceChildren();
+        const valueCells = new Map();
+
+        for (const parameter of routerCurrentParameters) {
+            const row = document.createElement("tr");
+
+            for (const [index, value] of [parameter.number, parameter.name, "Pending"].entries()) {
+                const cell = document.createElement("td");
+                cell.textContent = value;
+                row.append(cell);
+                if (index === 2) {
+                    valueCells.set(parameter.number, cell);
+                }
+            }
+
+            routerParameterListRows.append(row);
+        }
+
+        return valueCells;
+    };
+
+    const displayRouterParameterValue = parameter => {
+        if (parameter.parameterNumber === 5) {
+            return redactedPasswordMarker;
+        }
+
+        return parameter.parameterValue;
+    };
+
+    const pollRouterParameter = async (statusUrl, valueCell) => {
+        const response = await fetch(statusUrl);
+
+        if (!response.ok) {
+            valueCell.textContent = "The Router Parameter Request could not be completed.";
+            return;
+        }
+
+        const parameter = await response.json();
+
+        if (parameter.state === "received") {
+            valueCell.textContent = displayRouterParameterValue(parameter)
+                ?? "The Router Parameter Request did not return a value.";
+            return;
+        }
+
+        if (parameter.state === "pending") {
+            window.setTimeout(() => pollRouterParameter(statusUrl, valueCell), 1000);
+            return;
+        }
+
+        valueCell.textContent = `Router Parameter Request ${parameter.state}.`;
+    };
+
+    const requestRouterParameter = async (parameter, valueCell) => {
+        try {
+            const response = await fetch(`/router/parameters/current/${parameter.number}`, {
+                method: "POST"
+            });
+            const statusUrl = response.url;
+
+            if (!response.ok || !statusUrl) {
+                valueCell.textContent = "The Router Parameter Request could not be submitted.";
+                return;
+            }
+
+            pollRouterParameter(statusUrl, valueCell);
+        } catch {
+            valueCell.textContent = "The Router Parameter Request could not be submitted.";
+        }
+    };
+
+    const requestRouterParameters = async button => {
+        button.disabled = true;
+        const valueCells = renderPendingRouterParameters();
+        routerParameterListStatus.textContent = "Requesting Router Parameters...";
+
+        await Promise.all(routerCurrentParameters.map(parameter =>
+            requestRouterParameter(parameter, valueCells.get(parameter.number))));
+
+        routerParameterListStatus.textContent = "Router Parameters requested.";
+    };
+
+    const renderUnavailableParameterListing = () => {
+        routerParameterList.hidden = true;
+        routerParameterListRows.replaceChildren();
+        routerParameterListStatus.hidden = false;
+        routerParameterListStatus.textContent =
+            "Parameter listing is not available for this participant.";
+    };
 
     requestForm.addEventListener("submit", async event => {
         event.preventDefault();
@@ -163,6 +285,22 @@
                 cell.textContent = value;
                 row.append(cell);
             }
+
+            const parametersCell = document.createElement("td");
+            const viewParametersButton = document.createElement("button");
+            viewParametersButton.type = "button";
+            viewParametersButton.textContent = "View parameters";
+            viewParametersButton.disabled = scan.completedProbeCount < 63;
+            if (participant.kind === "router") {
+                viewParametersButton.addEventListener("click", () =>
+                    requestRouterParameters(viewParametersButton));
+            } else {
+                viewParametersButton.addEventListener(
+                    "click",
+                    renderUnavailableParameterListing);
+            }
+            parametersCell.append(viewParametersButton);
+            row.append(parametersCell);
 
             discoveryResultRows.append(row);
         }

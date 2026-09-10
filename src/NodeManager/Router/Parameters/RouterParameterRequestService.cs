@@ -7,9 +7,16 @@ public sealed class RouterParameterRequestService(
 	RouterParameterRequestSettings settings,
 	IManagementTransactionService managementTransactions) : IRouterParameterRequestService
 {
-	public async Task<RouterParameterRequestStatusIdentifier> RequestLocalRouterBrigadeOrAgencyNumber(
+	public Task<RouterParameterRequestStatusIdentifier> RequestLocalRouterBrigadeOrAgencyNumber(
+		CancellationToken cancellationToken) =>
+		this.RequestLocalRouterCurrentParameter(ParameterNumber.FromValue(1), cancellationToken);
+
+	public async Task<RouterParameterRequestStatusIdentifier> RequestLocalRouterCurrentParameter(
+		ParameterNumber parameterNumber,
 		CancellationToken cancellationToken)
 	{
+		ArgumentNullException.ThrowIfNull(parameterNumber);
+
 		return await managementTransactions.SubmitAsync(
 			new ManagementTransactionRequest(
 				settings.MessageOriginator,
@@ -25,7 +32,7 @@ public sealed class RouterParameterRequestService(
 						AcknowledgementRequest.Requested),
 					ParameterRequest.FromFields(
 						ParameterTable.Current,
-						ParameterNumber.FromValue(1))),
+						parameterNumber)),
 				ManagementTransactionKind.ParameterRequest),
 			cancellationToken);
 	}

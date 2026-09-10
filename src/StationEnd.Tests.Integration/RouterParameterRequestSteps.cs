@@ -19,6 +19,7 @@ public sealed class RouterParameterRequestSteps
 	private string? level1Password;
 	private string? pageContent;
 	private Uri? inventoryScanStatusAddress;
+	private IReadOnlyDictionary<byte, Uri>? routerParameterStatusAddresses;
 	private RouterParameterRequestApplicationProfile applicationProfile;
 
 	[Given(@"NodeManager is the User Agent at Brigade (.*), Node (.*), and Port (.*)")]
@@ -107,12 +108,41 @@ public sealed class RouterParameterRequestSteps
 			"""Inventory Scan: ${scan.completedProbeCount} of 63 probes completed.""");
 	}
 
+	[Then(@"NodeManager presents Router Parameter selection and result areas after Inventory Scan completion")]
+	public void ThenNodeManagerPresentsRouterParameterSelectionAndResultAreas()
+	{
+		this.pageContent.Should().Contain("""<th scope="col">Parameters</th>""");
+		this.pageContent.Should().Contain("""id="router-parameter-list" hidden""");
+		this.pageContent.Should().Contain("""viewParametersButton.disabled = scan.completedProbeCount < 63;""");
+	}
+
 	[When(@"I select Discover local participants")]
 	public async Task WhenISelectDiscoverLocalParticipants()
 	{
 		await this.EnsureApplicationStartedAsync();
 
 		this.response = await this.client!.PostAsync("/router/participants/discovery", null);
+	}
+
+	[When(@"I select View parameters for the discovered Router")]
+	public async Task WhenISelectViewParametersForTheDiscoveredRouter()
+	{
+		await this.EnsureApplicationStartedAsync();
+
+		var requests = new byte[] { 1, 4, 5, 12, 19 }
+			.Select(async parameterNumber =>
+			{
+				using var response = await this.client!.PostAsync(
+					$"/router/parameters/current/{parameterNumber}",
+					null);
+				response.StatusCode.Should().Be(HttpStatusCode.SeeOther);
+				response.Headers.Location.Should().NotBeNull();
+				return (parameterNumber, statusAddress: response.Headers.Location!);
+			});
+		var responses = await Task.WhenAll(requests);
+		this.routerParameterStatusAddresses = responses.ToDictionary(
+			response => response.parameterNumber,
+			response => response.statusAddress);
 	}
 
 	[Then(@"I am redirected to a pending Inventory Scan status")]
@@ -153,6 +183,43 @@ public sealed class RouterParameterRequestSteps
 			participant.GetProperty("port").GetByte() == 25 &&
 			participant.GetProperty("kind").GetString() == "ua" &&
 			participant.GetProperty("agentType").GetString() == "Network Management UA (12)");
+	}
+
+	[Then(@"NodeManager lists the local Router Current Parameters with their received values")]
+	public async Task ThenNodeManagerListsTheLocalRouterCurrentParametersWithTheirReceivedValues()
+	{
+		var expectedValues = new Dictionary<byte, string>
+		{
+			[1] = "26",
+			[4] = "Level 0, User-Agent 26.100.0, PASSWORD",
+			[5] = "PASSWORD",
+			[12] = "5",
+			[19] = "3"
+		};
+
+		foreach (var (parameterNumber, expectedValue) in expectedValues)
+		{
+			using var status = await this.WaitForRouterParameterStatusAsync(
+				this.routerParameterStatusAddresses![parameterNumber]);
+
+			status.RootElement.GetProperty("state").GetString().Should().Be("received");
+			status.RootElement.GetProperty("parameterNumber").GetByte().Should().Be(parameterNumber);
+			status.RootElement.GetProperty("parameterValue").GetString().Should().Be(expectedValue);
+		}
+	}
+
+	[Then(@"NodeManager redacts the local Router Password Parameters")]
+	public void ThenNodeManagerRedactsTheLocalRouterPasswordParameters()
+	{
+		this.pageContent.Should().Contain("PASSWORD");
+		this.pageContent.Should().NotContain("FIRE1");
+	}
+
+	[Then(@"NodeManager marks Parameter listing as unavailable for other discovered participants")]
+	public void ThenNodeManagerMarksParameterListingAsUnavailableForOtherDiscoveredParticipants()
+	{
+		this.pageContent.Should().Contain(
+			"Parameter listing is not available for this participant.");
 	}
 
 	[Then(@"the completed Inventory Scan summary shows (.*) discovered participants, (.*) timeouts, no delivery failures, and no negative acknowledgements")]
@@ -474,6 +541,28 @@ public sealed class RouterParameterRequestSteps
 
 		throw new Xunit.Sdk.XunitException(
 			"The Inventory Scan status did not reach the expected state.");
+	}
+
+	private async Task<JsonDocument> WaitForRouterParameterStatusAsync(Uri statusAddress)
+	{
+		for (var attempt = 0; attempt < 30; attempt++)
+		{
+			var response = await this.client!.GetAsync(statusAddress);
+			if (response.StatusCode == HttpStatusCode.OK)
+			{
+				var content = await response.Content.ReadAsStringAsync();
+				using var status = JsonDocument.Parse(content);
+				if (status.RootElement.GetProperty("state").GetString() == "received")
+				{
+					return JsonDocument.Parse(content);
+				}
+			}
+
+			await Task.Delay(TimeSpan.FromSeconds(1));
+		}
+
+		throw new Xunit.Sdk.XunitException(
+			"The Router Parameter Request did not receive a Parameter Value.");
 	}
 
 	private static HttpClient CreateClient(DistributedApplication application)

@@ -1,6 +1,7 @@
 using System.Globalization;
 using Microsoft.AspNetCore.Mvc;
 using Stensones.GD92.Fields;
+using Stensones.GD92.Messages;
 
 namespace NodeManager.Router.Parameters;
 
@@ -16,6 +17,19 @@ public sealed class RouterParametersController(
 			.RequestLocalRouterBrigadeOrAgencyNumber(cancellationToken);
 
 		return new SeeOtherRedirectResult($"/router/parameters/status/{statusIdentifier}");
+	}
+
+	[HttpPost("current/{parameterNumber}")]
+	public async Task<IActionResult> RequestCurrentParameter(
+		byte parameterNumber,
+		CancellationToken cancellationToken)
+	{
+		var statusIdentifier = await routerParameterRequests.RequestLocalRouterCurrentParameter(
+			ParameterNumber.FromValue(parameterNumber),
+			cancellationToken);
+
+		return new SeeOtherRedirectResult(
+			$"/router/parameters/current/{parameterNumber}/status/{statusIdentifier}");
 	}
 
 	[HttpPost("logon")]
@@ -54,6 +68,19 @@ public sealed class RouterParametersController(
 	[HttpGet("logoff/status/{identifier}")]
 	public IActionResult Status(string identifier)
 	{
+		return this.Status(identifier, null);
+	}
+
+	[HttpGet("current/{parameterNumber}/status/{identifier}")]
+	public IActionResult CurrentStatus(byte parameterNumber, string identifier)
+	{
+		return this.Status(identifier, ParameterNumber.FromValue(parameterNumber));
+	}
+
+	private IActionResult Status(
+		string identifier,
+		ParameterNumber? parameterNumber)
+	{
 		if (!RouterParameterRequestStatusIdentifier.TryParse(identifier, out var statusIdentifier))
 		{
 			return this.NotFound();
@@ -66,11 +93,12 @@ public sealed class RouterParametersController(
 			return this.NotFound();
 		}
 
-		return this.Ok(ToResponse(status));
+		return this.Ok(ToResponse(status, parameterNumber));
 	}
 
 	private static RouterParameterRequestStatusResponse ToResponse(
-		RouterParameterRequestStatus status)
+		RouterParameterRequestStatus status,
+		ParameterNumber? parameterNumber)
 	{
 		byte? brigadeOrAgencyNumber = status is ReceivedRouterParameterRequestStatus receivedStatus
 			? receivedStatus.ParameterValue.ToWireValue() switch
@@ -93,6 +121,9 @@ public sealed class RouterParametersController(
 				Format(timedOutNodeLogin.UserAgentAddress),
 			_ => null
 		};
+		string? parameterValue = status is ReceivedRouterParameterRequestStatus receivedParameter
+			? FormatParameterValue(parameterNumber, receivedParameter.ParameterValue)
+			: null;
 
 		return new RouterParameterRequestStatusResponse(
 			status.Identifier.ToString(),
@@ -113,7 +144,43 @@ public sealed class RouterParametersController(
 				_ => throw new InvalidOperationException("The Management Transaction status is unknown.")
 			},
 			brigadeOrAgencyNumber,
-			userAgentAddress);
+			userAgentAddress,
+			parameterNumber?.Value,
+			parameterValue);
+	}
+
+	private static string? FormatParameterValue(
+		ParameterNumber? parameterNumber,
+		ParameterValue parameterValue)
+	{
+		return parameterNumber?.Value switch
+		{
+			1 or 12 or 19 => FormatSingleOctet(parameterValue),
+			4 => FormatCurrentPassword(parameterValue),
+			5 => "PASSWORD",
+			_ => null
+		};
+	}
+
+	private static string? FormatSingleOctet(ParameterValue parameterValue)
+	{
+		return parameterValue.ToWireValue() switch
+		{
+			[var value] => value.ToString(CultureInfo.InvariantCulture),
+			_ => null
+		};
+	}
+
+	private static string FormatCurrentPassword(ParameterValue parameterValue)
+	{
+		var buffer = new EncodedMessageBuffer(parameterValue.ToWireValue());
+		var currentPassword = PasswordParameter.FromEncodedMessageBuffer(ref buffer);
+
+		return string.Join(
+			", ",
+			$"Level {(byte)currentPassword.Level.Value}",
+			$"User-Agent {Format(currentPassword.CommunicationsAddress)}",
+			"PASSWORD");
 	}
 
 	private static string Format(CommunicationsAddress communicationsAddress)
