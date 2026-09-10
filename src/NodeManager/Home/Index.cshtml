@@ -186,10 +186,14 @@
         const valueCells = renderPendingRouterParameters();
         routerParameterListStatus.textContent = "Requesting Router Parameters...";
 
-        await Promise.all(routerCurrentParameters.map(parameter =>
-            requestRouterParameter(parameter, valueCells.get(parameter.number))));
+        try {
+            await Promise.all(routerCurrentParameters.map(parameter =>
+                requestRouterParameter(parameter, valueCells.get(parameter.number))));
 
-        routerParameterListStatus.textContent = "Router Parameters requested.";
+            routerParameterListStatus.textContent = "Router Parameters requested.";
+        } finally {
+            button.disabled = false;
+        }
     };
 
     const renderUnavailableParameterListing = () => {

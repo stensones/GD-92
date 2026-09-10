@@ -38,29 +38,9 @@ internal sealed class RouterParameterRead
 			return ValueTask.FromResult<Envelope?>(null);
 		}
 
-		var currentParameters = this.currentParameterSource?.GetCurrent();
-		var parameterValue = number == RouterParameterCatalogue.BrigadeOrAgency.Number
-			? RouterParameterCatalogue.BrigadeOrAgency.Encode(
-				currentParameters?.BrigadeOrAgencyIdentifier ?? this.localAddress.Brigade.Value)
-			: number == RouterParameterCatalogue.CurrentPassword.Number
-				? RouterParameterCatalogue.CurrentPassword.Encode(
-					PasswordParameter.FromFields(
-						currentParameters?.CurrentPassword.Level ??
-							PasswordLevel.FromValue(PasswordLevelNumber.Unauthenticated),
-						RedactedPassword,
-						currentParameters?.CurrentPassword.CommunicationsAddress ?? this.localAddress))
-				: number == RouterParameterCatalogue.Level1PasswordNumber
-					? ParameterValue.FromWireValue(RedactedPassword.ToWireValue())
-				: number == RouterParameterCatalogue.NoAcknowledgementTimeout.Number
-					? currentParameters is null
-						? null
-						: RouterParameterCatalogue.NoAcknowledgementTimeout.Encode(
-							currentParameters.NoAcknowledgementTimeout)
-				: number == RouterParameterCatalogue.Retries.Number
-					? currentParameters is null
-						? null
-						: RouterParameterCatalogue.Retries.Encode(currentParameters.Retries)
-				: null;
+		var parameterValue = number == RouterParameterCatalogue.Level1PasswordNumber
+			? ParameterValue.FromWireValue(RedactedPassword.ToWireValue())
+			: this.CurrentParameterValue(number);
 
 		if (parameterValue is null)
 		{
@@ -76,5 +56,31 @@ internal sealed class RouterParameterRead
 				parameterValue));
 
 		return ValueTask.FromResult<Envelope?>(response);
+	}
+
+	private ParameterValue? CurrentParameterValue(ParameterNumber number)
+	{
+		var currentParameters = this.currentParameterSource?.GetCurrent();
+
+		return number == RouterParameterCatalogue.BrigadeOrAgency.Number
+			? RouterParameterCatalogue.BrigadeOrAgency.Encode(
+				currentParameters?.BrigadeOrAgencyIdentifier ?? this.localAddress.Brigade.Value)
+			: number == RouterParameterCatalogue.CurrentPassword.Number
+				? RouterParameterCatalogue.CurrentPassword.Encode(
+					PasswordParameter.FromFields(
+						currentParameters?.CurrentPassword.Level ??
+							PasswordLevel.FromValue(PasswordLevelNumber.Unauthenticated),
+						RedactedPassword,
+						currentParameters?.CurrentPassword.CommunicationsAddress ?? this.localAddress))
+				: number == RouterParameterCatalogue.NoAcknowledgementTimeout.Number
+					? currentParameters is null
+						? null
+						: RouterParameterCatalogue.NoAcknowledgementTimeout.Encode(
+							currentParameters.NoAcknowledgementTimeout)
+				: number == RouterParameterCatalogue.Retries.Number
+					? currentParameters is null
+						? null
+						: RouterParameterCatalogue.Retries.Encode(currentParameters.Retries)
+				: null;
 	}
 }

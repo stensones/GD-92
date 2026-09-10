@@ -52,7 +52,8 @@ public sealed class RouterParameterReadTests
 		var localAddress = RouterParameterModuleTestSupport.CreateAddress(26, 100, 0);
 		var parameterRead = new RouterParameterRead(
 			localAddress,
-			RouterParameterModuleTestSupport.ProtocolVersion);
+			RouterParameterModuleTestSupport.ProtocolVersion,
+			new RouterCurrentParameterProjectionSource());
 		var request = Envelope.FromValues(
 			RouterParameterModuleTestSupport.CreateAddress(26, 100, 25),
 			Destinations.FromAddresses(localAddress),
