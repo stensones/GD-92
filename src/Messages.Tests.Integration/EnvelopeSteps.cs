@@ -65,6 +65,16 @@ public sealed class EnvelopeSteps
 			Stensones.GD92.Fields.Text.FromValue(text));
 	}
 
+	[Given(@"a Mobilise Command activating station sounders and appliance indicator 1 requiring manual acknowledgement")]
+	public void GivenAMobiliseCommandActivatingStationSoundersAndApplianceIndicator1RequiringManualAcknowledgement()
+	{
+		this.contents = MobiliseCommand.FromFields(
+			OutputPeripherals.FromOutputs(
+				OutputPeripheral.StationSounders,
+				OutputPeripheral.ApplianceIndicator1),
+			ManualAcknowledgementRequest.Required);
+	}
+
 	[Given(@"a Parameter Request for the current table and parameter number (.*)")]
 	public void GivenAParameterRequestForTheCurrentTable(byte parameterNumber)
 	{
@@ -206,6 +216,16 @@ public sealed class EnvelopeSteps
 		contents.Block.Value.Should().Be(block);
 		contents.OfBlocks.Value.Should().Be(ofBlocks);
 		contents.MessageText.Value.Should().Be(text);
+	}
+
+	[Then(@"its decoded Mobilise Command activates station sounders and appliance indicator 1 and requires manual acknowledgement")]
+	public void ThenItsDecodedMobiliseCommandActivatesStationSoundersAndApplianceIndicator1AndRequiresManualAcknowledgement()
+	{
+		var contents = this.envelope!.Contents.Should().BeOfType<MobiliseCommand>().Which;
+
+		contents.OutputPeripherals.IsOutputSet(OutputPeripheral.StationSounders).Should().BeTrue();
+		contents.OutputPeripherals.IsOutputSet(OutputPeripheral.ApplianceIndicator1).Should().BeTrue();
+		contents.ManualAcknowledgementRequest.Should().Be(ManualAcknowledgementRequest.Required);
 	}
 
 	[Then(@"its decoded Parameter Request identifies the current table and parameter number (.*)")]
