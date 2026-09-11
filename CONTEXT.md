@@ -369,6 +369,9 @@ _Avoid_: User Agent, Communications Node
 The protocol-visible availability, location, and remarks reported for a Resource.
 _Avoid_: delivery status, User Agent status
 
+**Resource Status Request**:
+The Message Type 5 Contents that requests the current status of one or more Resources by Callsign. A single zero-length Callsign requests every Resource known to the recipient.
+
 **Duty Staffing**:
 The officer-in-charge, rider, and staffing details reported for a Resource.
 _Avoid_: Resource Status, User Agent capability

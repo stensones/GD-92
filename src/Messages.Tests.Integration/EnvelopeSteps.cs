@@ -93,6 +93,13 @@ public sealed class EnvelopeSteps
 				OutputPeripheral.ApplianceIndicator1));
 	}
 
+	[Given(@"a Resource Status Request for resource ""(.*)""")]
+	public void GivenAResourceStatusRequestForResource(string callsign)
+	{
+		this.contents = ResourceStatusRequest.FromCallsigns(
+			Callsign.FromValue(SevenBitAsciiString.FromValue(callsign)));
+	}
+
 	[Given(@"a single-block Mobilise Message for resource ""(.*)"" submitted at ""(.*)"" for Incident (.*)")]
 	public void GivenASingleBlockMobiliseMessageForResourceSubmittedAtForIncident(
 		string callsign,
@@ -291,6 +298,14 @@ public sealed class EnvelopeSteps
 
 		contents.OutputPeripherals.IsOutputSet(OutputPeripheral.StationSounders).Should().BeTrue();
 		contents.OutputPeripherals.IsOutputSet(OutputPeripheral.ApplianceIndicator1).Should().BeTrue();
+	}
+
+	[Then(@"its decoded Resource Status Request identifies resource ""(.*)""")]
+	public void ThenItsDecodedResourceStatusRequestIdentifiesResource(string callsign)
+	{
+		var contents = this.envelope!.Contents.Should().BeOfType<ResourceStatusRequest>().Which;
+
+		contents.Callsigns.Select(value => value.Value.Value).Should().Equal(callsign);
 	}
 
 	[Then(@"its decoded Mobilise Message preserves the resource and incident details")]
