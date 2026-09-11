@@ -305,7 +305,10 @@ The total number of blocks in one Text_message.
 A long compressed ASCII Protocol Field used for unstructured message text, which is decompressed when received.
 
 **Output Peripherals**:
-A 16-bit Protocol Field whose set bits identify the peripheral outputs a Mobilise Command shall activate.
+A 16-bit Protocol Field whose set bits identify selected peripheral output functions or reported asserted output states.
+
+**Input Peripherals**:
+A 16-bit Protocol Field whose set bits report defined peripheral input states, including manual acknowledgement, power, repeat-message, battery, and paper conditions.
 
 **Manual Acknowledgement Request**:
 A boolean Protocol Field indicating that a recipient must await a local Manual Acknowledgement before completing a message.
@@ -338,6 +341,9 @@ The Message Type 8 Contents that deactivates the selected Output Peripherals.
 
 **Peripheral Status Request**:
 The zero-content Message Type 9 request for the current state of a remote station's monitored peripherals.
+
+**Peripheral Status**:
+The Message Type 28 Contents that reports Input Peripherals followed by Output Peripherals.
 
 **Mobilise Message**:
 The Message Type 2 Contents, comprising message block data, a submission Time And Date, target Callsign List, and one or more incident-detail sets.

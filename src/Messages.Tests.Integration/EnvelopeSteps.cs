@@ -106,6 +106,18 @@ public sealed class EnvelopeSteps
 		this.contents = PeripheralStatusRequest.Create();
 	}
 
+	[Given(@"an unsolicited Peripheral Status reporting manual acknowledgement, paper low, station sounders, and appliance indicator 1")]
+	public void GivenAnUnsolicitedPeripheralStatus()
+	{
+		this.contents = PeripheralStatus.FromFields(
+			InputPeripherals.FromInputs(
+				InputPeripheral.ManualAcknowledgementPressed,
+				InputPeripheral.PaperLow),
+			OutputPeripherals.FromOutputs(
+				OutputPeripheral.StationSounders,
+				OutputPeripheral.ApplianceIndicator1));
+	}
+
 	[Given(@"a single-block Mobilise Message for resource ""(.*)"" submitted at ""(.*)"" for Incident (.*)")]
 	public void GivenASingleBlockMobiliseMessageForResourceSubmittedAtForIncident(
 		string callsign,
@@ -318,6 +330,17 @@ public sealed class EnvelopeSteps
 	public void ThenItsDecodedContentsAreAPeripheralStatusRequest()
 	{
 		this.envelope!.Contents.Should().BeOfType<PeripheralStatusRequest>();
+	}
+
+	[Then(@"its decoded Peripheral Status reports manual acknowledgement, paper low, station sounders, and appliance indicator 1")]
+	public void ThenItsDecodedPeripheralStatusReportsItsInputsAndOutputs()
+	{
+		var contents = this.envelope!.Contents.Should().BeOfType<PeripheralStatus>().Which;
+
+		contents.InputPeripherals.IsInputSet(InputPeripheral.ManualAcknowledgementPressed).Should().BeTrue();
+		contents.InputPeripherals.IsInputSet(InputPeripheral.PaperLow).Should().BeTrue();
+		contents.OutputPeripherals.IsOutputSet(OutputPeripheral.StationSounders).Should().BeTrue();
+		contents.OutputPeripherals.IsOutputSet(OutputPeripheral.ApplianceIndicator1).Should().BeTrue();
 	}
 
 	[Then(@"its decoded Mobilise Message preserves the resource and incident details")]
