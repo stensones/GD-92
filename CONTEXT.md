@@ -310,12 +310,28 @@ A 16-bit Protocol Field whose set bits identify the peripheral outputs a Mobilis
 **Manual Acknowledgement Request**:
 A boolean Protocol Field indicating that a recipient must await a local Manual Acknowledgement before completing a message.
 
+**Callsign List**:
+A counted collection of the Callsigns of Resources to which a Mobilise Message applies.
+
+**Time And Date**:
+A fixed-length `DDMMMYYHHMMSS` Protocol Field recording a Message submission time.
+
+**Mobilisation Type**:
+A Protocol Field that classifies a mobilisation as a pre-alert, incident, non-incident, batch address, standby, demobilisation, or test.
+
+**Incident Address**:
+The structured address, location, and postcode information supplied for an Incident.
+_Avoid_: Communications Address, Address Range
+
 **Text Message**:
 The Message Type 27 Contents, composed of a Block, OfBlocks, and Text.
 _Avoid_: text Protocol Field, Envelope
 
 **Mobilise Command**:
 The Message Type 1 Contents, composed of Output Peripherals and a Manual Acknowledgement Request.
+
+**Mobilise Message**:
+The Message Type 2 Contents, comprising message block data, a submission Time And Date, target Callsign List, and one or more incident-detail sets.
 
 **Message Family**:
 A protocol grouping of Message Types: Mobilisation, Resource or Incident, Peripheral, Protocol, Network Management, or Non-Mandatory.
