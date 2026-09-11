@@ -330,6 +330,9 @@ _Avoid_: text Protocol Field, Envelope
 **Mobilise Command**:
 The Message Type 1 Contents, composed of Output Peripherals and a Manual Acknowledgement Request.
 
+**Activate Peripheral**:
+The Message Type 7 Contents that activates the selected Output Peripherals.
+
 **Mobilise Message**:
 The Message Type 2 Contents, comprising message block data, a submission Time And Date, target Callsign List, and one or more incident-detail sets.
 

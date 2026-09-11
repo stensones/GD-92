@@ -218,6 +218,7 @@ public sealed class Envelope
 		{
 			GD92MessageType.MobiliseCommand => MobiliseCommand.FromEncodedMessageBuffer(ref contentsBuffer),
 			GD92MessageType.MobiliseMessage => MobiliseMessage.FromEncodedMessageBuffer(ref contentsBuffer),
+			GD92MessageType.ActivatePeripheral => ActivatePeripheral.FromEncodedMessageBuffer(ref contentsBuffer),
 			GD92MessageType.Text => Text.FromEncodedMessageBuffer(ref contentsBuffer),
 			GD92MessageType.Acknowledgement => Acknowledgement.FromEncodedMessageBuffer(ref contentsBuffer),
 			GD92MessageType.NegativeAcknowledgement => NegativeAcknowledgement.FromEncodedMessageBuffer(ref contentsBuffer),
