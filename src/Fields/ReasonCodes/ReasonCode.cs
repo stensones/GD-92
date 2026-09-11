@@ -6,20 +6,18 @@ public sealed record ReasonCode : IGD9Field
 	private const byte ParameterReasonCodeSet = 4;
 	private const int WordBitCount = 8;
 
-	private ReasonCode(byte set, byte value)
+	private ReasonCode(GeneralReasonCode generalReasonCode)
 	{
-		this.Set = set;
-		this.Value = value;
+		this.GeneralReasonCode = generalReasonCode;
 	}
 
-	public byte Set { get; }
-	public byte Value { get; }
-	public GeneralReasonCode? GeneralReasonCode => this.Set == GeneralReasonCodeSet
-		? (GeneralReasonCode)this.Value
-		: null;
-	public ParameterReasonCode? ParameterReasonCode => this.Set == ParameterReasonCodeSet
-		? (ParameterReasonCode)this.Value
-		: null;
+	private ReasonCode(ParameterReasonCode parameterReasonCode)
+	{
+		this.ParameterReasonCode = parameterReasonCode;
+	}
+
+	public GeneralReasonCode? GeneralReasonCode { get; }
+	public ParameterReasonCode? ParameterReasonCode { get; }
 
 	public static ReasonCode FromGeneralReasonCode(GeneralReasonCode generalReasonCode)
 	{
@@ -28,7 +26,7 @@ public sealed record ReasonCode : IGD9Field
 			throw new ArgumentOutOfRangeException(nameof(generalReasonCode));
 		}
 
-		return new ReasonCode(GeneralReasonCodeSet, (byte)generalReasonCode);
+		return new ReasonCode(generalReasonCode);
 	}
 
 	public static ReasonCode FromParameterReasonCode(ParameterReasonCode parameterReasonCode)
@@ -38,7 +36,7 @@ public sealed record ReasonCode : IGD9Field
 			throw new ArgumentOutOfRangeException(nameof(parameterReasonCode));
 		}
 
-		return new ReasonCode(ParameterReasonCodeSet, (byte)parameterReasonCode);
+		return new ReasonCode(parameterReasonCode);
 	}
 
 	public static ReasonCode FromEncodedMessageBuffer(ref EncodedMessageBuffer buffer)
@@ -56,6 +54,11 @@ public sealed record ReasonCode : IGD9Field
 
 	public byte[] ToWireValue()
 	{
-		return [this.Set, this.Value];
+		if (this.GeneralReasonCode is { } generalReasonCode)
+		{
+			return [GeneralReasonCodeSet, (byte)generalReasonCode];
+		}
+
+		return [ParameterReasonCodeSet, (byte)this.ParameterReasonCode!.Value];
 	}
 }
