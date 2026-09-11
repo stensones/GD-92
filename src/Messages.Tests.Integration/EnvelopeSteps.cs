@@ -75,6 +75,35 @@ public sealed class EnvelopeSteps
 			ManualAcknowledgementRequest.Required);
 	}
 
+	[Given(@"a single-block Mobilise Message for resource ""(.*)"" submitted at ""(.*)"" for Incident (.*)")]
+	public void GivenASingleBlockMobiliseMessageForResourceSubmittedAtForIncident(
+		string callsign,
+		string submittedAt,
+		uint incidentNumber)
+	{
+		this.contents = MobiliseMessage.FromFields(
+			Block.FromValue(1),
+			OfBlocks.FromValue(1),
+			ManualAcknowledgementRequest.NotRequired,
+			TimeAndDate.FromValue(SevenBitAsciiString.FromValue(submittedAt)),
+			CallsignList.FromValues(Callsign.FromValue(SevenBitAsciiString.FromValue(callsign))),
+			IncidentDetails.FromFields(
+				IncidentNumber.FromValue(incidentNumber),
+				MobilisationType.FromValue(MobilisationTypeValue.Incident),
+				IncidentAddress.FromValues(
+					AddressText.FromValue(SevenBitAsciiString.FromValue("STATION")),
+					HouseNumber.FromValue(SevenBitAsciiString.FromValue("1")),
+					Street.FromValue(SevenBitAsciiString.FromValue("HIGH STREET")),
+					SubDistrict.FromValue(SevenBitAsciiString.FromValue(string.Empty)),
+					District.FromValue(SevenBitAsciiString.FromValue(string.Empty)),
+					Town.FromValue(SevenBitAsciiString.FromValue(string.Empty)),
+					County.FromValue(SevenBitAsciiString.FromValue(string.Empty)),
+					Postcode.FromValue(SevenBitAsciiString.FromValue(string.Empty))),
+				MapReference.FromValue(SevenBitAsciiString.FromValue("SU123456")),
+				TelephoneNumber.FromValue(SevenBitAsciiString.FromValue("0123")),
+				Stensones.GD92.Fields.Text.FromValue("FIRE")));
+	}
+
 	[Given(@"a Parameter Request for the current table and parameter number (.*)")]
 	public void GivenAParameterRequestForTheCurrentTable(byte parameterNumber)
 	{
@@ -226,6 +255,25 @@ public sealed class EnvelopeSteps
 		contents.OutputPeripherals.IsOutputSet(OutputPeripheral.StationSounders).Should().BeTrue();
 		contents.OutputPeripherals.IsOutputSet(OutputPeripheral.ApplianceIndicator1).Should().BeTrue();
 		contents.ManualAcknowledgementRequest.Should().Be(ManualAcknowledgementRequest.Required);
+	}
+
+	[Then(@"its decoded Mobilise Message preserves the resource and incident details")]
+	public void ThenItsDecodedMobiliseMessagePreservesTheResourceAndIncidentDetails()
+	{
+		var contents = this.envelope!.Contents.Should().BeOfType<MobiliseMessage>().Which;
+
+		contents.Block.Value.Should().Be(1);
+		contents.OfBlocks.Value.Should().Be(1);
+		contents.ManualAcknowledgementRequest.Should().Be(ManualAcknowledgementRequest.NotRequired);
+		contents.TimeAndDate.Value.Value.Should().Be("07SEP26154309");
+		contents.CallsignList.Values.Select(callsign => callsign.Value.Value).Should().Equal("A1");
+		contents.IncidentDetails.Should().ContainSingle();
+		contents.IncidentDetails[0].IncidentNumber.Value.Should().Be(1U);
+		contents.IncidentDetails[0].MobilisationType.Value.Should().Be(MobilisationTypeValue.Incident);
+		contents.IncidentDetails[0].Address.AddressText.Value.Value.Should().Be("STATION");
+		contents.IncidentDetails[0].MapReference.Value.Value.Should().Be("SU123456");
+		contents.IncidentDetails[0].TelephoneNumber.Value.Value.Should().Be("0123");
+		contents.IncidentDetails[0].Text.Value.Should().Be("FIRE");
 	}
 
 	[Then(@"its decoded Parameter Request identifies the current table and parameter number (.*)")]

@@ -217,6 +217,7 @@ public sealed class Envelope
 		IGD92MessageContents contents = (GD92MessageType)messageType.Value switch
 		{
 			GD92MessageType.MobiliseCommand => MobiliseCommand.FromEncodedMessageBuffer(ref contentsBuffer),
+			GD92MessageType.MobiliseMessage => MobiliseMessage.FromEncodedMessageBuffer(ref contentsBuffer),
 			GD92MessageType.Text => Text.FromEncodedMessageBuffer(ref contentsBuffer),
 			GD92MessageType.Acknowledgement => Acknowledgement.FromEncodedMessageBuffer(ref contentsBuffer),
 			GD92MessageType.NegativeAcknowledgement => NegativeAcknowledgement.FromEncodedMessageBuffer(ref contentsBuffer),
