@@ -221,6 +221,7 @@ public sealed class Envelope
 			GD92MessageType.ActivatePeripheral => ActivatePeripheral.FromEncodedMessageBuffer(ref contentsBuffer),
 			GD92MessageType.DeactivatePeripheral => DeactivatePeripheral.FromEncodedMessageBuffer(ref contentsBuffer),
 			GD92MessageType.ResourceStatusRequest => ResourceStatusRequest.FromEncodedMessageBuffer(ref contentsBuffer),
+			GD92MessageType.PeripheralStatusRequest => PeripheralStatusRequest.FromEncodedMessageBuffer(ref contentsBuffer),
 			GD92MessageType.Text => Text.FromEncodedMessageBuffer(ref contentsBuffer),
 			GD92MessageType.Acknowledgement => Acknowledgement.FromEncodedMessageBuffer(ref contentsBuffer),
 			GD92MessageType.NegativeAcknowledgement => NegativeAcknowledgement.FromEncodedMessageBuffer(ref contentsBuffer),

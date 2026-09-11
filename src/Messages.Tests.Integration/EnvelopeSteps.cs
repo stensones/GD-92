@@ -100,6 +100,12 @@ public sealed class EnvelopeSteps
 			Callsign.FromValue(SevenBitAsciiString.FromValue(callsign)));
 	}
 
+	[Given(@"a Peripheral Status Request")]
+	public void GivenAPeripheralStatusRequest()
+	{
+		this.contents = PeripheralStatusRequest.Create();
+	}
+
 	[Given(@"a single-block Mobilise Message for resource ""(.*)"" submitted at ""(.*)"" for Incident (.*)")]
 	public void GivenASingleBlockMobiliseMessageForResourceSubmittedAtForIncident(
 		string callsign,
@@ -306,6 +312,12 @@ public sealed class EnvelopeSteps
 		var contents = this.envelope!.Contents.Should().BeOfType<ResourceStatusRequest>().Which;
 
 		contents.Callsigns.Select(value => value.Value.Value).Should().Equal(callsign);
+	}
+
+	[Then(@"its decoded Contents are a Peripheral Status Request")]
+	public void ThenItsDecodedContentsAreAPeripheralStatusRequest()
+	{
+		this.envelope!.Contents.Should().BeOfType<PeripheralStatusRequest>();
 	}
 
 	[Then(@"its decoded Mobilise Message preserves the resource and incident details")]

@@ -336,6 +336,9 @@ The Message Type 7 Contents that activates the selected Output Peripherals.
 **Deactivate Peripheral**:
 The Message Type 8 Contents that deactivates the selected Output Peripherals.
 
+**Peripheral Status Request**:
+The zero-content Message Type 9 request for the current state of a remote station's monitored peripherals.
+
 **Mobilise Message**:
 The Message Type 2 Contents, comprising message block data, a submission Time And Date, target Callsign List, and one or more incident-detail sets.
 
