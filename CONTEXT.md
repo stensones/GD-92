@@ -304,9 +304,18 @@ The total number of blocks in one Text_message.
 **Text**:
 A long compressed ASCII Protocol Field used for unstructured message text, which is decompressed when received.
 
+**Output Peripherals**:
+A 16-bit Protocol Field whose set bits identify the peripheral outputs a Mobilise Command shall activate.
+
+**Manual Acknowledgement Request**:
+A boolean Protocol Field indicating that a recipient must await a local Manual Acknowledgement before completing a message.
+
 **Text Message**:
 The Message Type 27 Contents, composed of a Block, OfBlocks, and Text.
 _Avoid_: text Protocol Field, Envelope
+
+**Mobilise Command**:
+The Message Type 1 Contents, composed of Output Peripherals and a Manual Acknowledgement Request.
 
 **Message Family**:
 A protocol grouping of Message Types: Mobilisation, Resource or Incident, Peripheral, Protocol, Network Management, or Non-Mandatory.
