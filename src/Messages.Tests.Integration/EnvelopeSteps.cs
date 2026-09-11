@@ -84,6 +84,15 @@ public sealed class EnvelopeSteps
 				OutputPeripheral.ApplianceIndicator1));
 	}
 
+	[Given(@"a Deactivate Peripheral message deactivating station sounders and appliance indicator 1")]
+	public void GivenADeactivatePeripheralMessageDeactivatingStationSoundersAndApplianceIndicator1()
+	{
+		this.contents = DeactivatePeripheral.FromFields(
+			OutputPeripherals.FromOutputs(
+				OutputPeripheral.StationSounders,
+				OutputPeripheral.ApplianceIndicator1));
+	}
+
 	[Given(@"a single-block Mobilise Message for resource ""(.*)"" submitted at ""(.*)"" for Incident (.*)")]
 	public void GivenASingleBlockMobiliseMessageForResourceSubmittedAtForIncident(
 		string callsign,
@@ -270,6 +279,15 @@ public sealed class EnvelopeSteps
 	public void ThenItsDecodedActivatePeripheralMessageActivatesStationSoundersAndApplianceIndicator1()
 	{
 		var contents = this.envelope!.Contents.Should().BeOfType<ActivatePeripheral>().Which;
+
+		contents.OutputPeripherals.IsOutputSet(OutputPeripheral.StationSounders).Should().BeTrue();
+		contents.OutputPeripherals.IsOutputSet(OutputPeripheral.ApplianceIndicator1).Should().BeTrue();
+	}
+
+	[Then(@"its decoded Deactivate Peripheral message deactivates station sounders and appliance indicator 1")]
+	public void ThenItsDecodedDeactivatePeripheralMessageDeactivatesStationSoundersAndApplianceIndicator1()
+	{
+		var contents = this.envelope!.Contents.Should().BeOfType<DeactivatePeripheral>().Which;
 
 		contents.OutputPeripherals.IsOutputSet(OutputPeripheral.StationSounders).Should().BeTrue();
 		contents.OutputPeripherals.IsOutputSet(OutputPeripheral.ApplianceIndicator1).Should().BeTrue();
