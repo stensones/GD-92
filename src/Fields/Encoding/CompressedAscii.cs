@@ -2,6 +2,13 @@ namespace Stensones.GD92.Fields;
 
 internal static class CompressedAscii
 {
+	private const byte EscapeByte = 0x1B;
+	private const byte EscapedEscapeRunLength = 1;
+	private const int MinimumCompressibleRunLength = 4;
+	private const int EscapeSequenceLength = 3;
+	private const int EscapedCharacterOffset = 1;
+	private const int RunLengthOffset = 2;
+
 	public static byte[] Compress(ReadOnlySpan<byte> value)
 	{
 		var compressedValue = new List<byte>();
@@ -15,14 +22,14 @@ internal static class CompressedAscii
 				runLength++;
 			}
 
-			if (runLength > 3)
+			if (runLength >= MinimumCompressibleRunLength)
 			{
 				var remainingRunLength = runLength;
 
-				while (remainingRunLength > 3)
+				while (remainingRunLength >= MinimumCompressibleRunLength)
 				{
 					var compressedRunLength = Math.Min(remainingRunLength, byte.MaxValue);
-					compressedValue.Add(0x1B);
+					compressedValue.Add(EscapeByte);
 					compressedValue.Add(value[index]);
 					compressedValue.Add((byte)compressedRunLength);
 					remainingRunLength -= compressedRunLength;
@@ -33,13 +40,13 @@ internal static class CompressedAscii
 					compressedValue.Add(value[index]);
 				}
 			}
-			else if (value[index] == 0x1B)
+			else if (value[index] == EscapeByte)
 			{
 				for (var runIndex = 0; runIndex < runLength; runIndex++)
 				{
-					compressedValue.Add(0x1B);
-					compressedValue.Add(0x1B);
-					compressedValue.Add(0x01);
+					compressedValue.Add(EscapeByte);
+					compressedValue.Add(EscapeByte);
+					compressedValue.Add(EscapedEscapeRunLength);
 				}
 			}
 			else
@@ -62,28 +69,28 @@ internal static class CompressedAscii
 
 		for (var index = 0; index < value.Length;)
 		{
-			if (value[index] != 0x1B)
+			if (value[index] != EscapeByte)
 			{
 				decompressedValue.Add(value[index]);
 				index++;
 				continue;
 			}
 
-			if (index + 2 >= value.Length)
+			if (index + RunLengthOffset >= value.Length)
 			{
 				throw new InvalidOperationException("The compressed text contains an incomplete escape sequence.");
 			}
 
-			var character = value[index + 1];
-			var count = value[index + 2];
+			var character = value[index + EscapedCharacterOffset];
+			var count = value[index + RunLengthOffset];
 
-			if (character == 0x1B && count == 1)
+			if (character == EscapeByte && count == EscapedEscapeRunLength)
 			{
 				decompressedValue.Add(character);
 			}
 			else
 			{
-				if (count <= 3)
+				if (count < MinimumCompressibleRunLength)
 				{
 					throw new InvalidOperationException("The compressed text contains an invalid run length.");
 				}
@@ -94,7 +101,7 @@ internal static class CompressedAscii
 				}
 			}
 
-			index += 3;
+			index += EscapeSequenceLength;
 		}
 
 		return decompressedValue.ToArray();

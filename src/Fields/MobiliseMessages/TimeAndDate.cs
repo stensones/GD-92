@@ -2,6 +2,27 @@ namespace Stensones.GD92.Fields;
 
 public sealed record TimeAndDate : IGD9Field
 {
+	private const int WireByteCount = 13;
+	private const int CharacterBitCount = 8;
+	private const int DayStartIndex = 0;
+	private const int DayLength = 2;
+	private const int MinimumDay = 1;
+	private const int MaximumDay = 31;
+	private const int MonthStartIndex = DayStartIndex + DayLength;
+	private const int MonthEndIndex = MonthStartIndex + 3;
+	private const int YearStartIndex = MonthEndIndex;
+	private const int YearLength = 2;
+	private const int HourStartIndex = YearStartIndex + YearLength;
+	private const int HourLength = 2;
+	private const int MinimumTimeComponent = 0;
+	private const int MaximumHour = 23;
+	private const int MinuteStartIndex = HourStartIndex + HourLength;
+	private const int MinuteLength = 2;
+	private const int MaximumMinute = 59;
+	private const int SecondStartIndex = MinuteStartIndex + MinuteLength;
+	private const int SecondLength = 2;
+	private const int MaximumSecond = 59;
+
 	private static readonly HashSet<string> Months =
 	[
 		"JAN", "FEB", "MAR", "APR", "MAY", "JUN",
@@ -27,11 +48,11 @@ public sealed record TimeAndDate : IGD9Field
 
 	public static TimeAndDate FromEncodedMessageBuffer(ref EncodedMessageBuffer buffer)
 	{
-		var value = new byte[13];
+		var value = new byte[WireByteCount];
 
 		for (var index = 0; index < value.Length; index++)
 		{
-			value[index] = (byte)buffer.ReadUnsignedBits(8);
+			value[index] = (byte)buffer.ReadUnsignedBits(CharacterBitCount);
 		}
 
 		return FromValue(SevenBitAsciiString.FromValue(new string(value.Select(character => (char)character).ToArray())));
@@ -44,13 +65,13 @@ public sealed record TimeAndDate : IGD9Field
 
 	private static bool HasValidFormat(string value)
 	{
-		return value.Length == 13
-			&& HasValueInRange(value, 0, 2, 1, 31)
-			&& Months.Contains(value[2..5])
-			&& HasDigits(value, 5, 2)
-			&& HasValueInRange(value, 7, 2, 0, 23)
-			&& HasValueInRange(value, 9, 2, 0, 59)
-			&& HasValueInRange(value, 11, 2, 0, 59);
+		return value.Length == WireByteCount
+			&& HasValueInRange(value, DayStartIndex, DayLength, MinimumDay, MaximumDay)
+			&& Months.Contains(value[MonthStartIndex..MonthEndIndex])
+			&& HasDigits(value, YearStartIndex, YearLength)
+			&& HasValueInRange(value, HourStartIndex, HourLength, MinimumTimeComponent, MaximumHour)
+			&& HasValueInRange(value, MinuteStartIndex, MinuteLength, MinimumTimeComponent, MaximumMinute)
+			&& HasValueInRange(value, SecondStartIndex, SecondLength, MinimumTimeComponent, MaximumSecond);
 	}
 
 	private static bool HasValueInRange(string value, int startIndex, int length, int minimum, int maximum)

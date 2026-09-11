@@ -2,6 +2,9 @@ namespace Stensones.GD92.Fields;
 
 public readonly record struct DestinationAddressCount
 {
+	private const byte MinimumValue = 1;
+	private const byte MaximumValue = 63;
+
 	private DestinationAddressCount(byte value)
 	{
 		this.Value = value;
@@ -11,7 +14,7 @@ public readonly record struct DestinationAddressCount
 
 	public static DestinationAddressCount FromValue(byte value)
 	{
-		if (value is < 1 or > 63)
+		if (value is < MinimumValue or > MaximumValue)
 		{
 			throw new ArgumentOutOfRangeException(nameof(value));
 		}

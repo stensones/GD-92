@@ -2,6 +2,11 @@ namespace Stensones.GD92.Fields;
 
 public sealed record CommunicationsAddress : IGD9Field
 {
+	private const int BrigadeBitCount = 8;
+	private const int NodeBitCount = 10;
+	private const int PortBitCount = 6;
+	private const int NodeBitsInFinalOctet = 2;
+
 	private CommunicationsAddress(Brigade brigade, Node node, Port port)
 	{
 		this.Brigade = brigade;
@@ -21,13 +26,17 @@ public sealed record CommunicationsAddress : IGD9Field
 	public static CommunicationsAddress FromEncodedMessageBuffer(ref EncodedMessageBuffer buffer)
 	{
 		return FromValues(
-			Brigade.FromValue(BrigadeOrAgencyIdentifier.FromValue((byte)buffer.ReadUnsignedBits(8))),
-			Node.FromValue(NodeIdentifier.FromValue((ushort)buffer.ReadUnsignedBits(10))),
-			Port.FromValue(PortIdentifier.FromValue((byte)buffer.ReadUnsignedBits(6))));
+			Brigade.FromValue(BrigadeOrAgencyIdentifier.FromValue((byte)buffer.ReadUnsignedBits(BrigadeBitCount))),
+			Node.FromValue(NodeIdentifier.FromValue((ushort)buffer.ReadUnsignedBits(NodeBitCount))),
+			Port.FromValue(PortIdentifier.FromValue((byte)buffer.ReadUnsignedBits(PortBitCount))));
 	}
 
 	public byte[] ToWireValue()
 	{
-		return [this.Brigade.Value.EncodedOctet, (byte)(this.Node.Value >> 2), (byte)((this.Node.Value << 6) | this.Port.Value)];
+		return [
+			this.Brigade.Value.EncodedOctet,
+			(byte)(this.Node.Value >> NodeBitsInFinalOctet),
+			(byte)((this.Node.Value << PortBitCount) | this.Port.Value)
+		];
 	}
 }

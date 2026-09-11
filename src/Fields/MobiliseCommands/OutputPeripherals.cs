@@ -3,6 +3,8 @@ namespace Stensones.GD92.Fields;
 public sealed record OutputPeripherals : IGD9Field
 {
 	private const ushort DefinedOutputMask = 0xFF63;
+	private const int PeripheralBitMapBitCount = 16;
+	private const int ByteBitCount = 8;
 
 	private readonly ushort value;
 
@@ -34,7 +36,7 @@ public sealed record OutputPeripherals : IGD9Field
 
 	public static OutputPeripherals FromEncodedMessageBuffer(ref EncodedMessageBuffer buffer)
 	{
-		return new OutputPeripherals((ushort)buffer.ReadUnsignedBits(16));
+		return new OutputPeripherals((ushort)buffer.ReadUnsignedBits(PeripheralBitMapBitCount));
 	}
 
 	public bool IsOutputSet(OutputPeripheral output)
@@ -49,6 +51,6 @@ public sealed record OutputPeripherals : IGD9Field
 
 	public byte[] ToWireValue()
 	{
-		return [(byte)(this.value >> 8), (byte)this.value];
+		return [(byte)(this.value >> ByteBitCount), (byte)this.value];
 	}
 }

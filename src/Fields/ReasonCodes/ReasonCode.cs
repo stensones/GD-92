@@ -4,6 +4,7 @@ public sealed record ReasonCode : IGD9Field
 {
 	private const byte GeneralReasonCodeSet = 1;
 	private const byte ParameterReasonCodeSet = 4;
+	private const int WordBitCount = 8;
 
 	private ReasonCode(byte set, byte value)
 	{
@@ -42,8 +43,8 @@ public sealed record ReasonCode : IGD9Field
 
 	public static ReasonCode FromEncodedMessageBuffer(ref EncodedMessageBuffer buffer)
 	{
-		var reasonCodeSet = (byte)buffer.ReadUnsignedBits(8);
-		var reasonCodeValue = (byte)buffer.ReadUnsignedBits(8);
+		var reasonCodeSet = (byte)buffer.ReadUnsignedBits(WordBitCount);
+		var reasonCodeValue = (byte)buffer.ReadUnsignedBits(WordBitCount);
 
 		return reasonCodeSet switch
 		{

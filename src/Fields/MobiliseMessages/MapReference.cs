@@ -2,6 +2,8 @@ namespace Stensones.GD92.Fields;
 
 public sealed record MapReference : IGD9Field
 {
+	private const int MaximumMapReferenceLength = 16;
+
 	private MapReference(SevenBitAsciiString value)
 	{
 		this.Value = value;
@@ -11,7 +13,7 @@ public sealed record MapReference : IGD9Field
 
 	public static MapReference FromValue(SevenBitAsciiString value)
 	{
-		if (value.Value.Length > 16)
+		if (value.Value.Length > MaximumMapReferenceLength)
 		{
 			throw new ArgumentOutOfRangeException(nameof(value));
 		}
@@ -21,11 +23,11 @@ public sealed record MapReference : IGD9Field
 
 	public static MapReference FromEncodedMessageBuffer(ref EncodedMessageBuffer buffer)
 	{
-		return FromValue(MobiliseMessageStringEncoding.ReadCountedAscii(ref buffer, 16, false));
+		return FromValue(MobiliseMessageStringEncoding.ReadCountedAscii(ref buffer, MaximumMapReferenceLength, false));
 	}
 
 	public byte[] ToWireValue()
 	{
-		return MobiliseMessageStringEncoding.ToCountedWireValue(this.Value, 16, false);
+		return MobiliseMessageStringEncoding.ToCountedWireValue(this.Value, MaximumMapReferenceLength, false);
 	}
 }

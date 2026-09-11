@@ -2,6 +2,11 @@ namespace Stensones.GD92.Fields;
 
 public sealed record IncidentNumber : IGD9Field
 {
+	private const int WordBitCount = 32;
+	private const int MostSignificantByteShift = 24;
+	private const int SecondByteShift = 16;
+	private const int ThirdByteShift = 8;
+
 	private IncidentNumber(uint value)
 	{
 		this.Value = value;
@@ -16,15 +21,15 @@ public sealed record IncidentNumber : IGD9Field
 
 	public static IncidentNumber FromEncodedMessageBuffer(ref EncodedMessageBuffer buffer)
 	{
-		return FromValue(buffer.ReadUnsignedBits(32));
+		return FromValue(buffer.ReadUnsignedBits(WordBitCount));
 	}
 
 	public byte[] ToWireValue()
 	{
 		return [
-			(byte)(this.Value >> 24),
-			(byte)(this.Value >> 16),
-			(byte)(this.Value >> 8),
+			(byte)(this.Value >> MostSignificantByteShift),
+			(byte)(this.Value >> SecondByteShift),
+			(byte)(this.Value >> ThirdByteShift),
 			(byte)this.Value
 		];
 	}

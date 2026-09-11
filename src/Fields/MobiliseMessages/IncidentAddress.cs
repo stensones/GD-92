@@ -2,6 +2,15 @@ namespace Stensones.GD92.Fields;
 
 public sealed record IncidentAddress : IGD9Field
 {
+	private const int MaximumAddressTextLength = 120;
+	private const int MaximumHouseNumberLength = 10;
+	private const int MaximumStreetLength = 40;
+	private const int MaximumSubDistrictLength = 30;
+	private const int MaximumDistrictLength = 30;
+	private const int MaximumTownLength = 30;
+	private const int MaximumCountyLength = 20;
+	private const int MaximumPostcodeLength = 10;
+
 	private IncidentAddress(
 		SevenBitAsciiString addressText,
 		SevenBitAsciiString houseNumber,
@@ -59,27 +68,27 @@ public sealed record IncidentAddress : IGD9Field
 	public static IncidentAddress FromEncodedMessageBuffer(ref EncodedMessageBuffer buffer)
 	{
 		return FromValues(
-			MobiliseMessageStringEncoding.ReadCountedAscii(ref buffer, 120, true),
-			MobiliseMessageStringEncoding.ReadCountedAscii(ref buffer, 10, false),
-			MobiliseMessageStringEncoding.ReadCountedAscii(ref buffer, 40, true),
-			MobiliseMessageStringEncoding.ReadCountedAscii(ref buffer, 30, true),
-			MobiliseMessageStringEncoding.ReadCountedAscii(ref buffer, 30, true),
-			MobiliseMessageStringEncoding.ReadCountedAscii(ref buffer, 30, true),
-			MobiliseMessageStringEncoding.ReadCountedAscii(ref buffer, 20, true),
-			MobiliseMessageStringEncoding.ReadCountedAscii(ref buffer, 10, false));
+			MobiliseMessageStringEncoding.ReadCountedAscii(ref buffer, MaximumAddressTextLength, true),
+			MobiliseMessageStringEncoding.ReadCountedAscii(ref buffer, MaximumHouseNumberLength, false),
+			MobiliseMessageStringEncoding.ReadCountedAscii(ref buffer, MaximumStreetLength, true),
+			MobiliseMessageStringEncoding.ReadCountedAscii(ref buffer, MaximumSubDistrictLength, true),
+			MobiliseMessageStringEncoding.ReadCountedAscii(ref buffer, MaximumDistrictLength, true),
+			MobiliseMessageStringEncoding.ReadCountedAscii(ref buffer, MaximumTownLength, true),
+			MobiliseMessageStringEncoding.ReadCountedAscii(ref buffer, MaximumCountyLength, true),
+			MobiliseMessageStringEncoding.ReadCountedAscii(ref buffer, MaximumPostcodeLength, false));
 	}
 
 	public byte[] ToWireValue()
 	{
 		return [
-			.. MobiliseMessageStringEncoding.ToCountedWireValue(this.AddressText, 120, true),
-			.. MobiliseMessageStringEncoding.ToCountedWireValue(this.HouseNumber, 10, false),
-			.. MobiliseMessageStringEncoding.ToCountedWireValue(this.Street, 40, true),
-			.. MobiliseMessageStringEncoding.ToCountedWireValue(this.SubDistrict, 30, true),
-			.. MobiliseMessageStringEncoding.ToCountedWireValue(this.District, 30, true),
-			.. MobiliseMessageStringEncoding.ToCountedWireValue(this.Town, 30, true),
-			.. MobiliseMessageStringEncoding.ToCountedWireValue(this.County, 20, true),
-			.. MobiliseMessageStringEncoding.ToCountedWireValue(this.Postcode, 10, false)
+			.. MobiliseMessageStringEncoding.ToCountedWireValue(this.AddressText, MaximumAddressTextLength, true),
+			.. MobiliseMessageStringEncoding.ToCountedWireValue(this.HouseNumber, MaximumHouseNumberLength, false),
+			.. MobiliseMessageStringEncoding.ToCountedWireValue(this.Street, MaximumStreetLength, true),
+			.. MobiliseMessageStringEncoding.ToCountedWireValue(this.SubDistrict, MaximumSubDistrictLength, true),
+			.. MobiliseMessageStringEncoding.ToCountedWireValue(this.District, MaximumDistrictLength, true),
+			.. MobiliseMessageStringEncoding.ToCountedWireValue(this.Town, MaximumTownLength, true),
+			.. MobiliseMessageStringEncoding.ToCountedWireValue(this.County, MaximumCountyLength, true),
+			.. MobiliseMessageStringEncoding.ToCountedWireValue(this.Postcode, MaximumPostcodeLength, false)
 		];
 	}
 }

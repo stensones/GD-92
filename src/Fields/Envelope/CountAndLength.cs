@@ -2,6 +2,11 @@ namespace Stensones.GD92.Fields;
 
 public sealed record CountAndLength : IGD9Field
 {
+	private const int PackedFieldBitCount = 16;
+	private const int ByteBitCount = 8;
+	private const int DestinationCountBitCount = 6;
+	private const ushort DestinationCountMask = 0x003F;
+
 	private CountAndLength(MessageLength messageLength, DestinationCount destinationCount)
 	{
 		this.MessageLength = messageLength;
@@ -21,17 +26,17 @@ public sealed record CountAndLength : IGD9Field
 
 	public static CountAndLength FromEncodedMessageBuffer(ref EncodedMessageBuffer buffer)
 	{
-		var value = (ushort)buffer.ReadUnsignedBits(16);
+		var value = (ushort)buffer.ReadUnsignedBits(PackedFieldBitCount);
 
 		return FromValues(
-			MessageLength.FromValue(MessageByteLength.FromValue((ushort)(value >> 6))),
-			DestinationCount.FromValue(DestinationAddressCount.FromValue((byte)(value & 0x3F))));
+			MessageLength.FromValue(MessageByteLength.FromValue((ushort)(value >> DestinationCountBitCount))),
+			DestinationCount.FromValue(DestinationAddressCount.FromValue((byte)(value & DestinationCountMask))));
 	}
 
 	public byte[] ToWireValue()
 	{
-		var value = (ushort)((this.MessageLength.Value << 6) | this.DestinationCount.Value);
+		var value = (ushort)((this.MessageLength.Value << DestinationCountBitCount) | this.DestinationCount.Value);
 
-		return [(byte)(value >> 8), (byte)value];
+		return [(byte)(value >> ByteBitCount), (byte)value];
 	}
 }

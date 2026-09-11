@@ -2,12 +2,19 @@ namespace Stensones.GD92.Fields;
 
 public ref struct EncodedMessageBuffer
 {
+	private const int BitsPerByte = 8;
+	private const int MinimumReadableBitCount = 1;
+	private const int MaximumReadableBitCount = sizeof(uint) * BitsPerByte;
+	private const int MostSignificantBitOffset = BitsPerByte - 1;
+	private const int SingleBitShift = 1;
+	private const uint SingleBitMask = 1;
+
 	private readonly ReadOnlySpan<byte> payload;
 	private int bitPosition;
 
 	public EncodedMessageBuffer(ReadOnlySpan<byte> payload, int bitPosition = 0)
 	{
-		var payloadBitCount = checked(payload.Length * 8);
+		var payloadBitCount = checked(payload.Length * BitsPerByte);
 
 		if (bitPosition < 0 || bitPosition > payloadBitCount)
 		{
@@ -20,15 +27,15 @@ public ref struct EncodedMessageBuffer
 
 	public int BitPosition => this.bitPosition;
 
-	public int ByteOffset => this.bitPosition / 8;
+	public int ByteOffset => this.bitPosition / BitsPerByte;
 
-	public int BitOffsetInByte => this.bitPosition % 8;
+	public int BitOffsetInByte => this.bitPosition % BitsPerByte;
 
-	public int RemainingBitCount => checked(this.payload.Length * 8) - this.bitPosition;
+	public int RemainingBitCount => checked(this.payload.Length * BitsPerByte) - this.bitPosition;
 
 	public uint ReadUnsignedBits(int bitCount)
 	{
-		if (bitCount is < 1 or > 32)
+		if (bitCount is < MinimumReadableBitCount or > MaximumReadableBitCount)
 		{
 			throw new ArgumentOutOfRangeException(nameof(bitCount));
 		}
@@ -43,11 +50,11 @@ public ref struct EncodedMessageBuffer
 		for (var bitIndex = 0; bitIndex < bitCount; bitIndex++)
 		{
 			var payloadBitPosition = this.bitPosition + bitIndex;
-			var byteOffset = payloadBitPosition / 8;
-			var bitOffsetInByte = payloadBitPosition % 8;
-			var bit = (uint)((this.payload[byteOffset] >> (7 - bitOffsetInByte)) & 1);
+			var byteOffset = payloadBitPosition / BitsPerByte;
+			var bitOffsetInByte = payloadBitPosition % BitsPerByte;
+			var bit = (uint)((this.payload[byteOffset] >> (MostSignificantBitOffset - bitOffsetInByte)) & SingleBitMask);
 
-			value = (value << 1) | bit;
+			value = (value << SingleBitShift) | bit;
 		}
 
 		this.bitPosition += bitCount;

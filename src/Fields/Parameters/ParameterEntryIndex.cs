@@ -2,6 +2,9 @@ namespace Stensones.GD92.Fields;
 
 public sealed record ParameterEntryIndex : IGD9Field
 {
+	private const int WordBitCount = 16;
+	private const int ByteBitCount = 8;
+
 	private ParameterEntryIndex(ushort value)
 	{
 		this.Value = value;
@@ -16,11 +19,11 @@ public sealed record ParameterEntryIndex : IGD9Field
 
 	public static ParameterEntryIndex FromEncodedMessageBuffer(ref EncodedMessageBuffer buffer)
 	{
-		return FromValue((ushort)buffer.ReadUnsignedBits(16));
+		return FromValue((ushort)buffer.ReadUnsignedBits(WordBitCount));
 	}
 
 	public byte[] ToWireValue()
 	{
-		return [(byte)(this.Value >> 8), (byte)this.Value];
+		return [(byte)(this.Value >> ByteBitCount), (byte)this.Value];
 	}
 }

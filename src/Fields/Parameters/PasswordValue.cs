@@ -2,6 +2,8 @@ namespace Stensones.GD92.Fields;
 
 public readonly record struct PasswordValue
 {
+	private const int MaximumPasswordLength = 10;
+
 	private PasswordValue(SevenBitAsciiString value)
 	{
 		this.Value = value;
@@ -11,7 +13,7 @@ public readonly record struct PasswordValue
 
 	public static PasswordValue FromValue(SevenBitAsciiString value)
 	{
-		if (value.Value.Length > 10)
+		if (value.Value.Length > MaximumPasswordLength)
 		{
 			throw new ArgumentOutOfRangeException(nameof(value));
 		}

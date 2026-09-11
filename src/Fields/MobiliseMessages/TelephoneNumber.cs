@@ -2,6 +2,8 @@ namespace Stensones.GD92.Fields;
 
 public sealed record TelephoneNumber : IGD9Field
 {
+	private const int MaximumTelephoneNumberLength = 16;
+
 	private TelephoneNumber(SevenBitAsciiString value)
 	{
 		this.Value = value;
@@ -13,7 +15,7 @@ public sealed record TelephoneNumber : IGD9Field
 	{
 		var number = value.Value.TrimEnd(' ');
 
-		if (value.Value.Length > 16 || number.Any(character => !char.IsAsciiDigit(character)))
+		if (value.Value.Length > MaximumTelephoneNumberLength || number.Any(character => !char.IsAsciiDigit(character)))
 		{
 			throw new ArgumentOutOfRangeException(nameof(value));
 		}
@@ -23,11 +25,11 @@ public sealed record TelephoneNumber : IGD9Field
 
 	public static TelephoneNumber FromEncodedMessageBuffer(ref EncodedMessageBuffer buffer)
 	{
-		return FromValue(MobiliseMessageStringEncoding.ReadCountedAscii(ref buffer, 16, false));
+		return FromValue(MobiliseMessageStringEncoding.ReadCountedAscii(ref buffer, MaximumTelephoneNumberLength, false));
 	}
 
 	public byte[] ToWireValue()
 	{
-		return MobiliseMessageStringEncoding.ToCountedWireValue(this.Value, 16, false);
+		return MobiliseMessageStringEncoding.ToCountedWireValue(this.Value, MaximumTelephoneNumberLength, false);
 	}
 }

@@ -2,6 +2,8 @@ namespace Stensones.GD92.Fields;
 
 public sealed record MoreValues : IGD9Field
 {
+	private const int WordBitCount = 8;
+
 	private MoreValues(byte value)
 	{
 		this.Value = value;
@@ -19,7 +21,7 @@ public sealed record MoreValues : IGD9Field
 
 	public static MoreValues FromEncodedMessageBuffer(ref EncodedMessageBuffer buffer)
 	{
-		return FromValue(ProtocolBoolean.FromValue((byte)buffer.ReadUnsignedBits(8)));
+		return FromValue(ProtocolBoolean.FromValue((byte)buffer.ReadUnsignedBits(WordBitCount)));
 	}
 
 	public byte[] ToWireValue()

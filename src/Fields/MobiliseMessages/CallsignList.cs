@@ -2,6 +2,8 @@ namespace Stensones.GD92.Fields;
 
 public sealed record CallsignList : IGD9Field
 {
+	private const int CountBitCount = 8;
+
 	private CallsignList(IReadOnlyList<Callsign> values)
 	{
 		this.Values = values;
@@ -28,7 +30,7 @@ public sealed record CallsignList : IGD9Field
 
 	public static CallsignList FromEncodedMessageBuffer(ref EncodedMessageBuffer buffer)
 	{
-		var count = (byte)buffer.ReadUnsignedBits(8);
+		var count = (byte)buffer.ReadUnsignedBits(CountBitCount);
 		var values = new Callsign[count];
 
 		for (var index = 0; index < values.Length; index++)

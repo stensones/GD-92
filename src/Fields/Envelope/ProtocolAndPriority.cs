@@ -2,6 +2,10 @@ namespace Stensones.GD92.Fields;
 
 public sealed record ProtocolAndPriority : IGD9Field
 {
+	private const int PackedFieldBitCount = 8;
+	private const int ProtocolVersionBitCount = 4;
+	private const byte ProtocolVersionMask = 0x0F;
+
 	private ProtocolAndPriority(MessagePriority priority, ProtocolVersion protocolVersion)
 	{
 		this.Priority = priority;
@@ -21,15 +25,15 @@ public sealed record ProtocolAndPriority : IGD9Field
 
 	public static ProtocolAndPriority FromEncodedMessageBuffer(ref EncodedMessageBuffer buffer)
 	{
-		var value = (byte)buffer.ReadUnsignedBits(8);
+		var value = (byte)buffer.ReadUnsignedBits(PackedFieldBitCount);
 
 		return FromValues(
-			MessagePriority.FromValue(MessagePriorityLevel.FromValue((byte)(value >> 4))),
-			ProtocolVersion.FromValue(ProtocolVersionNumber.FromValue((byte)(value & 0x0F))));
+			MessagePriority.FromValue(MessagePriorityLevel.FromValue((byte)(value >> ProtocolVersionBitCount))),
+			ProtocolVersion.FromValue(ProtocolVersionNumber.FromValue((byte)(value & ProtocolVersionMask))));
 	}
 
 	public byte[] ToWireValue()
 	{
-		return [(byte)((this.Priority.Value << 4) | this.ProtocolVersion.Value)];
+		return [(byte)((this.Priority.Value << ProtocolVersionBitCount) | this.ProtocolVersion.Value)];
 	}
 }

@@ -2,6 +2,8 @@ namespace Stensones.GD92.Fields;
 
 public sealed record PasswordLevel : IGD9Field
 {
+	private const int WordBitCount = 8;
+
 	private PasswordLevel(PasswordLevelNumber value)
 	{
 		this.Value = value;
@@ -21,7 +23,7 @@ public sealed record PasswordLevel : IGD9Field
 
 	public static PasswordLevel FromEncodedMessageBuffer(ref EncodedMessageBuffer buffer)
 	{
-		return FromValue((PasswordLevelNumber)buffer.ReadUnsignedBits(8));
+		return FromValue((PasswordLevelNumber)buffer.ReadUnsignedBits(WordBitCount));
 	}
 
 	public byte[] ToWireValue()

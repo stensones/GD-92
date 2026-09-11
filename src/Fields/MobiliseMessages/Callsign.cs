@@ -2,6 +2,8 @@ namespace Stensones.GD92.Fields;
 
 public sealed record Callsign : IGD9Field
 {
+	private const int MaximumCallsignLength = 6;
+
 	private Callsign(SevenBitAsciiString value)
 	{
 		this.Value = value;
@@ -11,7 +13,7 @@ public sealed record Callsign : IGD9Field
 
 	public static Callsign FromValue(SevenBitAsciiString value)
 	{
-		if (value.Value.Length > 6 || value.Value.Any(character => !char.IsAsciiLetterOrDigit(character)))
+		if (value.Value.Length > MaximumCallsignLength || value.Value.Any(character => !char.IsAsciiLetterOrDigit(character)))
 		{
 			throw new ArgumentOutOfRangeException(nameof(value));
 		}
@@ -21,11 +23,11 @@ public sealed record Callsign : IGD9Field
 
 	public static Callsign FromEncodedMessageBuffer(ref EncodedMessageBuffer buffer)
 	{
-		return FromValue(MobiliseMessageStringEncoding.ReadCountedAscii(ref buffer, 6, false));
+		return FromValue(MobiliseMessageStringEncoding.ReadCountedAscii(ref buffer, MaximumCallsignLength, false));
 	}
 
 	public byte[] ToWireValue()
 	{
-		return MobiliseMessageStringEncoding.ToCountedWireValue(this.Value, 6, false);
+		return MobiliseMessageStringEncoding.ToCountedWireValue(this.Value, MaximumCallsignLength, false);
 	}
 }

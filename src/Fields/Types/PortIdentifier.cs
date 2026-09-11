@@ -2,6 +2,8 @@ namespace Stensones.GD92.Fields;
 
 public readonly record struct PortIdentifier
 {
+	private const byte MaximumValue = 63;
+
 	private PortIdentifier(byte value)
 	{
 		this.Value = value;
@@ -11,7 +13,7 @@ public readonly record struct PortIdentifier
 
 	public static PortIdentifier FromValue(byte value)
 	{
-		if (value > 63)
+		if (value > MaximumValue)
 		{
 			throw new ArgumentOutOfRangeException(nameof(value));
 		}

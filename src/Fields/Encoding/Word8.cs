@@ -2,6 +2,8 @@ namespace Stensones.GD92.Fields;
 
 public record Word8 : IGD9Field
 {
+	private const int WordBitCount = 8;
+
 	protected Word8(byte value)
 	{
 		this.Value = value;
@@ -16,7 +18,7 @@ public record Word8 : IGD9Field
 
 	public static Word8 FromEncodedMessageBuffer(ref EncodedMessageBuffer buffer)
 	{
-		return new Word8((byte)buffer.ReadUnsignedBits(8));
+		return new Word8((byte)buffer.ReadUnsignedBits(WordBitCount));
 	}
 
 	public byte[] ToWireValue()

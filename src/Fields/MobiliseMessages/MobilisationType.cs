@@ -2,6 +2,8 @@ namespace Stensones.GD92.Fields;
 
 public sealed record MobilisationType : IGD9Field
 {
+	private const int WordBitCount = 8;
+
 	private MobilisationType(MobilisationTypeValue value)
 	{
 		this.Value = value;
@@ -21,7 +23,7 @@ public sealed record MobilisationType : IGD9Field
 
 	public static MobilisationType FromEncodedMessageBuffer(ref EncodedMessageBuffer buffer)
 	{
-		return FromValue((MobilisationTypeValue)buffer.ReadUnsignedBits(8));
+		return FromValue((MobilisationTypeValue)buffer.ReadUnsignedBits(WordBitCount));
 	}
 
 	public byte[] ToWireValue()

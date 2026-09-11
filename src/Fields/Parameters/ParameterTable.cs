@@ -2,6 +2,8 @@ namespace Stensones.GD92.Fields;
 
 public sealed record ParameterTable : IGD9Field
 {
+	private const int WordBitCount = 8;
+
 	private ParameterTable(byte value)
 	{
 		this.Value = value;
@@ -20,7 +22,7 @@ public sealed record ParameterTable : IGD9Field
 
 	public static ParameterTable FromEncodedMessageBuffer(ref EncodedMessageBuffer buffer)
 	{
-		return FromValue(ParameterTableIdentifier.FromValue((byte)buffer.ReadUnsignedBits(8)));
+		return FromValue(ParameterTableIdentifier.FromValue((byte)buffer.ReadUnsignedBits(WordBitCount)));
 	}
 
 	public byte[] ToWireValue()

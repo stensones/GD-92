@@ -2,12 +2,15 @@ namespace Stensones.GD92.Fields;
 
 internal static class MobiliseMessageStringEncoding
 {
+	private const int CountBitCount = 8;
+	private const int CharacterBitCount = 8;
+
 	public static SevenBitAsciiString ReadCountedAscii(
 		ref EncodedMessageBuffer buffer,
 		int maximumEncodedLength,
 		bool isCompressed)
 	{
-		var encodedLength = (byte)buffer.ReadUnsignedBits(8);
+		var encodedLength = (byte)buffer.ReadUnsignedBits(CountBitCount);
 
 		ArgumentOutOfRangeException.ThrowIfGreaterThan(encodedLength, maximumEncodedLength, nameof(buffer));
 
@@ -15,7 +18,7 @@ internal static class MobiliseMessageStringEncoding
 
 		for (var index = 0; index < encodedValue.Length; index++)
 		{
-			encodedValue[index] = (byte)buffer.ReadUnsignedBits(8);
+			encodedValue[index] = (byte)buffer.ReadUnsignedBits(CharacterBitCount);
 		}
 
 		var value = isCompressed
