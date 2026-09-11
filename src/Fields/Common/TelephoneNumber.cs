@@ -25,11 +25,11 @@ public sealed record TelephoneNumber : IGD9Field
 
 	public static TelephoneNumber FromEncodedMessageBuffer(ref EncodedMessageBuffer buffer)
 	{
-		return FromValue(MobiliseMessageStringEncoding.ReadCountedAscii(ref buffer, MaximumTelephoneNumberLength, false));
+		return FromValue(CountedAsciiStringEncoding.ReadCountedAscii(ref buffer, MaximumTelephoneNumberLength, false));
 	}
 
 	public byte[] ToWireValue()
 	{
-		return MobiliseMessageStringEncoding.ToCountedWireValue(this.Value, MaximumTelephoneNumberLength, false);
+		return CountedAsciiStringEncoding.ToCountedWireValue(this.Value, MaximumTelephoneNumberLength, false);
 	}
 }

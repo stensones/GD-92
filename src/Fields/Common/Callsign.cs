@@ -23,11 +23,11 @@ public sealed record Callsign : IGD9Field
 
 	public static Callsign FromEncodedMessageBuffer(ref EncodedMessageBuffer buffer)
 	{
-		return FromValue(MobiliseMessageStringEncoding.ReadCountedAscii(ref buffer, MaximumCallsignLength, false));
+		return FromValue(CountedAsciiStringEncoding.ReadCountedAscii(ref buffer, MaximumCallsignLength, false));
 	}
 
 	public byte[] ToWireValue()
 	{
-		return MobiliseMessageStringEncoding.ToCountedWireValue(this.Value, MaximumCallsignLength, false);
+		return CountedAsciiStringEncoding.ToCountedWireValue(this.Value, MaximumCallsignLength, false);
 	}
 }

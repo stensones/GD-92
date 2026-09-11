@@ -14,7 +14,7 @@ public abstract record AddressComponent
 		int maximumEncodedLength,
 		bool isCompressed)
 	{
-		return MobiliseMessageStringEncoding.ReadCountedAscii(ref buffer, maximumEncodedLength, isCompressed);
+		return CountedAsciiStringEncoding.ReadCountedAscii(ref buffer, maximumEncodedLength, isCompressed);
 	}
 
 	protected static void ValidateValue(
@@ -22,11 +22,11 @@ public abstract record AddressComponent
 		int maximumEncodedLength,
 		bool isCompressed)
 	{
-		_ = MobiliseMessageStringEncoding.ToCountedWireValue(value, maximumEncodedLength, isCompressed);
+		_ = CountedAsciiStringEncoding.ToCountedWireValue(value, maximumEncodedLength, isCompressed);
 	}
 
 	protected byte[] GetWireValue(int maximumEncodedLength, bool isCompressed)
 	{
-		return MobiliseMessageStringEncoding.ToCountedWireValue(this.Value, maximumEncodedLength, isCompressed);
+		return CountedAsciiStringEncoding.ToCountedWireValue(this.Value, maximumEncodedLength, isCompressed);
 	}
 }

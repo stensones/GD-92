@@ -13,16 +13,24 @@
 using Reqnroll;
 namespace Router.Persistence.Tests.Integration
 {
+    
+    
     [global::System.CodeDom.Compiler.GeneratedCodeAttribute("Reqnroll", "3.0.0.0")]
     [global::System.Runtime.CompilerServices.CompilerGeneratedAttribute()]
     public partial class RouterParameterBootstrapFeature : object, global::Xunit.IClassFixture<RouterParameterBootstrapFeature.FixtureData>, global::Xunit.IAsyncLifetime
     {
+        
         private global::Reqnroll.ITestRunner testRunner;
+        
         private static string[] featureTags = ((string[])(null));
+        
         private static global::Reqnroll.FeatureInfo featureInfo = new global::Reqnroll.FeatureInfo(new global::System.Globalization.CultureInfo("en-US"), "", "Router Parameter Bootstrap", null, global::Reqnroll.ProgrammingLanguage.CSharp, featureTags, InitializeCucumberMessages());
+        
         private global::Xunit.Abstractions.ITestOutputHelper _testOutputHelper;
+        
 #line 1 "RouterParameterBootstrap.feature"
 #line hidden
+        
         public RouterParameterBootstrapFeature(RouterParameterBootstrapFeature.FixtureData fixtureData, global::Xunit.Abstractions.ITestOutputHelper testOutputHelper)
         {
             this._testOutputHelper = testOutputHelper;
@@ -164,6 +172,7 @@ namespace Router.Persistence.Tests.Integration
             }
             await this.ScenarioCleanupAsync();
         }
+        
         [global::Xunit.SkippableFactAttribute(DisplayName="Bootstrapping the initial typed Router Parameters")]
         [global::Xunit.TraitAttribute("FeatureTitle", "Router Parameter Bootstrap")]
         [global::Xunit.TraitAttribute("Description", "Bootstrapping the initial typed Router Parameters")]
@@ -244,6 +253,7 @@ namespace Router.Persistence.Tests.Integration
             }
             await this.ScenarioCleanupAsync();
         }
+        
         [global::Xunit.SkippableFactAttribute(DisplayName="Storing a first direct Permanent Parameter value")]
         [global::Xunit.TraitAttribute("FeatureTitle", "Router Parameter Bootstrap")]
         [global::Xunit.TraitAttribute("Description", "Storing a first direct Permanent Parameter value")]
@@ -280,6 +290,7 @@ namespace Router.Persistence.Tests.Integration
             }
             await this.ScenarioCleanupAsync();
         }
+        
         [global::Xunit.SkippableFactAttribute(DisplayName="Concurrently starting Router with different bootstrap configurations")]
         [global::Xunit.TraitAttribute("FeatureTitle", "Router Parameter Bootstrap")]
         [global::Xunit.TraitAttribute("Description", "Concurrently starting Router with different bootstrap configurations")]
@@ -316,6 +327,7 @@ namespace Router.Persistence.Tests.Integration
             }
             await this.ScenarioCleanupAsync();
         }
+        
         [global::Xunit.SkippableFactAttribute(DisplayName="Concurrently changing an existing Non-Volatile Parameter value")]
         [global::Xunit.TraitAttribute("FeatureTitle", "Router Parameter Bootstrap")]
         [global::Xunit.TraitAttribute("Description", "Concurrently changing an existing Non-Volatile Parameter value")]
@@ -349,6 +361,7 @@ namespace Router.Persistence.Tests.Integration
             }
             await this.ScenarioCleanupAsync();
         }
+        
         [global::System.CodeDom.Compiler.GeneratedCodeAttribute("Reqnroll", "3.0.0.0")]
         [global::System.Runtime.CompilerServices.CompilerGeneratedAttribute()]
         public class FixtureData : object, global::Xunit.IAsyncLifetime

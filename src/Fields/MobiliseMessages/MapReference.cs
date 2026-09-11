@@ -23,11 +23,11 @@ public sealed record MapReference : IGD9Field
 
 	public static MapReference FromEncodedMessageBuffer(ref EncodedMessageBuffer buffer)
 	{
-		return FromValue(MobiliseMessageStringEncoding.ReadCountedAscii(ref buffer, MaximumMapReferenceLength, false));
+		return FromValue(CountedAsciiStringEncoding.ReadCountedAscii(ref buffer, MaximumMapReferenceLength, false));
 	}
 
 	public byte[] ToWireValue()
 	{
-		return MobiliseMessageStringEncoding.ToCountedWireValue(this.Value, MaximumMapReferenceLength, false);
+		return CountedAsciiStringEncoding.ToCountedWireValue(this.Value, MaximumMapReferenceLength, false);
 	}
 }

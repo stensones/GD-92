@@ -1,6 +1,6 @@
 namespace Stensones.GD92.Fields;
 
-internal static class MobiliseMessageStringEncoding
+internal static class CountedAsciiStringEncoding
 {
 	private const int CountBitCount = 8;
 	private const int CharacterBitCount = 8;
