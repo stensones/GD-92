@@ -320,7 +320,7 @@ A fixed-length `DDMMMYYHHMMSS` Protocol Field recording a Message submission tim
 A Protocol Field that classifies a mobilisation as a pre-alert, incident, non-incident, batch address, standby, demobilisation, or test.
 
 **Incident Address**:
-The structured address, location, and postcode information supplied for an Incident.
+The structured address, location, and postcode information supplied for an Incident. Each typed address component owns its encoded-length and compression constraint.
 _Avoid_: Communications Address, Address Range
 
 **Text Message**:
