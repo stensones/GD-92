@@ -313,6 +313,9 @@ A 16-bit Protocol Field whose set bits report defined peripheral input states, i
 **Manual Acknowledgement Request**:
 A boolean Protocol Field indicating that a recipient must await a local Manual Acknowledgement before completing a message.
 
+**Alert Group**:
+A two-character Protocol Field that selects one of the seven defined Firecall team combinations.
+
 **Callsign List**:
 A counted collection of the Callsigns of Resources to which a Mobilise Message applies.
 
@@ -344,6 +347,9 @@ The zero-content Message Type 9 request for the current state of a remote statio
 
 **Peripheral Status**:
 The Message Type 28 Contents that reports Input Peripherals followed by Output Peripherals.
+
+**Alert Crew**:
+The Message Type 40 Contents that alerts a Firecall team group, optionally requires Manual Acknowledgement, and can activate Output Peripherals.
 
 **Mobilise Message**:
 The Message Type 2 Contents, comprising message block data, a submission Time And Date, target Callsign List, and one or more incident-detail sets.

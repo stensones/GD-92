@@ -118,6 +118,17 @@ public sealed class EnvelopeSteps
 				OutputPeripheral.ApplianceIndicator1));
 	}
 
+	[Given(@"an Alert Crew message for Firecall Team A requiring manual acknowledgement and activating station sounders and appliance indicator 1")]
+	public void GivenAnAlertCrewMessageForFirecallTeamA()
+	{
+		this.contents = AlertCrew.FromFields(
+			AlertGroup.FromValue(AlertGroupValue.FirecallTeamA),
+			ManualAcknowledgementRequest.Required,
+			OutputPeripherals.FromOutputs(
+				OutputPeripheral.StationSounders,
+				OutputPeripheral.ApplianceIndicator1));
+	}
+
 	[Given(@"a single-block Mobilise Message for resource ""(.*)"" submitted at ""(.*)"" for Incident (.*)")]
 	public void GivenASingleBlockMobiliseMessageForResourceSubmittedAtForIncident(
 		string callsign,
@@ -339,6 +350,17 @@ public sealed class EnvelopeSteps
 
 		contents.InputPeripherals.IsInputSet(InputPeripheral.ManualAcknowledgementPressed).Should().BeTrue();
 		contents.InputPeripherals.IsInputSet(InputPeripheral.PaperLow).Should().BeTrue();
+		contents.OutputPeripherals.IsOutputSet(OutputPeripheral.StationSounders).Should().BeTrue();
+		contents.OutputPeripherals.IsOutputSet(OutputPeripheral.ApplianceIndicator1).Should().BeTrue();
+	}
+
+	[Then(@"its decoded Alert Crew message identifies Firecall Team A, requires manual acknowledgement, and activates station sounders and appliance indicator 1")]
+	public void ThenItsDecodedAlertCrewMessagePreservesItsFields()
+	{
+		var contents = this.envelope!.Contents.Should().BeOfType<AlertCrew>().Which;
+
+		contents.AlertGroup.Value.Should().Be(AlertGroupValue.FirecallTeamA);
+		contents.ManualAcknowledgementRequest.Should().Be(ManualAcknowledgementRequest.Required);
 		contents.OutputPeripherals.IsOutputSet(OutputPeripheral.StationSounders).Should().BeTrue();
 		contents.OutputPeripherals.IsOutputSet(OutputPeripheral.ApplianceIndicator1).Should().BeTrue();
 	}
