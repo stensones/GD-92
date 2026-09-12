@@ -133,6 +133,15 @@ public sealed class EnvelopeSteps
 			Update.FromValue(SevenBitAsciiString.FromValue(update)));
 	}
 
+	[Given(@"a Stop from resource ""(.*)"" for incident (.*) with stop code ""(.*)""")]
+	public void GivenAStop(string callsign, uint incidentNumber, string stopCode)
+	{
+		this.contents = Stop.FromFields(
+			Callsign.FromValue(SevenBitAsciiString.FromValue(callsign)),
+			IncidentNumber.FromValue(incidentNumber),
+			StopCode.FromValue(SevenBitAsciiString.FromValue(stopCode)));
+	}
+
 	[Given(@"a Peripheral Status Request")]
 	public void GivenAPeripheralStatusRequest()
 	{
@@ -449,6 +458,16 @@ public sealed class EnvelopeSteps
 		contents.Callsign.Value.Value.Should().Be(callsign);
 		contents.IncidentNumber.Value.Should().Be(incidentNumber);
 		contents.Update.Value.Value.Should().Be(update);
+	}
+
+	[Then(@"its decoded Stop identifies resource ""(.*)"", incident (.*), and stop code ""(.*)""")]
+	public void ThenItsDecodedStopPreservesItsFields(string callsign, uint incidentNumber, string stopCode)
+	{
+		var contents = this.envelope!.Contents.Should().BeOfType<Stop>().Which;
+
+		contents.Callsign.Value.Value.Should().Be(callsign);
+		contents.IncidentNumber.Value.Should().Be(incidentNumber);
+		contents.StopCode.Value.Value.Should().Be(stopCode);
 	}
 
 	[Then(@"its decoded Contents are a Peripheral Status Request")]
