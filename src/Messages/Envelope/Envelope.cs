@@ -234,6 +234,7 @@ public sealed class Envelope
 			GD92MessageType.AlertCrew => AlertCrew.FromEncodedMessageBuffer(ref contentsBuffer),
 			GD92MessageType.AlertStatus => AlertStatus.FromEncodedMessageBuffer(ref contentsBuffer),
 			GD92MessageType.AlertEng => AlertEng.FromEncodedMessageBuffer(ref contentsBuffer),
+			GD92MessageType.Test => Test.FromEncodedMessageBuffer(ref contentsBuffer),
 			GD92MessageType.InterruptRequest => InterruptRequest.FromEncodedMessageBuffer(ref contentsBuffer),
 			GD92MessageType.ResetRequest => ResetRequest.FromEncodedMessageBuffer(ref contentsBuffer),
 			GD92MessageType.Reset => Reset.FromEncodedMessageBuffer(ref contentsBuffer),

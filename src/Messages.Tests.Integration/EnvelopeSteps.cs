@@ -195,6 +195,12 @@ public sealed class EnvelopeSteps
 			AlerterEngineering.FromValue(AlerterEngineeringValue.LockSystemToTransmitterA));
 	}
 
+	[Given(@"a Test with opaque test type (.*)")]
+	public void GivenATestWithOpaqueTestType(byte testType)
+	{
+		this.contents = Test.FromFields(TestType.FromValue(testType));
+	}
+
 	[Given(@"a Peripheral Status Request")]
 	public void GivenAPeripheralStatusRequest()
 	{
@@ -570,6 +576,14 @@ public sealed class EnvelopeSteps
 		var contents = this.envelope!.Contents.Should().BeOfType<AlertEng>().Which;
 
 		contents.AlerterEngineering.Value.Should().Be(AlerterEngineeringValue.LockSystemToTransmitterA);
+	}
+
+	[Then(@"its decoded Test preserves opaque test type (.*)")]
+	public void ThenItsDecodedTestPreservesOpaqueTestType(byte testType)
+	{
+		var contents = this.envelope!.Contents.Should().BeOfType<Test>().Which;
+
+		contents.TestType.Value.Should().Be(testType);
 	}
 
 	[Then(@"its decoded Contents are a Peripheral Status Request")]
