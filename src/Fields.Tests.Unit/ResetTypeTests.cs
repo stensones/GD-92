@@ -4,12 +4,15 @@ namespace Stensones.GD92.Fields.Tests.Unit;
 
 public sealed class ResetTypeTests
 {
-	[Fact]
-	public void Serializes_the_defined_software_reset_type()
+	[Theory]
+	[InlineData(ResetTypeValue.SoftwareReset, 0x00)]
+	[InlineData(ResetTypeValue.HardwareReset, 0x01)]
+	[InlineData(ResetTypeValue.HardwareResetAndReloadParametersFromPermanentTables, 0x02)]
+	public void Serializes_each_defined_reset_type(ResetTypeValue value, byte expectedWireValue)
 	{
-		ResetType.FromValue(ResetTypeValue.SoftwareReset)
+		ResetType.FromValue(value)
 			.ToWireValue()
 			.Should()
-			.Equal(new byte[] { 0x00 });
+			.Equal(new byte[] { expectedWireValue });
 	}
 }

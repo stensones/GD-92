@@ -320,10 +320,79 @@ A two-character Protocol Field that selects one of the seven defined Firecall te
 A one-character Protocol Field that identifies a request to speak, an emergency, or a confidential request to speak.
 
 **Reset Type**:
-A one-byte Protocol Field that identifies the requested reset severity. Volume A currently defines Software Reset.
+A one-byte Protocol Field that identifies the requested reset severity: software reset, hardware reset, or hardware reset with permanent-parameter reload.
 
 **Reset Reason**:
 A one-byte Protocol Field that reports whether a reset was requested, caused by software failure, or followed power-on.
+
+**Pager Priority**:
+A one-character Protocol Field that classifies a pager call as emergency, priority, routine, or administrative.
+
+**Pager Number**:
+The Protocol Field that combines a Telephone Number with a Pager Type.
+
+**Pager Type**:
+A one-character Protocol Field that identifies an alphanumeric, numeric, or tones-only pager call.
+
+**Pager Text**:
+A compressed ASCII Protocol Field carrying up to 200 encoded bytes of pager text.
+
+**Resource Status Fields**:
+The Availability, location, status, and Remarks fields reported for a Resource. AVL Type and AVL Data remain opaque because Volume A reserves future AVL assignment values and does not define AVL Data coding.
+
+**Status Code**:
+A one-byte Protocol Field that identifies one of Volume A's defined Resource availability and incident states.
+
+**Officer In Charge**:
+A bounded plain ASCII Protocol Field identifying a Resource's officer in charge.
+
+**Riders**:
+A one-byte Protocol Field recording the 1-15 riders reported with a Resource's Duty Staffing.
+
+**Update**:
+A compressed ASCII Protocol Field carrying up to 255 encoded bytes of incident-log update text.
+
+**Stop Code**:
+A fixed five-character alphanumeric Protocol Field supplied when a Resource stops an Incident.
+
+**Appliance Type**:
+A three-character, space-padded alphanumeric Protocol Field identifying an appliance type.
+
+**Appliance Quantity**:
+The unsigned one-byte quantity requested for an Appliance Type.
+
+**Number Types**:
+The unsigned one-byte count, limited to 0-12, of Appliance Type and Quantity pairs.
+
+**Alarm Fields**:
+The bounded Alarm Type, Call Agency, Alarm Reference, and Alarm Serial Protocol Fields that identify an Incident Notification source and alarm.
+
+**Alerter Status**:
+A two-character Protocol Field reporting a defined Alerter local operation, fault, or cleared-fault condition.
+
+**Alerter Engineering**:
+A one-character Protocol Field that selects a defined Alerter engineering command or user-defined engineering parameter.
+
+**Destination Nodes**:
+A count-prefixed collection of Address Ranges used to describe routing destinations.
+
+**Format Type**:
+A one-byte Protocol Field whose only currently defined value identifies a text table.
+
+**Table**:
+A compressed ASCII Protocol Field carrying up to 255 encoded bytes of formatted or proforma table data.
+
+**Query Type**:
+An opaque one-byte Protocol Field; Volume A leaves its values for later definition.
+
+**Test Type**:
+An opaque one-byte Protocol Field with no Volume A assignment table.
+
+**Printer Status**:
+A one-byte Protocol Field reporting a printer as offline, paper out, or online.
+
+**MTA Status**:
+A one-byte Protocol Field reporting a Message Transfer Agent as idle, online, user-offline, or fault-offline.
 
 **Callsign List**:
 A counted collection of the Callsigns of Resources to which a Mobilise Message applies.
