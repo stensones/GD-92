@@ -379,6 +379,9 @@ The Message Type 66 Contents through which a Message Transfer Agent reports a de
 **Route Status**:
 The Message Type 67 Contents through which a Router enables or disables routes to Destination Nodes via the sending Communications Node.
 
+**Brigade Message**:
+The Type 101 non-mandatory Contents for non-operational text sent between Communications Nodes.
+
 **Status Code**:
 A one-byte Protocol Field that identifies one of Volume A's defined Resource availability and incident states.
 

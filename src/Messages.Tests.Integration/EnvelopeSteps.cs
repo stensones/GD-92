@@ -230,6 +230,13 @@ public sealed class EnvelopeSteps
 				CreateAddress(brigade, lastNode, port))));
 	}
 
+	[Given(@"a Brigade Message containing ""(.*)""")]
+	public void GivenABrigadeMessage(string text)
+	{
+		this.contents = BrigadeMessage.FromFields(
+			Stensones.GD92.Fields.Text.FromValue(text));
+	}
+
 	[Given(@"a Peripheral Status Request")]
 	public void GivenAPeripheralStatusRequest()
 	{
@@ -645,6 +652,14 @@ public sealed class EnvelopeSteps
 		contents.RoutesEnabled.Value.Should().BeTrue();
 		range.FirstAddress.Should().Be(CreateAddress(brigade, firstNode, port));
 		range.LastAddress.Should().Be(CreateAddress(brigade, lastNode, port));
+	}
+
+	[Then(@"its decoded Brigade Message contains ""(.*)""")]
+	public void ThenItsDecodedBrigadeMessageContains(string text)
+	{
+		var contents = this.envelope!.Contents.Should().BeOfType<BrigadeMessage>().Which;
+
+		contents.Text.Value.Should().Be(text);
 	}
 
 	[Then(@"its decoded Contents are a Peripheral Status Request")]
