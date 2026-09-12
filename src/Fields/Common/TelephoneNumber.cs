@@ -3,6 +3,7 @@ namespace Stensones.GD92.Fields;
 public sealed record TelephoneNumber : IGD9Field
 {
 	private const int MaximumTelephoneNumberLength = 16;
+	private const char PaddingCharacter = ' ';
 
 	private TelephoneNumber(SevenBitAsciiString value)
 	{
@@ -13,7 +14,7 @@ public sealed record TelephoneNumber : IGD9Field
 
 	public static TelephoneNumber FromValue(SevenBitAsciiString value)
 	{
-		var number = value.Value.TrimEnd(' ');
+		var number = value.Value.TrimEnd(PaddingCharacter);
 
 		if (value.Value.Length > MaximumTelephoneNumberLength || number.Any(character => !char.IsAsciiDigit(character)))
 		{

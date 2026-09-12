@@ -2,8 +2,6 @@ namespace Stensones.GD92.Fields;
 
 public sealed record ManualAcknowledgementRequest : IGD9Field
 {
-	private const int BooleanBitCount = 8;
-
 	private ManualAcknowledgementRequest(ProtocolBoolean value)
 	{
 		this.Value = value;
@@ -21,11 +19,8 @@ public sealed record ManualAcknowledgementRequest : IGD9Field
 
 	public static ManualAcknowledgementRequest FromEncodedMessageBuffer(ref EncodedMessageBuffer buffer)
 	{
-		return FromValue(ProtocolBoolean.FromValue((byte)buffer.ReadUnsignedBits(BooleanBitCount)));
+		return FromValue(ProtocolBoolean.FromEncodedMessageBuffer(ref buffer));
 	}
 
-	public byte[] ToWireValue()
-	{
-		return [this.Value.Value];
-	}
+	public byte[] ToWireValue() => this.Value.ToWireValue();
 }

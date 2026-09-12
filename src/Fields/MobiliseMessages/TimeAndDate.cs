@@ -22,11 +22,23 @@ public sealed record TimeAndDate : IGD9Field
 	private const int SecondStartIndex = MinuteStartIndex + MinuteLength;
 	private const int SecondLength = 2;
 	private const int MaximumSecond = 59;
+	private const string JanuaryToken = "JAN";
+	private const string FebruaryToken = "FEB";
+	private const string MarchToken = "MAR";
+	private const string AprilToken = "APR";
+	private const string MayToken = "MAY";
+	private const string JuneToken = "JUN";
+	private const string JulyToken = "JUL";
+	private const string AugustToken = "AUG";
+	private const string SeptemberToken = "SEP";
+	private const string OctoberToken = "OCT";
+	private const string NovemberToken = "NOV";
+	private const string DecemberToken = "DEC";
 
 	private static readonly HashSet<string> Months =
 	[
-		"JAN", "FEB", "MAR", "APR", "MAY", "JUN",
-		"JUL", "AUG", "SEP", "OCT", "NOV", "DEC"
+		JanuaryToken, FebruaryToken, MarchToken, AprilToken, MayToken, JuneToken,
+		JulyToken, AugustToken, SeptemberToken, OctoberToken, NovemberToken, DecemberToken
 	];
 
 	private TimeAndDate(SevenBitAsciiString value)

@@ -2,8 +2,6 @@ namespace Stensones.GD92.Fields;
 
 public sealed record WanTableEntry : IUncountedTableEntry
 {
-	private const int BooleanBitCount = 8;
-
 	private WanTableEntry(
 		ParameterEntryIndex index,
 		ProtocolBoolean used,
@@ -43,7 +41,7 @@ public sealed record WanTableEntry : IUncountedTableEntry
 	{
 		return FromValues(
 			ParameterEntryIndex.FromEncodedMessageBuffer(ref buffer),
-			ProtocolBoolean.FromValue((byte)buffer.ReadUnsignedBits(BooleanBitCount)),
+			ProtocolBoolean.FromEncodedMessageBuffer(ref buffer),
 			CommunicationsAddress.FromEncodedMessageBuffer(ref buffer),
 			WanAddress.FromEncodedMessageBuffer(ref buffer),
 			ConnectType.FromEncodedMessageBuffer(ref buffer));
@@ -53,7 +51,7 @@ public sealed record WanTableEntry : IUncountedTableEntry
 	{
 		return [
 			.. this.Index.ToWireValue(),
-			this.Used.Value,
+			.. this.Used.ToWireValue(),
 			.. this.NextNode.ToWireValue(),
 			.. this.WanAddress.ToWireValue(),
 			.. this.ConnectType.ToWireValue()

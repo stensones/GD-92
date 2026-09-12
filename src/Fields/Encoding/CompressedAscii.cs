@@ -8,6 +8,8 @@ internal static class CompressedAscii
 	private const int EscapeSequenceLength = 3;
 	private const int EscapedCharacterOffset = 1;
 	private const int RunLengthOffset = 2;
+	private const string IncompleteEscapeSequenceMessage = "The compressed text contains an incomplete escape sequence.";
+	private const string InvalidRunLengthMessage = "The compressed text contains an invalid run length.";
 
 	public static byte[] Compress(ReadOnlySpan<byte> value)
 	{
@@ -78,7 +80,7 @@ internal static class CompressedAscii
 
 			if (index + RunLengthOffset >= value.Length)
 			{
-				throw new InvalidOperationException("The compressed text contains an incomplete escape sequence.");
+				throw new InvalidOperationException(IncompleteEscapeSequenceMessage);
 			}
 
 			var character = value[index + EscapedCharacterOffset];
@@ -92,7 +94,7 @@ internal static class CompressedAscii
 			{
 				if (count < MinimumCompressibleRunLength)
 				{
-					throw new InvalidOperationException("The compressed text contains an invalid run length.");
+					throw new InvalidOperationException(InvalidRunLengthMessage);
 				}
 
 				for (var occurrence = 0; occurrence < count; occurrence++)

@@ -3,6 +3,7 @@ namespace Stensones.GD92.Fields;
 public sealed record DestinationNodes : IGD9Field
 {
 	private const int CountBitCount = 8;
+	private const string NullAddressRangeMessage = "Address ranges may not contain null values.";
 
 	private DestinationNodes(IReadOnlyList<AddressRange> addressRanges)
 	{
@@ -22,7 +23,7 @@ public sealed record DestinationNodes : IGD9Field
 
 		if (addressRanges.Any(addressRange => addressRange is null))
 		{
-			throw new ArgumentException("Address ranges may not contain null values.", nameof(addressRanges));
+			throw new ArgumentException(NullAddressRangeMessage, nameof(addressRanges));
 		}
 
 		return new DestinationNodes(Array.AsReadOnly(addressRanges.ToArray()));

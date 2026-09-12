@@ -2,8 +2,6 @@ namespace Stensones.GD92.Fields;
 
 public sealed record LanTableEntry : IUncountedTableEntry
 {
-	private const int BooleanBitCount = 8;
-
 	private LanTableEntry(
 		ParameterEntryIndex index,
 		ProtocolBoolean used,
@@ -38,7 +36,7 @@ public sealed record LanTableEntry : IUncountedTableEntry
 	{
 		return FromValues(
 			ParameterEntryIndex.FromEncodedMessageBuffer(ref buffer),
-			ProtocolBoolean.FromValue((byte)buffer.ReadUnsignedBits(BooleanBitCount)),
+			ProtocolBoolean.FromEncodedMessageBuffer(ref buffer),
 			CommunicationsAddress.FromEncodedMessageBuffer(ref buffer),
 			LanAddress.FromEncodedMessageBuffer(ref buffer));
 	}
@@ -47,7 +45,7 @@ public sealed record LanTableEntry : IUncountedTableEntry
 	{
 		return [
 			.. this.Index.ToWireValue(),
-			this.Used.Value,
+			.. this.Used.ToWireValue(),
 			.. this.NextNode.ToWireValue(),
 			.. this.LanAddress.ToWireValue()
 		];

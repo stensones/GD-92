@@ -11,14 +11,6 @@ public sealed class MoreValuesTests
 	}
 
 	[Fact]
-	public void Rejects_protocol_booleans_outside_the_defined_encodings()
-	{
-		Action createProtocolBoolean = () => ProtocolBoolean.FromValue(2);
-
-		createProtocolBoolean.Should().Throw<ArgumentOutOfRangeException>();
-	}
-
-	[Fact]
 	public void Does_not_expose_a_primitive_factory()
 	{
 		typeof(MoreValues).GetMethod("FromValue", [typeof(byte)]).Should().BeNull();

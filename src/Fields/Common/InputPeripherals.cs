@@ -3,6 +3,7 @@ namespace Stensones.GD92.Fields;
 public sealed record InputPeripherals : IGD9Field
 {
 	private const ushort DefinedInputMask = 0x003F;
+	private const ushort EmptyPeripheralMask = 0;
 	private const int PeripheralBitMapBitCount = 16;
 	private const int ByteBitCount = 8;
 
@@ -19,7 +20,7 @@ public sealed record InputPeripherals : IGD9Field
 	{
 		ArgumentNullException.ThrowIfNull(inputs);
 
-		var value = (ushort)0;
+		var value = EmptyPeripheralMask;
 
 		foreach (var input in inputs)
 		{

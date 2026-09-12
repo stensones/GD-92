@@ -3,6 +3,7 @@ namespace Stensones.GD92.Fields;
 public sealed record CallsignList : IGD9Field
 {
 	private const int CountBitCount = 8;
+	private const string NullCallsignMessage = "Callsigns may not contain null values.";
 
 	private CallsignList(IReadOnlyList<Callsign> values)
 	{
@@ -22,7 +23,7 @@ public sealed record CallsignList : IGD9Field
 
 		if (values.Any(value => value is null))
 		{
-			throw new ArgumentException("Callsigns may not contain null values.", nameof(values));
+			throw new ArgumentException(NullCallsignMessage, nameof(values));
 		}
 
 		return new CallsignList(Array.AsReadOnly(values.ToArray()));

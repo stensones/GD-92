@@ -3,6 +3,7 @@ namespace Stensones.GD92.Fields;
 public sealed record ApplianceType : IGD9Field
 {
 	private const int WireByteCount = 3;
+	private const int CharacterBitCount = 8;
 	private const char PaddingCharacter = ' ';
 
 	private ApplianceType(SevenBitAsciiString value)
@@ -29,7 +30,7 @@ public sealed record ApplianceType : IGD9Field
 
 		for (var index = 0; index < characters.Length; index++)
 		{
-			characters[index] = (char)buffer.ReadUnsignedBits(8);
+			characters[index] = (char)buffer.ReadUnsignedBits(CharacterBitCount);
 		}
 
 		return FromValue(SevenBitAsciiString.FromValue(new string(characters).TrimEnd(PaddingCharacter)));

@@ -5,6 +5,7 @@ namespace Stensones.GD92.Fields;
 public readonly record struct SevenBitAsciiString
 {
 	private const char MaximumAsciiCharacter = (char)0x7F;
+	private const string InvalidAsciiValueMessage = "Value may contain only 7-bit ASCII characters.";
 
 	private static readonly Encoding Ascii = Encoding.ASCII;
 
@@ -21,7 +22,7 @@ public readonly record struct SevenBitAsciiString
 
 		if (value.Any(character => character > MaximumAsciiCharacter))
 		{
-			throw new ArgumentException("Value may contain only 7-bit ASCII characters.", nameof(value));
+			throw new ArgumentException(InvalidAsciiValueMessage, nameof(value));
 		}
 
 		return new SevenBitAsciiString(value);

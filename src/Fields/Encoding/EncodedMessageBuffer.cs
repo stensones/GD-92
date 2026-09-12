@@ -8,6 +8,7 @@ public ref struct EncodedMessageBuffer
 	private const int MostSignificantBitOffset = BitsPerByte - 1;
 	private const int SingleBitShift = 1;
 	private const uint SingleBitMask = 1;
+	private const string InsufficientBitsMessage = "The encoded message buffer does not contain enough bits.";
 
 	private readonly ReadOnlySpan<byte> payload;
 	private int bitPosition;
@@ -42,7 +43,7 @@ public ref struct EncodedMessageBuffer
 
 		if (bitCount > this.RemainingBitCount)
 		{
-			throw new InvalidOperationException("The encoded message buffer does not contain enough bits.");
+			throw new InvalidOperationException(InsufficientBitsMessage);
 		}
 
 		var value = 0U;

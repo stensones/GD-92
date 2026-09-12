@@ -291,6 +291,9 @@ _Avoid_: application event, arbitrary payload type
 An encoded value type used to construct an Envelope or Message Contents.
 _Avoid_: domain Entity, arbitrary JSON field
 
+**Protocol Boolean**:
+A Protocol Field whose encoded `00` and `01` values represent false and true. It exposes the semantic Boolean value, not its encoded octet.
+
 **Word8**:
 An unsigned eight-bit Protocol Field that is encoded as eight consecutive bits.
 _Avoid_: signed byte, variable-length integer

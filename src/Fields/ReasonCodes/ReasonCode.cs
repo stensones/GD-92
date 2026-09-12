@@ -5,6 +5,7 @@ public sealed record ReasonCode : IGD9Field
 	private const byte GeneralReasonCodeSet = 1;
 	private const byte ParameterReasonCodeSet = 4;
 	private const int WordBitCount = 8;
+	private const string UnsupportedReasonCodeSetMessageFormat = "Reason Code Set {0} is not supported.";
 
 	private ReasonCode(GeneralReasonCode generalReasonCode)
 	{
@@ -48,7 +49,7 @@ public sealed record ReasonCode : IGD9Field
 		{
 			GeneralReasonCodeSet => FromGeneralReasonCode((GeneralReasonCode)reasonCodeValue),
 			ParameterReasonCodeSet => FromParameterReasonCode((ParameterReasonCode)reasonCodeValue),
-			_ => throw new NotSupportedException($"Reason Code Set {reasonCodeSet} is not supported.")
+			_ => throw new NotSupportedException(string.Format(UnsupportedReasonCodeSetMessageFormat, reasonCodeSet))
 		};
 	}
 

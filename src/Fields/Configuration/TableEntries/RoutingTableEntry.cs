@@ -2,8 +2,6 @@ namespace Stensones.GD92.Fields;
 
 public sealed record RoutingTableEntry : IUncountedTableEntry
 {
-	private const int BooleanBitCount = 8;
-
 	private RoutingTableEntry(
 		ParameterEntryIndex index,
 		ProtocolBoolean used,
@@ -48,7 +46,7 @@ public sealed record RoutingTableEntry : IUncountedTableEntry
 	{
 		return FromValues(
 			ParameterEntryIndex.FromEncodedMessageBuffer(ref buffer),
-			ProtocolBoolean.FromValue((byte)buffer.ReadUnsignedBits(BooleanBitCount)),
+			ProtocolBoolean.FromEncodedMessageBuffer(ref buffer),
 			CommunicationsAddress.FromEncodedMessageBuffer(ref buffer),
 			DestinationNodes.FromEncodedMessageBuffer(ref buffer),
 			AgentType.FromEncodedMessageBuffer(ref buffer),
@@ -59,7 +57,7 @@ public sealed record RoutingTableEntry : IUncountedTableEntry
 	{
 		return [
 			.. this.Index.ToWireValue(),
-			this.Used.Value,
+			.. this.Used.ToWireValue(),
 			.. this.NextNode.ToWireValue(),
 			.. this.DestinationNodes.ToWireValue(),
 			.. this.AgentType.ToWireValue(),

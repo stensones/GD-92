@@ -8,6 +8,8 @@ public interface IUncountedTableEntry : IGD9Field
 public abstract record UncountedTableField<TEntry>
 	where TEntry : class, IUncountedTableEntry
 {
+	private const string NullTableEntryMessage = "Table entries may not contain null values.";
+
 	protected UncountedTableField(IReadOnlyList<TEntry> entries)
 	{
 		this.Entries = entries;
@@ -35,7 +37,7 @@ public abstract record UncountedTableField<TEntry>
 
 		if (entries.Any(entry => entry is null))
 		{
-			throw new ArgumentException("Table entries may not contain null values.", nameof(entries));
+			throw new ArgumentException(NullTableEntryMessage, nameof(entries));
 		}
 
 		return Array.AsReadOnly(entries.ToArray());
