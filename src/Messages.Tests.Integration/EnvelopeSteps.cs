@@ -112,6 +112,18 @@ public sealed class EnvelopeSteps
 				Remarks.FromValue(SevenBitAsciiString.FromValue(remarks))));
 	}
 
+	[Given(@"a Duty Staffing Update reporting resource ""(.*)"" with officer in charge ""(.*)"", (.*) riders, Available At Base, and remarks ""(.*)""")]
+	public void GivenADutyStaffingUpdate(string callsign, string officerInCharge, byte riders, string remarks)
+	{
+		this.contents = DutyStaffingUpdate.FromEntries(
+			DutyStaffingEntry.FromFields(
+				Callsign.FromValue(SevenBitAsciiString.FromValue(callsign)),
+				OfficerInCharge.FromValue(SevenBitAsciiString.FromValue(officerInCharge)),
+				Riders.FromValue(riders),
+				StatusCode.FromValue(StatusCodeValue.AvailableAtBase),
+				Remarks.FromValue(SevenBitAsciiString.FromValue(remarks))));
+	}
+
 	[Given(@"a Peripheral Status Request")]
 	public void GivenAPeripheralStatusRequest()
 	{
@@ -405,6 +417,19 @@ public sealed class EnvelopeSteps
 		status.AvlData.Value.Value.Should().BeEmpty();
 		status.StatusCode.Value.Should().Be(StatusCodeValue.AvailableAtBase);
 		status.Remarks.Value.Value.Should().Be(remarks);
+	}
+
+	[Then(@"its decoded Duty Staffing Update reports resource ""(.*)"" with officer in charge ""(.*)"", (.*) riders, Available At Base, and remarks ""(.*)""")]
+	public void ThenItsDecodedDutyStaffingUpdatePreservesItsEntry(string callsign, string officerInCharge, byte riders, string remarks)
+	{
+		var contents = this.envelope!.Contents.Should().BeOfType<DutyStaffingUpdate>().Which;
+		var entry = contents.Entries.Should().ContainSingle().Which;
+
+		entry.Callsign.Value.Value.Should().Be(callsign);
+		entry.OfficerInCharge.Value.Value.Should().Be(officerInCharge);
+		entry.Riders.Value.Should().Be(riders);
+		entry.StatusCode.Value.Should().Be(StatusCodeValue.AvailableAtBase);
+		entry.Remarks.Value.Value.Should().Be(remarks);
 	}
 
 	[Then(@"its decoded Contents are a Peripheral Status Request")]

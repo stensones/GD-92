@@ -346,6 +346,9 @@ The Availability, location, status, and Remarks fields reported for a Resource. 
 **Resource Status**:
 The Message Type 20 Contents comprising an ordered sequence of Resource Status entries, each reporting a Resource Callsign, AVL Type and Data, Status Code, and Remarks.
 
+**Duty Staffing Update**:
+The Message Type 21 Contents comprising an ordered sequence of Duty Staffing entries, each reporting a Resource Callsign, Officer in Charge, number of Riders, Status Code, and Remarks.
+
 **Status Code**:
 A one-byte Protocol Field that identifies one of Volume A's defined Resource availability and incident states.
 
