@@ -394,6 +394,36 @@ A one-byte Protocol Field reporting a printer as offline, paper out, or online.
 **MTA Status**:
 A one-byte Protocol Field reporting a Message Transfer Agent as idle, online, user-offline, or fault-offline.
 
+**Configuration Fields**:
+The Protocol Fields that define Communications Node routing, bearer, peripheral-mapping, and addressing Parameters.
+
+**Active State**:
+A one-byte Protocol Field that defines whether a physical peripheral contact is active when closed or open.
+
+**Generate Alarm**:
+A one-byte Protocol Field that defines whether an asserted or de-asserted input generates an alarm and, where applicable, repeats at its Regeneration Time.
+
+**Agent Type**:
+A one-byte Protocol Field that identifies the specified Message Transfer Agent or User Agent type, including Volume A's user-defined assignments.
+
+**Connect Type**:
+A one-byte Protocol Field identifying a permanent or switched virtual circuit.
+
+**Dial Tones**:
+A one-byte Protocol Field selecting pulse or tone dialling.
+
+**Hold Time**:
+A one-byte Protocol Field specifying the connection hold duration in seconds.
+
+**Physical Bit**:
+A one-byte Protocol Field identifying a physical peripheral bit from 0 through 15.
+
+**Routing Preference**:
+An opaque one-byte Protocol Field that orders routing entries; Volume A defines no value-assignment table.
+
+**Configuration Address Fields**:
+Bounded ASCII Protocol Fields for alternative printed addresses, LAN and WAN addresses, Network User addresses, and Communications Node names. Alternative printed addresses use compressed ASCII; the others use plain ASCII.
+
 **Callsign List**:
 A counted collection of the Callsigns of Resources to which a Mobilise Message applies.
 
