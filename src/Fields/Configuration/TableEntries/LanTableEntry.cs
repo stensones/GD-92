@@ -1,6 +1,6 @@
 namespace Stensones.GD92.Fields;
 
-public sealed record LanTableEntry : IUncountedTableEntry
+public sealed record LanTableEntry : IUncountedTableEntry<LanTableEntry>
 {
 	private LanTableEntry(
 		ParameterEntryIndex index,

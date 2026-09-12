@@ -1,6 +1,6 @@
 namespace Stensones.GD92.Fields;
 
-public sealed record RoutingTableEntry : IUncountedTableEntry
+public sealed record RoutingTableEntry : IUncountedTableEntry<RoutingTableEntry>
 {
 	private RoutingTableEntry(
 		ParameterEntryIndex index,

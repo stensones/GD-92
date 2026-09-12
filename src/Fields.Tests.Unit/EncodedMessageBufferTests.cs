@@ -33,6 +33,55 @@ public sealed class EncodedMessageBufferTests
 			.WithMessage("*does not contain enough bits*");
 	}
 
+	[Fact]
+	public void Reads_an_aligned_fixed_length_byte_sequence()
+	{
+		var buffer = new EncodedMessageBuffer([0x0A, 0xBC, 0xDE]);
+
+		buffer.ReadUnsignedBits(8).Should().Be(0x0A);
+
+		var bytes = buffer.ReadBytes(2);
+
+		bytes.ToArray().Should().Equal(0xBC, 0xDE);
+		buffer.RemainingBitCount.Should().Be(0);
+	}
+
+	[Fact]
+	public void Reads_the_remaining_aligned_bytes()
+	{
+		var buffer = new EncodedMessageBuffer([0x0A, 0xBC, 0xDE]);
+
+		buffer.ReadUnsignedBits(8).Should().Be(0x0A);
+
+		var bytes = buffer.ReadRemainingBytes();
+
+		bytes.ToArray().Should().Equal(0xBC, 0xDE);
+		buffer.RemainingBitCount.Should().Be(0);
+	}
+
+	[Fact]
+	public void Rejects_an_unaligned_byte_read_without_advancing_the_cursor()
+	{
+		var buffer = new EncodedMessageBuffer([0x0A, 0xBC]);
+
+		buffer.ReadUnsignedBits(1).Should().Be(0);
+
+		InvalidOperationException? exception = null;
+
+		try
+		{
+			buffer.ReadBytes(1);
+		}
+		catch (InvalidOperationException error)
+		{
+			exception = error;
+		}
+
+		exception.Should().NotBeNull();
+		exception!.Message.Should().Match("*byte-aligned*");
+		buffer.BitPosition.Should().Be(1);
+	}
+
 	private static void InitializeBuffer(int bitPosition)
 	{
 		_ = new EncodedMessageBuffer([0x00], bitPosition);

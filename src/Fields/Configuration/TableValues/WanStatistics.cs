@@ -14,13 +14,6 @@ public sealed record WanStatistics : UncountedTableField<WanStatisticsEntry>, IG
 
 	public static WanStatistics FromEncodedMessageBuffer(ref EncodedMessageBuffer buffer)
 	{
-		var entries = new List<WanStatisticsEntry>();
-
-		while (buffer.RemainingBitCount > 0)
-		{
-			entries.Add(WanStatisticsEntry.FromEncodedMessageBuffer(ref buffer));
-		}
-
-		return FromEntries(entries.ToArray());
+		return new WanStatistics(DecodeEntries(ref buffer, int.MaxValue));
 	}
 }

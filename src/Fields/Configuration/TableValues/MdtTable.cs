@@ -16,13 +16,6 @@ public sealed record MdtTable : UncountedTableField<MobileDataTerminalTableEntry
 
 	public static MdtTable FromEncodedMessageBuffer(ref EncodedMessageBuffer buffer)
 	{
-		var entries = new List<MobileDataTerminalTableEntry>();
-
-		while (buffer.RemainingBitCount > 0)
-		{
-			entries.Add(MobileDataTerminalTableEntry.FromEncodedMessageBuffer(ref buffer));
-		}
-
-		return FromEntries(entries.ToArray());
+		return new MdtTable(DecodeEntries(ref buffer, MaximumEntryCount));
 	}
 }

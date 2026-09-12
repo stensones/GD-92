@@ -19,15 +19,15 @@ public sealed class Password : IGD9Field
 	public static Password FromEncodedMessageBuffer(ref EncodedMessageBuffer buffer)
 	{
 		var length = (byte)buffer.ReadUnsignedBits(StringLengthBitCount);
-
-		var characters = new byte[length];
+		var value = buffer.ReadBytes(length);
+		var characters = new char[value.Length];
 
 		for (var index = 0; index < characters.Length; index++)
 		{
-			characters[index] = (byte)buffer.ReadUnsignedBits(StringLengthBitCount);
+			characters[index] = (char)value[index];
 		}
 
-		var charactersAsString = new string(characters.Select(character => (char)character).ToArray());
+		var charactersAsString = new string(characters);
 
 		return FromValue(PasswordValue.FromValue(SevenBitAsciiString.FromValue(charactersAsString)));
 	}

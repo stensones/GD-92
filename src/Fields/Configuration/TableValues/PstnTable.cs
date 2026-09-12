@@ -16,13 +16,6 @@ public sealed record PstnTable : UncountedTableField<TelephoneTableEntry>, IGD9F
 
 	public static PstnTable FromEncodedMessageBuffer(ref EncodedMessageBuffer buffer)
 	{
-		var entries = new List<TelephoneTableEntry>();
-
-		while (buffer.RemainingBitCount > 0)
-		{
-			entries.Add(TelephoneTableEntry.FromEncodedMessageBuffer(ref buffer));
-		}
-
-		return FromEntries(entries.ToArray());
+		return new PstnTable(DecodeEntries(ref buffer, MaximumEntryCount));
 	}
 }

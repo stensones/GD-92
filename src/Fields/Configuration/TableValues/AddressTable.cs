@@ -16,13 +16,6 @@ public sealed record AddressTable : UncountedTableField<AlternativeAddressTableE
 
 	public static AddressTable FromEncodedMessageBuffer(ref EncodedMessageBuffer buffer)
 	{
-		var entries = new List<AlternativeAddressTableEntry>();
-
-		while (buffer.RemainingBitCount > 0)
-		{
-			entries.Add(AlternativeAddressTableEntry.FromEncodedMessageBuffer(ref buffer));
-		}
-
-		return FromEntries(entries.ToArray());
+		return new AddressTable(DecodeEntries(ref buffer, MaximumEntryCount));
 	}
 }

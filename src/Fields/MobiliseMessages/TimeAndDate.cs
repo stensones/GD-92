@@ -3,7 +3,6 @@ namespace Stensones.GD92.Fields;
 public sealed record TimeAndDate : IGD9Field
 {
 	private const int WireByteCount = 13;
-	private const int CharacterBitCount = 8;
 	private const int DayStartIndex = 0;
 	private const int DayLength = 2;
 	private const int MinimumDay = 1;
@@ -60,14 +59,15 @@ public sealed record TimeAndDate : IGD9Field
 
 	public static TimeAndDate FromEncodedMessageBuffer(ref EncodedMessageBuffer buffer)
 	{
-		var value = new byte[WireByteCount];
+		var value = buffer.ReadBytes(WireByteCount);
+		var characters = new char[value.Length];
 
-		for (var index = 0; index < value.Length; index++)
+		for (var index = 0; index < characters.Length; index++)
 		{
-			value[index] = (byte)buffer.ReadUnsignedBits(CharacterBitCount);
+			characters[index] = (char)value[index];
 		}
 
-		return FromValue(SevenBitAsciiString.FromValue(new string(value.Select(character => (char)character).ToArray())));
+		return FromValue(SevenBitAsciiString.FromValue(new string(characters)));
 	}
 
 	public byte[] ToWireValue()

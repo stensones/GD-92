@@ -14,13 +14,6 @@ public sealed record TelephoneStatistics : UncountedTableField<TelephoneStatisti
 
 	public static TelephoneStatistics FromEncodedMessageBuffer(ref EncodedMessageBuffer buffer)
 	{
-		var entries = new List<TelephoneStatisticsEntry>();
-
-		while (buffer.RemainingBitCount > 0)
-		{
-			entries.Add(TelephoneStatisticsEntry.FromEncodedMessageBuffer(ref buffer));
-		}
-
-		return FromEntries(entries.ToArray());
+		return new TelephoneStatistics(DecodeEntries(ref buffer, int.MaxValue));
 	}
 }

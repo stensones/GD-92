@@ -16,13 +16,6 @@ public sealed record RoutingTable : UncountedTableField<RoutingTableEntry>, IGD9
 
 	public static RoutingTable FromEncodedMessageBuffer(ref EncodedMessageBuffer buffer)
 	{
-		var entries = new List<RoutingTableEntry>();
-
-		while (buffer.RemainingBitCount > 0)
-		{
-			entries.Add(RoutingTableEntry.FromEncodedMessageBuffer(ref buffer));
-		}
-
-		return FromEntries(entries.ToArray());
+		return new RoutingTable(DecodeEntries(ref buffer, MaximumEntryCount));
 	}
 }

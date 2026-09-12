@@ -28,21 +28,8 @@ public sealed class Parameter : IGD92MessageContents
 	public static Parameter FromEncodedMessageBuffer(ref EncodedMessageBuffer buffer)
 	{
 		var moreValues = MoreValues.FromEncodedMessageBuffer(ref buffer);
-		var valueLength = buffer.RemainingBitCount;
 
-		if (valueLength % 8 != 0)
-		{
-			throw new InvalidOperationException("Parameter Value must be byte-aligned.");
-		}
-
-		var parameterValue = new byte[valueLength / 8];
-
-		for (var index = 0; index < parameterValue.Length; index++)
-		{
-			parameterValue[index] = (byte)buffer.ReadUnsignedBits(8);
-		}
-
-		return FromFields(moreValues, ParameterValue.FromWireValue(parameterValue));
+		return FromFields(moreValues, ParameterValue.FromWireValue(buffer.ReadRemainingBytes()));
 	}
 
 	public byte[] ToWireValue()

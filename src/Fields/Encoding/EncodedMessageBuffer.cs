@@ -9,6 +9,7 @@ public ref struct EncodedMessageBuffer
 	private const int SingleBitShift = 1;
 	private const uint SingleBitMask = 1;
 	private const string InsufficientBitsMessage = "The encoded message buffer does not contain enough bits.";
+	private const string ByteAlignmentMessage = "Byte reads require a byte-aligned encoded message buffer.";
 
 	private readonly ReadOnlySpan<byte> payload;
 	private int bitPosition;
@@ -61,5 +62,30 @@ public ref struct EncodedMessageBuffer
 		this.bitPosition += bitCount;
 
 		return value;
+	}
+
+	public ReadOnlySpan<byte> ReadBytes(int byteCount)
+	{
+		ArgumentOutOfRangeException.ThrowIfNegative(byteCount);
+
+		if (this.BitOffsetInByte != 0)
+		{
+			throw new InvalidOperationException(ByteAlignmentMessage);
+		}
+
+		if (byteCount > this.RemainingBitCount / BitsPerByte)
+		{
+			throw new InvalidOperationException(InsufficientBitsMessage);
+		}
+
+		var bytes = this.payload.Slice(this.ByteOffset, byteCount);
+		this.bitPosition += byteCount * BitsPerByte;
+
+		return bytes;
+	}
+
+	public ReadOnlySpan<byte> ReadRemainingBytes()
+	{
+		return this.ReadBytes(this.RemainingBitCount / BitsPerByte);
 	}
 }

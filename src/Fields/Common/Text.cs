@@ -42,12 +42,7 @@ public sealed record Text : IGD9Field
 	public static Text FromEncodedMessageBuffer(ref EncodedMessageBuffer buffer)
 	{
 		var length = (ushort)buffer.ReadUnsignedBits(LongCountBitCount);
-		var value = new byte[length];
-
-		for (var index = 0; index < value.Length; index++)
-		{
-			value[index] = (byte)buffer.ReadUnsignedBits(Word8BitCount);
-		}
+		var value = buffer.ReadBytes(length).ToArray();
 
 		var text = new Text(value);
 		_ = text.Value;

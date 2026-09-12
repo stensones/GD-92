@@ -14,10 +14,11 @@ public sealed class UnsupportedMessageContents : IGD92MessageContents
 
 	public MessageType Type { get; }
 
-	internal static UnsupportedMessageContents FromWireValue(MessageType type, byte[] wireValue)
+	internal static UnsupportedMessageContents FromWireValue(
+		MessageType type,
+		ReadOnlySpan<byte> wireValue)
 	{
 		ArgumentNullException.ThrowIfNull(type);
-		ArgumentNullException.ThrowIfNull(wireValue);
 
 		return new UnsupportedMessageContents(type, wireValue.ToArray());
 	}

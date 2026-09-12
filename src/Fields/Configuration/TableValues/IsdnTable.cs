@@ -16,13 +16,6 @@ public sealed record IsdnTable : UncountedTableField<TelephoneTableEntry>, IGD9F
 
 	public static IsdnTable FromEncodedMessageBuffer(ref EncodedMessageBuffer buffer)
 	{
-		var entries = new List<TelephoneTableEntry>();
-
-		while (buffer.RemainingBitCount > 0)
-		{
-			entries.Add(TelephoneTableEntry.FromEncodedMessageBuffer(ref buffer));
-		}
-
-		return FromEntries(entries.ToArray());
+		return new IsdnTable(DecodeEntries(ref buffer, MaximumEntryCount));
 	}
 }

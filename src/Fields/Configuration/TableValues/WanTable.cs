@@ -14,13 +14,6 @@ public sealed record WanTable : UncountedTableField<WanTableEntry>, IGD9Field
 
 	public static WanTable FromEncodedMessageBuffer(ref EncodedMessageBuffer buffer)
 	{
-		var entries = new List<WanTableEntry>();
-
-		while (buffer.RemainingBitCount > 0)
-		{
-			entries.Add(WanTableEntry.FromEncodedMessageBuffer(ref buffer));
-		}
-
-		return FromEntries(entries.ToArray());
+		return new WanTable(DecodeEntries(ref buffer, int.MaxValue));
 	}
 }

@@ -1,6 +1,6 @@
 namespace Stensones.GD92.Fields;
 
-public sealed record MobileDataTerminalTableEntry : IUncountedTableEntry
+public sealed record MobileDataTerminalTableEntry : IUncountedTableEntry<MobileDataTerminalTableEntry>
 {
 	private MobileDataTerminalTableEntry(
 		ParameterEntryIndex index,

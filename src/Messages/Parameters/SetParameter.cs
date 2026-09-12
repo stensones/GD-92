@@ -38,24 +38,11 @@ public sealed record SetParameter : IGD92MessageContents
 	{
 		var parameterTable = ParameterTable.FromEncodedMessageBuffer(ref buffer);
 		var parameterNumber = ParameterNumber.FromEncodedMessageBuffer(ref buffer);
-		var valueLength = buffer.RemainingBitCount;
-
-		if (valueLength % 8 != 0)
-		{
-			throw new InvalidOperationException("Set Parameter Value must be byte-aligned.");
-		}
-
-		var parameterValue = new byte[valueLength / 8];
-
-		for (var index = 0; index < parameterValue.Length; index++)
-		{
-			parameterValue[index] = (byte)buffer.ReadUnsignedBits(8);
-		}
 
 		return FromFields(
 			parameterTable,
 			parameterNumber,
-			ParameterValue.FromWireValue(parameterValue));
+			ParameterValue.FromWireValue(buffer.ReadRemainingBytes()));
 	}
 
 	public byte[] ToWireValue()

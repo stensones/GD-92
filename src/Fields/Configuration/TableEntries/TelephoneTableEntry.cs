@@ -1,6 +1,6 @@
 namespace Stensones.GD92.Fields;
 
-public sealed record TelephoneTableEntry : IUncountedTableEntry
+public sealed record TelephoneTableEntry : IUncountedTableEntry<TelephoneTableEntry>
 {
 	private TelephoneTableEntry(
 		ParameterEntryIndex index,

@@ -5,8 +5,14 @@ public interface IUncountedTableEntry : IGD9Field
 	byte[] ToWireValue();
 }
 
+public interface IUncountedTableEntry<TSelf> : IUncountedTableEntry
+	where TSelf : class, IUncountedTableEntry<TSelf>
+{
+	static abstract TSelf FromEncodedMessageBuffer(ref EncodedMessageBuffer buffer);
+}
+
 public abstract record UncountedTableField<TEntry>
-	where TEntry : class, IUncountedTableEntry
+	where TEntry : class, IUncountedTableEntry<TEntry>
 {
 	private const string NullTableEntryMessage = "Table entries may not contain null values.";
 
@@ -41,5 +47,19 @@ public abstract record UncountedTableField<TEntry>
 		}
 
 		return Array.AsReadOnly(entries.ToArray());
+	}
+
+	protected static IReadOnlyList<TEntry> DecodeEntries(
+		ref EncodedMessageBuffer buffer,
+		int maximumEntryCount)
+	{
+		var entries = new List<TEntry>();
+
+		while (buffer.RemainingBitCount > 0)
+		{
+			entries.Add(TEntry.FromEncodedMessageBuffer(ref buffer));
+		}
+
+		return ValidateEntries(entries.ToArray(), maximumEntryCount);
 	}
 }

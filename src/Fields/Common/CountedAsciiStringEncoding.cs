@@ -3,7 +3,6 @@ namespace Stensones.GD92.Fields;
 internal static class CountedAsciiStringEncoding
 {
 	private const int CountBitCount = 8;
-	private const int CharacterBitCount = 8;
 
 	public static SevenBitAsciiString ReadCountedAscii(
 		ref EncodedMessageBuffer buffer,
@@ -14,18 +13,18 @@ internal static class CountedAsciiStringEncoding
 
 		ArgumentOutOfRangeException.ThrowIfGreaterThan(encodedLength, maximumEncodedLength, nameof(buffer));
 
-		var encodedValue = new byte[encodedLength];
-
-		for (var index = 0; index < encodedValue.Length; index++)
-		{
-			encodedValue[index] = (byte)buffer.ReadUnsignedBits(CharacterBitCount);
-		}
-
-		var value = isCompressed
+		var encodedValue = buffer.ReadBytes(encodedLength);
+		ReadOnlySpan<byte> value = isCompressed
 			? CompressedAscii.Decompress(encodedValue)
 			: encodedValue;
+		var characters = new char[value.Length];
 
-		return SevenBitAsciiString.FromValue(new string(value.Select(character => (char)character).ToArray()));
+		for (var index = 0; index < characters.Length; index++)
+		{
+			characters[index] = (char)value[index];
+		}
+
+		return SevenBitAsciiString.FromValue(new string(characters));
 	}
 
 	public static byte[] ToCountedWireValue(

@@ -16,13 +16,6 @@ public sealed record LanTable : UncountedTableField<LanTableEntry>, IGD9Field
 
 	public static LanTable FromEncodedMessageBuffer(ref EncodedMessageBuffer buffer)
 	{
-		var entries = new List<LanTableEntry>();
-
-		while (buffer.RemainingBitCount > 0)
-		{
-			entries.Add(LanTableEntry.FromEncodedMessageBuffer(ref buffer));
-		}
-
-		return FromEntries(entries.ToArray());
+		return new LanTable(DecodeEntries(ref buffer, MaximumEntryCount));
 	}
 }
