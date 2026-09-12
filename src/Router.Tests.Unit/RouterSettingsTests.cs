@@ -65,9 +65,18 @@ public sealed class RouterSettingsTests
 			["Router:LocalAddress:Brigade"] = "26",
 			["Router:LocalAddress:Node"] = "100",
 			["Router:LocalAddress:Port"] = "0",
+			["Router:NodeName"] = "Station End",
+			["Router:MaximumMessageLength"] = "1023",
+			["Router:NetworkManagerAddress1:Brigade"] = "26",
+			["Router:NetworkManagerAddress1:Node"] = "100",
+			["Router:NetworkManagerAddress1:Port"] = "25",
+			["Router:NetworkManagerAddress2:Brigade"] = "26",
+			["Router:NetworkManagerAddress2:Node"] = "100",
+			["Router:NetworkManagerAddress2:Port"] = "25",
 			["Router:ProtocolVersion"] = "2",
 			["Router:NoAcknowledgementTimeout"] = "5",
-			["Router:Retries"] = "3"
+			["Router:Retries"] = "3",
+			["Router:ManualAcknowledgementTimeout"] = "60"
 		};
 
 		foreach (var value in values)

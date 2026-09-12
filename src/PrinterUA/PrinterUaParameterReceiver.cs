@@ -1,13 +1,16 @@
 using Stensones.GD92.Fields;
 using Stensones.GD92.Messages;
 using Stensones.GD92.Transport.RabbitMQ;
+using PrinterUA.Persistence;
 
 namespace PrinterUA;
 
 public sealed class PrinterUaParameterReceiver(
 	PrinterUaSettings settings,
+	PrinterUaCurrentParameterProjectionSource currentParameters,
 	IRouterIngress routerIngress) : ILocalParticipantIngressReceiver
 {
+	private static readonly ParameterNumber PortNumberParameterNumber = ParameterNumber.FromValue(1);
 	private static readonly ParameterNumber AgentTypeParameterNumber = ParameterNumber.FromValue(2);
 
 	public async Task ReceiveAsync(Envelope envelope, CancellationToken cancellationToken)
@@ -19,7 +22,8 @@ public sealed class PrinterUaParameterReceiver(
 			envelope.Destinations.Addresses[0] != settings.LocalAddress ||
 			envelope.Contents is not ParameterRequest parameterRequest ||
 			parameterRequest.ParameterTable != ParameterTable.Current ||
-			parameterRequest.ParameterNumber != AgentTypeParameterNumber)
+			(parameterRequest.ParameterNumber != PortNumberParameterNumber &&
+				parameterRequest.ParameterNumber != AgentTypeParameterNumber))
 		{
 			return;
 		}
@@ -30,7 +34,7 @@ public sealed class PrinterUaParameterReceiver(
 			settings.ProtocolVersion,
 			Parameter.FromFields(
 				MoreValues.No,
-				ParameterValue.FromWireValue([4])));
+				currentParameters.GetCurrent().Get(parameterRequest.ParameterNumber)));
 
 		await routerIngress.SubmitAsync(response, cancellationToken);
 	}

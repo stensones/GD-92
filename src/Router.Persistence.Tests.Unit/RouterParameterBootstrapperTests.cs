@@ -42,16 +42,49 @@ public sealed class RouterParameterBootstrapperTests
 		var initialPassword = PasswordValue.FromValue(SevenBitAsciiString.FromValue("FIRE"));
 		var configuration = RouterParameterBootstrapConfiguration.FromValues(
 			localAddress,
+			CreateNodeName(),
+			MaximumMessageLength.FromValue(1_023),
+			CreateAddress(26, 100, 25),
+			CreateAddress(26, 100, 25),
 			initialPassword,
 			NoAcknowledgementTimeout.FromValue(Word8.FromValue(5)),
-			Retries.FromValue(Word8.FromValue(3)));
+			Retries.FromValue(Word8.FromValue(3)),
+			ManualAcknowledgementTimeout.FromValue(60),
+			CreateInstallationTime(),
+			MdtTable.FromEntries());
 		var bootstrapper = new RouterParameterBootstrapper(
 			parameterStore,
 			passwordVerifierStore);
 
 		var currentParameters = await bootstrapper.LoadCurrentParameterProjectionAsync(configuration);
+		var permanentNodeNumber = await parameterStore.GetAsync(
+			ParameterTable.Permanent,
+			ParameterNumber.FromValue(2));
+		var nonVolatileNodeNumber = await parameterStore.GetAsync(
+			ParameterTable.NonVolatile,
+			ParameterNumber.FromValue(2));
+		var permanentNodeName = await parameterStore.GetAsync(
+			ParameterTable.Permanent,
+			ParameterNumber.FromValue(3));
+		var nonVolatileNodeName = await parameterStore.GetAsync(
+			ParameterTable.NonVolatile,
+			ParameterNumber.FromValue(3));
 
 		currentParameters.BrigadeOrAgencyIdentifier.ToWireValue().Should().Equal([26]);
+		permanentNodeNumber.Should().NotBeNull();
+		permanentNodeNumber!.ToWireValue().Should().Equal([0, 100]);
+		nonVolatileNodeNumber.Should().NotBeNull();
+		nonVolatileNodeNumber!.ToWireValue().Should().Equal([0, 100]);
+		permanentNodeName.Should().NotBeNull();
+		permanentNodeName!.ToWireValue().Should().Equal([
+			11, (byte)'S', (byte)'t', (byte)'a', (byte)'t', (byte)'i',
+			(byte)'o', (byte)'n', (byte)' ', (byte)'E', (byte)'n', (byte)'d'
+		]);
+		nonVolatileNodeName.Should().NotBeNull();
+		nonVolatileNodeName!.ToWireValue().Should().Equal([
+			11, (byte)'S', (byte)'t', (byte)'a', (byte)'t', (byte)'i',
+			(byte)'o', (byte)'n', (byte)' ', (byte)'E', (byte)'n', (byte)'d'
+		]);
 		currentParameters.CurrentPassword.ToWireValue().Should().Equal(
 			PasswordParameter.FromFields(
 				PasswordLevel.FromValue(PasswordLevelNumber.Unauthenticated),
@@ -97,6 +130,133 @@ public sealed class RouterParameterBootstrapperTests
 		(await passwordVerifierStore.GetAsync(ParameterTable.NonVolatile))!
 			.Verifies(initialPassword).Should().BeTrue();
 		currentParameters.Level1PasswordVerifier.Verifies(initialPassword).Should().BeTrue();
+	}
+
+	[Fact]
+	public async Task Seeds_permanent_and_non_volatile_router_parameters_nine_to_eleven_from_its_configuration()
+	{
+		var parameterStore = new InMemoryRouterParameterStore();
+		var initialPassword = PasswordValue.FromValue(SevenBitAsciiString.FromValue("FIRE"));
+		var networkManagerAddress = CreateAddress(26, 100, 25);
+		var configuration = RouterParameterBootstrapConfiguration.FromValues(
+			CreateAddress(26, 100, 0),
+			CreateNodeName(),
+			MaximumMessageLength.FromValue(1_023),
+			networkManagerAddress,
+			networkManagerAddress,
+			initialPassword,
+			NoAcknowledgementTimeout.FromValue(Word8.FromValue(5)),
+			Retries.FromValue(Word8.FromValue(3)),
+			ManualAcknowledgementTimeout.FromValue(60),
+			CreateInstallationTime(),
+			MdtTable.FromEntries());
+		var bootstrapper = new RouterParameterBootstrapper(
+			parameterStore,
+			new InMemoryRouterPasswordVerifierStore());
+
+		await bootstrapper.LoadCurrentParameterProjectionAsync(configuration);
+
+		await AssertStoredParameterValueAsync(
+			parameterStore,
+			ParameterTable.Permanent,
+			9,
+			[3, 255]);
+		await AssertStoredParameterValueAsync(
+			parameterStore,
+			ParameterTable.NonVolatile,
+			9,
+			[3, 255]);
+		await AssertStoredParameterValueAsync(
+			parameterStore,
+			ParameterTable.Permanent,
+			10,
+			[26, 25, 25]);
+		await AssertStoredParameterValueAsync(
+			parameterStore,
+			ParameterTable.NonVolatile,
+			10,
+			[26, 25, 25]);
+		await AssertStoredParameterValueAsync(
+			parameterStore,
+			ParameterTable.Permanent,
+			11,
+			[26, 25, 25]);
+		await AssertStoredParameterValueAsync(
+			parameterStore,
+			ParameterTable.NonVolatile,
+			11,
+			[26, 25, 25]);
+	}
+
+	[Fact]
+	public async Task Seeds_empty_router_tables_as_canonical_parameter_values_in_both_persistent_tables()
+	{
+		var parameterStore = new InMemoryRouterParameterStore();
+		var initialPassword = PasswordValue.FromValue(SevenBitAsciiString.FromValue("FIRE"));
+		var bootstrapper = new RouterParameterBootstrapper(
+			parameterStore,
+			new InMemoryRouterPasswordVerifierStore());
+
+		await bootstrapper.LoadCurrentParameterProjectionAsync(
+			CreateBootstrapConfiguration(initialPassword));
+
+		await AssertEmptyStoredParameterValueAsync(
+			parameterStore,
+			RouterParameterCatalogue.RouterTable.Number,
+			RouterParameterCatalogue.RouterTable.Encode(RoutingTable.FromEntries()));
+		await AssertEmptyStoredParameterValueAsync(
+			parameterStore,
+			RouterParameterCatalogue.PstnTable.Number,
+			RouterParameterCatalogue.PstnTable.Encode(PstnTable.FromEntries()));
+		await AssertEmptyStoredParameterValueAsync(
+			parameterStore,
+			RouterParameterCatalogue.WanTable.Number,
+			RouterParameterCatalogue.WanTable.Encode(WanTable.FromEntries()));
+		await AssertEmptyStoredParameterValueAsync(
+			parameterStore,
+			RouterParameterCatalogue.LanTable.Number,
+			RouterParameterCatalogue.LanTable.Encode(LanTable.FromEntries()));
+		await AssertEmptyStoredParameterValueAsync(
+			parameterStore,
+			RouterParameterCatalogue.IsdnTable.Number,
+			RouterParameterCatalogue.IsdnTable.Encode(IsdnTable.FromEntries()));
+	}
+
+	[Fact]
+	public async Task Seeds_manual_acknowledgement_timeout_installation_time_and_empty_MDT_table_in_both_persistent_tables()
+	{
+		var parameterStore = new InMemoryRouterParameterStore();
+		var initialPassword = PasswordValue.FromValue(SevenBitAsciiString.FromValue("FIRE"));
+		var installationTime = TimeAndDate.FromValue(
+			SevenBitAsciiString.FromValue("07SEP26154309"));
+		var configuration = RouterParameterBootstrapConfiguration.FromValues(
+			CreateAddress(26, 100, 0),
+			CreateNodeName(),
+			MaximumMessageLength.FromValue(1_023),
+			CreateAddress(26, 100, 25),
+			CreateAddress(26, 100, 25),
+			initialPassword,
+			NoAcknowledgementTimeout.FromValue(Word8.FromValue(5)),
+			Retries.FromValue(Word8.FromValue(3)),
+			ManualAcknowledgementTimeout.FromValue(60),
+			installationTime,
+			MdtTable.FromEntries());
+		var bootstrapper = new RouterParameterBootstrapper(
+			parameterStore,
+			new InMemoryRouterPasswordVerifierStore());
+
+		await bootstrapper.LoadCurrentParameterProjectionAsync(configuration);
+
+		foreach (var parameterTable in new[] { ParameterTable.Permanent, ParameterTable.NonVolatile })
+		{
+			await AssertStoredParameterValueAsync(parameterStore, parameterTable, 18, [0, 60]);
+			await AssertStoredParameterValueAsync(
+				parameterStore,
+				parameterTable,
+				20,
+				Convert.FromHexString("30375345503236313534333039"));
+			await AssertStoredParameterValueAsync(parameterStore, parameterTable, 21, []);
+		}
 	}
 
 	[Fact]
@@ -296,14 +456,59 @@ public sealed class RouterParameterBootstrapperTests
 			Port.FromValue(PortIdentifier.FromValue(port)));
 	}
 
+	private static async Task AssertStoredParameterValueAsync(
+		IParticipantParameterStore parameterStore,
+		ParameterTable parameterTable,
+		byte parameterNumber,
+		byte[] expectedWireValue)
+	{
+		(await parameterStore.GetAsync(
+			parameterTable,
+			ParameterNumber.FromValue(parameterNumber)))!
+			.ToWireValue().Should().Equal(expectedWireValue);
+	}
+
+	private static async Task AssertEmptyStoredParameterValueAsync(
+		IParticipantParameterStore parameterStore,
+		ParameterNumber parameterNumber,
+		ParameterValue expectedValue)
+	{
+		expectedValue.ToWireValue().Should().BeEmpty();
+		(await parameterStore.GetAsync(
+			ParameterTable.Permanent,
+			parameterNumber))!
+			.ToWireValue().Should().Equal(expectedValue.ToWireValue());
+		(await parameterStore.GetAsync(
+			ParameterTable.NonVolatile,
+			parameterNumber))!
+			.ToWireValue().Should().Equal(expectedValue.ToWireValue());
+	}
+
 	private static RouterParameterBootstrapConfiguration CreateBootstrapConfiguration(
 		PasswordValue initialLevel1Password)
 	{
 		return RouterParameterBootstrapConfiguration.FromValues(
 			CreateAddress(26, 100, 0),
+			CreateNodeName(),
+			MaximumMessageLength.FromValue(1_023),
+			CreateAddress(26, 100, 25),
+			CreateAddress(26, 100, 25),
 			initialLevel1Password,
 			NoAcknowledgementTimeout.FromValue(Word8.FromValue(5)),
-			Retries.FromValue(Word8.FromValue(3)));
+			Retries.FromValue(Word8.FromValue(3)),
+			ManualAcknowledgementTimeout.FromValue(60),
+			CreateInstallationTime(),
+			MdtTable.FromEntries());
+	}
+
+	private static NodeName CreateNodeName()
+	{
+		return NodeName.FromValue(SevenBitAsciiString.FromValue("Station End"));
+	}
+
+	private static TimeAndDate CreateInstallationTime()
+	{
+		return TimeAndDate.FromValue(SevenBitAsciiString.FromValue("07SEP26154309"));
 	}
 
 	private static ParameterValue CreateNeutralCurrentPassword(CommunicationsAddress localAddress)

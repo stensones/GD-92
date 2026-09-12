@@ -46,6 +46,7 @@ builder.Services.AddSingleton<IUserAgentIngressReceiver>(serviceProvider =>
 builder.Services.AddScoped<ILocalParticipantIngressReceiver, NodeManagerParticipantIngressReceiver>();
 builder.Services.AddScoped<IRouterIngress, NodeManagerRouterIngress>();
 builder.Services.AddSingleton<IManagementTransactionRetryDelay, ManagementTransactionRetryDelay>();
+builder.Services.AddScoped<IParticipantParameterRequestService, ParticipantParameterRequestService>();
 builder.Services.AddScoped<IRouterParameterRequestService, RouterParameterRequestService>();
 
 var app = builder.Build();
@@ -62,6 +63,11 @@ await using (var scope = app.Services.CreateAsyncScope())
 }
 
 app.UseStaticFiles(); // Enables serving static files from wwwroot
+if (!app.Environment.IsDevelopment())
+{
+	app.MapHealthChecks("/health");
+}
+
 app.MapDefaultEndpoints();
 app.MapControllers();
 

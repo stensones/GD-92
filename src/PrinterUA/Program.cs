@@ -1,6 +1,9 @@
 ﻿using PrinterUA;
+using PrinterUA.Persistence;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using ParticipantParameters;
 using Stensones.GD92.Fields;
 using Stensones.GD92.Transport.RabbitMQ;
 using Wolverine;
@@ -17,6 +20,10 @@ var localRouter = CommunicationsAddress.FromValues(
 	localAddress.Brigade,
 	localAddress.Node,
 	Port.FromValue(PortIdentifier.FromValue(0)));
+var controlAddress = CommunicationsAddress.FromValues(
+	localAddress.Brigade,
+	localAddress.Node,
+	Port.FromValue(PortIdentifier.FromValue(25)));
 var protocolVersion = ProtocolVersion.FromValue(ProtocolVersionNumber.FromValue(2));
 
 builder.Services.AddWolverine(options =>
@@ -24,8 +31,32 @@ builder.Services.AddWolverine(options =>
 	options.UseRabbitMqUsingNamedConnection("RabbitMQ").AutoProvision();
 	options.ListenForLocalParticipantIngress(localAddress);
 });
-builder.Services.AddSingleton(new PrinterUaSettings(localAddress, localRouter, protocolVersion));
+builder.Services.AddSingleton(new PrinterUaSettings(
+	localAddress,
+	localRouter,
+	controlAddress,
+	protocolVersion));
+builder.AddNpgsqlDbContext<PrinterUaDbContext>("printer-ua-database");
+builder.Services.AddScoped<IParticipantParameterStore, EfPrinterUaParameterStore>();
+builder.Services.AddScoped<PrinterUaParameterBootstrapper>();
+builder.Services.AddSingleton<PrinterUaCurrentParameterProjectionSource>();
 builder.Services.AddScoped<IRouterIngress, PrinterUaRouterIngress>();
 builder.Services.AddScoped<ILocalParticipantIngressReceiver, PrinterUaParameterReceiver>();
 
-await builder.Build().RunAsync();
+var host = builder.Build();
+
+await using (var scope = host.Services.CreateAsyncScope())
+{
+	var database = scope.ServiceProvider.GetRequiredService<PrinterUaDbContext>();
+	await database.Database.MigrateAsync();
+
+	var settings = scope.ServiceProvider.GetRequiredService<PrinterUaSettings>();
+	var bootstrapper = scope.ServiceProvider.GetRequiredService<PrinterUaParameterBootstrapper>();
+	var projection = await bootstrapper.LoadCurrentParameterProjectionAsync(
+		PrinterUaParameterBootstrapConfiguration.FromAddresses(
+			settings.LocalAddress,
+			settings.ControlAddress));
+	host.Services.GetRequiredService<PrinterUaCurrentParameterProjectionSource>().Publish(projection);
+}
+
+await host.RunAsync();

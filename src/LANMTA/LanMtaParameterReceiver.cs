@@ -1,15 +1,15 @@
 using Stensones.GD92.Fields;
 using Stensones.GD92.Messages;
+using LANMTA.Persistence;
 using Stensones.GD92.Transport.RabbitMQ;
 
 namespace LANMTA;
 
 public sealed class LanMtaParameterReceiver(
 	LanMtaSettings settings,
+	LanMtaCurrentParameterProjectionSource currentParameters,
 	IRouterIngress routerIngress) : ILocalParticipantIngressReceiver
 {
-	private static readonly ParameterNumber AgentTypeParameterNumber = ParameterNumber.FromValue(2);
-
 	public async Task ReceiveAsync(Envelope envelope, CancellationToken cancellationToken)
 	{
 		ArgumentNullException.ThrowIfNull(envelope);
@@ -18,8 +18,13 @@ public sealed class LanMtaParameterReceiver(
 		if (envelope.Destinations.Addresses.Count != 1 ||
 			envelope.Destinations.Addresses[0] != settings.LocalAddress ||
 			envelope.Contents is not ParameterRequest parameterRequest ||
-			parameterRequest.ParameterTable != ParameterTable.Current ||
-			parameterRequest.ParameterNumber != AgentTypeParameterNumber)
+			parameterRequest.ParameterTable != ParameterTable.Current)
+		{
+			return;
+		}
+
+		var projection = currentParameters.GetCurrent();
+		if (!projection.TryGet(parameterRequest.ParameterNumber, out var parameterValue))
 		{
 			return;
 		}
@@ -30,7 +35,7 @@ public sealed class LanMtaParameterReceiver(
 			settings.ProtocolVersion,
 			Parameter.FromFields(
 				MoreValues.No,
-				ParameterValue.FromWireValue([10])));
+				parameterValue));
 
 		await routerIngress.SubmitAsync(response, cancellationToken);
 	}

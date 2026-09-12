@@ -272,9 +272,16 @@ public sealed class RouterParameterBootstrapSteps
 		return await bootstrapper.LoadCurrentParameterProjectionAsync(
 			RouterParameterBootstrapConfiguration.FromValues(
 				localAddress,
+				NodeName.FromValue(SevenBitAsciiString.FromValue("Station End")),
+				MaximumMessageLength.FromValue(1_023),
+				CreateAddress(26, 100, 25),
+				CreateAddress(26, 100, 25),
 				initialLevel1Password,
 				noAcknowledgementTimeout,
-				retries));
+				retries,
+				ManualAcknowledgementTimeout.FromValue(60),
+				TimeAndDate.FromValue(SevenBitAsciiString.FromValue("07SEP26154309")),
+				MdtTable.FromEntries()));
 	}
 
 	private RouterDbContext CreateContext()

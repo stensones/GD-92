@@ -9,24 +9,31 @@ namespace NodeManager.Persistence.Tests.Unit;
 public sealed class NodeManagerParameterBootstrapperTests
 {
 	[Fact]
-	public async Task Seeds_permanent_and_non_volatile_identity_parameters_and_projects_the_non_volatile_values()
+	public async Task Seeds_common_ua_parameters_in_both_persistent_tables_and_projects_non_volatile_values()
 	{
 		var store = new InMemoryNodeManagerParameterStore();
 		var bootstrapper = new NodeManagerParameterBootstrapper(store);
+		var nodeManagerAddress = CreateAddress(26, 100, 25);
 
 		var current = await bootstrapper.LoadCurrentParameterProjectionAsync(
-			NodeManagerParameterBootstrapConfiguration.FromAddress(CreateAddress(26, 100, 25)));
+			NodeManagerParameterBootstrapConfiguration.FromAddress(nodeManagerAddress));
 
-		current.Get(ParameterNumber.FromValue(1)).ToWireValue().Should().Equal([25]);
-		current.Get(ParameterNumber.FromValue(2)).ToWireValue().Should().Equal([12]);
-		(await store.GetAsync(ParameterTable.Permanent, ParameterNumber.FromValue(1)))!
-			.ToWireValue().Should().Equal([25]);
-		(await store.GetAsync(ParameterTable.Permanent, ParameterNumber.FromValue(2)))!
-			.ToWireValue().Should().Equal([12]);
-		(await store.GetAsync(ParameterTable.NonVolatile, ParameterNumber.FromValue(1)))!
-			.ToWireValue().Should().Equal([25]);
-		(await store.GetAsync(ParameterTable.NonVolatile, ParameterNumber.FromValue(2)))!
-			.ToWireValue().Should().Equal([12]);
+		var expectedValues = new Dictionary<byte, byte[]>
+		{
+			[1] = [25],
+			[2] = [12],
+			[3] = nodeManagerAddress.ToWireValue()
+		};
+
+		foreach (var (number, expectedValue) in expectedValues)
+		{
+			var parameterNumber = ParameterNumber.FromValue(number);
+			current.Get(parameterNumber).ToWireValue().Should().Equal(expectedValue);
+			(await store.GetAsync(ParameterTable.Permanent, parameterNumber))!
+				.ToWireValue().Should().Equal(expectedValue);
+			(await store.GetAsync(ParameterTable.NonVolatile, parameterNumber))!
+				.ToWireValue().Should().Equal(expectedValue);
+		}
 	}
 
 	[Fact]

@@ -5,8 +5,19 @@ namespace NodeManager.Router.Parameters;
 
 public sealed class RouterParameterRequestService(
 	RouterParameterRequestSettings settings,
+	IParticipantParameterRequestService participantParameterRequests,
 	IManagementTransactionService managementTransactions) : IRouterParameterRequestService
 {
+	public RouterParameterRequestService(
+		RouterParameterRequestSettings settings,
+		IManagementTransactionService managementTransactions) :
+		this(
+			settings,
+			new ParticipantParameterRequestService(settings, managementTransactions),
+			managementTransactions)
+	{
+	}
+
 	public Task<RouterParameterRequestStatusIdentifier> RequestLocalRouterBrigadeOrAgencyNumber(
 		CancellationToken cancellationToken) =>
 		this.RequestLocalRouterCurrentParameter(ParameterNumber.FromValue(1), cancellationToken);
@@ -17,23 +28,9 @@ public sealed class RouterParameterRequestService(
 	{
 		ArgumentNullException.ThrowIfNull(parameterNumber);
 
-		return await managementTransactions.SubmitAsync(
-			new ManagementTransactionRequest(
-				settings.MessageOriginator,
-				settings.LocalRouter,
-				sequenceNumber => Envelope.FromValues(
-					settings.MessageOriginator,
-					Destinations.FromAddresses(settings.LocalRouter),
-					ProtocolAndPriority.FromValues(
-						MessagePriority.FromValue(MessagePriorityLevel.FromValue(3)),
-						ProtocolVersion.FromValue(ProtocolVersionNumber.FromValue(2))),
-					AcknowledgementAndSequence.FromValues(
-						sequenceNumber,
-						AcknowledgementRequest.Requested),
-					ParameterRequest.FromFields(
-						ParameterTable.Current,
-						parameterNumber)),
-				ManagementTransactionKind.ParameterRequest),
+		return await participantParameterRequests.RequestCurrentParameter(
+			settings.LocalRouter,
+			parameterNumber,
 			cancellationToken);
 	}
 

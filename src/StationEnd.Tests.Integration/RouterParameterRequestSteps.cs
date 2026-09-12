@@ -20,6 +20,7 @@ public sealed class RouterParameterRequestSteps
 	private string? pageContent;
 	private Uri? inventoryScanStatusAddress;
 	private IReadOnlyDictionary<byte, Uri>? routerParameterStatusAddresses;
+	private IReadOnlyDictionary<byte, Uri>? participantParameterStatusAddresses;
 	private RouterParameterRequestApplicationProfile applicationProfile;
 
 	[Given(@"NodeManager is the User Agent at Brigade (.*), Node (.*), and Port (.*)")]
@@ -52,6 +53,37 @@ public sealed class RouterParameterRequestSteps
 		await this.EnsureApplicationStartedAsync();
 
 		this.response = await this.client!.PostAsync("/router/parameters/brigade-or-agency-number", null);
+	}
+
+	[When(@"I request LAN MTA Current Parameter (.*)")]
+	public async Task WhenIRequestLanMtaCurrentParameter(byte parameterNumber)
+	{
+		await this.EnsureApplicationStartedAsync();
+
+		this.response = await this.client!.PostAsync(
+			$"/participants/1/parameters/current/{parameterNumber}",
+			null);
+	}
+
+	[When(@"I request every LAN MTA Current Parameter")]
+	public async Task WhenIRequestEveryLanMtaCurrentParameter()
+	{
+		await this.EnsureApplicationStartedAsync();
+
+		var requests = new byte[] { 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 21 }
+			.Select(async parameterNumber =>
+			{
+				using var response = await this.client!.PostAsync(
+					$"/participants/1/parameters/current/{parameterNumber}",
+					null);
+				response.StatusCode.Should().Be(HttpStatusCode.SeeOther);
+				response.Headers.Location.Should().NotBeNull();
+				return (parameterNumber, statusAddress: response.Headers.Location!);
+			});
+		var responses = await Task.WhenAll(requests);
+		this.participantParameterStatusAddresses = responses.ToDictionary(
+			response => response.parameterNumber,
+			response => response.statusAddress);
 	}
 
 	[When(@"I open NodeManager")]
@@ -308,6 +340,12 @@ public sealed class RouterParameterRequestSteps
 		this.response.Headers.Location.Should().NotBeNull();
 	}
 
+	[Then(@"I am redirected to the pending Participant Parameter Request status")]
+	public Task ThenIAmRedirectedToThePendingParticipantParameterRequestStatus()
+	{
+		return this.ThenIAmRedirectedToThePendingParameterRequestStatus();
+	}
+
 	[Then(@"I am redirected to the pending Node Login status")]
 	public async Task ThenIAmRedirectedToThePendingNodeLoginStatus()
 	{
@@ -360,6 +398,60 @@ public sealed class RouterParameterRequestSteps
 
 		throw new Xunit.Sdk.XunitException(
 			"The Parameter Request status did not show timed-out.");
+	}
+
+	[Then(@"the Participant Parameter Request status eventually shows interface status Idle")]
+	public async Task ThenTheParticipantParameterRequestStatusEventuallyShowsInterfaceStatusIdle()
+	{
+		var statusAddress = this.response!.Headers.Location!;
+
+		for (var attempt = 0; attempt < 30; attempt++)
+		{
+			using var status = await this.client!.GetAsync(statusAddress);
+			if (status.StatusCode == HttpStatusCode.OK)
+			{
+				var content = await status.Content.ReadAsStringAsync();
+				using var document = JsonDocument.Parse(content);
+				if (document.RootElement.GetProperty("state").GetString() == "received" &&
+					document.RootElement.GetProperty("parameterValue").GetString() == "Idle")
+				{
+					return;
+				}
+			}
+
+			await Task.Delay(TimeSpan.FromSeconds(1));
+		}
+
+		throw new Xunit.Sdk.XunitException(
+			"The Participant Parameter Request did not return LAN MTA interface status Idle.");
+	}
+
+	[Then(@"the Participant Parameter Request statuses show the LAN MTA Current values")]
+	public async Task ThenTheParticipantParameterRequestStatusesShowTheLanMtaCurrentValues()
+	{
+		var expectedValues = new Dictionary<byte, string>
+		{
+			[1] = "1",
+			[2] = "LAN MTA (10)",
+			[3] = "Idle",
+			[4] = "true",
+			[5] = "0",
+			[6] = "0",
+			[7] = "0",
+			[8] = "0",
+			[9] = "3",
+			[10] = "0 destinations",
+			[21] = "station-end-lan"
+		};
+
+		foreach (var (parameterNumber, expectedValue) in expectedValues)
+		{
+			using var status = await this.WaitForRouterParameterStatusAsync(
+				this.participantParameterStatusAddresses![parameterNumber]);
+
+			status.RootElement.GetProperty("parameterNumber").GetByte().Should().Be(parameterNumber);
+			status.RootElement.GetProperty("parameterValue").GetString().Should().Be(expectedValue);
+		}
 	}
 
 	[Then(@"the Node Login status eventually shows User-Agent address (.*)\.(.*)\.(.*) is logged on")]
@@ -515,8 +607,10 @@ public sealed class RouterParameterRequestSteps
 
 		var application = await appHost.BuildAsync();
 		await application.StartAsync();
-		await application.ResourceNotifications.WaitForResourceHealthyAsync("Router");
-		await application.ResourceNotifications.WaitForResourceHealthyAsync("Node-Manager-UA");
+		await StationEndApplicationStartup.WaitForHealthyAsync(
+			application,
+			"Router",
+			"Node-Manager-UA");
 		return application;
 	}
 

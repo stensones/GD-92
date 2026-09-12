@@ -26,12 +26,17 @@ public sealed class NodeManagerParameterBootstrapper
 				configuration.PortNumber),
 			ParameterBootstrapValue.FromValues(
 				NodeManagerParameterCatalogue.AgentType,
-				configuration.AgentType)
+				configuration.AgentType),
+			ParameterBootstrapValue.FromValues(
+				NodeManagerParameterCatalogue.ControlAddress,
+				NodeManagerParameterCatalogue.EncodeControlAddress(configuration.ControlAddress))
 		],
 		static (nonVolatileValues, _) => ValueTask.FromResult(
 			NodeManagerCurrentParameterProjection.FromNonVolatileParameters(
 				nonVolatileValues[NodeManagerParameterCatalogue.PortNumber],
-				nonVolatileValues[NodeManagerParameterCatalogue.AgentType])),
+				nonVolatileValues[NodeManagerParameterCatalogue.AgentType],
+				NodeManagerParameterCatalogue.ReadControlAddress(
+					nonVolatileValues[NodeManagerParameterCatalogue.ControlAddress]))),
 		cancellationToken);
 	}
 }

@@ -7,13 +7,16 @@ public sealed class NodeManagerCurrentParameterProjection
 {
 	private readonly ParameterValue portNumber;
 	private readonly ParameterValue agentType;
+	private readonly CommunicationsAddress controlAddress;
 
 	private NodeManagerCurrentParameterProjection(
 		ParameterValue portNumber,
-		ParameterValue agentType)
+		ParameterValue agentType,
+		CommunicationsAddress controlAddress)
 	{
 		this.portNumber = portNumber;
 		this.agentType = agentType;
+		this.controlAddress = controlAddress;
 	}
 
 	public ParameterValue Get(ParameterNumber parameterNumber)
@@ -24,6 +27,8 @@ public sealed class NodeManagerCurrentParameterProjection
 			? this.portNumber
 			: parameterNumber == NodeManagerParameterCatalogue.AgentType
 				? this.agentType
+				: parameterNumber == NodeManagerParameterCatalogue.ControlAddress
+					? NodeManagerParameterCatalogue.EncodeControlAddress(this.controlAddress)
 				: throw new ArgumentOutOfRangeException(
 					nameof(parameterNumber),
 					"NodeManager does not own the requested Parameter.");
@@ -31,11 +36,13 @@ public sealed class NodeManagerCurrentParameterProjection
 
 	public static NodeManagerCurrentParameterProjection FromNonVolatileParameters(
 		ParameterValue portNumber,
-		ParameterValue agentType)
+		ParameterValue agentType,
+		CommunicationsAddress controlAddress)
 	{
 		ArgumentNullException.ThrowIfNull(portNumber);
 		ArgumentNullException.ThrowIfNull(agentType);
+		ArgumentNullException.ThrowIfNull(controlAddress);
 
-		return new NodeManagerCurrentParameterProjection(portNumber, agentType);
+		return new NodeManagerCurrentParameterProjection(portNumber, agentType, controlAddress);
 	}
 }

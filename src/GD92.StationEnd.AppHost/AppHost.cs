@@ -32,18 +32,35 @@ var inventoryScanMaximumConcurrentProbes = builder.Configuration[
 if (useExternalPostgres)
 {
 	var routerDatabase = builder.AddConnectionString("router-database");
+	var lanMtaDatabase = builder.AddConnectionString("lan-mta-database");
+	var printerUaDatabase = builder.AddConnectionString("printer-ua-database");
 	var nodeManagerDatabase = builder.AddConnectionString("node-manager-database");
 
 	var router = builder.AddProject<Projects.Router>("Router")
 		.WithReference(rabbitMq)
 		.WaitFor(rabbitMq)
 		.WithReference(routerDatabase)
-		.WithEnvironment("Router__InitialLevel1Password", routerLevel1Password);
+		.WithEnvironment("Router__InitialLevel1Password", routerLevel1Password)
+		.WithHttpEndpoint(name: "http", env: "ASPNETCORE_HTTP_PORTS")
+		.WithHttpHealthCheck("/health");
+
+	builder.AddProject<Projects.LANMTA>("LAN-MTA")
+		.WithReference(rabbitMq)
+		.WaitFor(rabbitMq)
+		.WithReference(lanMtaDatabase);
+
+	builder.AddProject<Projects.PrinterUA>("Printer-UA")
+		.WithReference(rabbitMq)
+		.WaitFor(rabbitMq)
+		.WithReference(printerUaDatabase)
+		.WaitFor(printerUaDatabase);
 
 	builder.AddProject<Projects.NodeManager>("Node-Manager-UA")
 		.WithReference(rabbitMq)
 		.WaitFor(rabbitMq)
 		.WithReference(nodeManagerDatabase)
+		.WithHttpEndpoint(name: "http", env: "ASPNETCORE_HTTP_PORTS")
+		.WithHttpHealthCheck("/health")
 		.WithEnvironment(
 			"RouterParameterRequest__LocalRouter__Port",
 			builder.Configuration["RouterParameterRequest:LocalRouter:Port"] ?? "0")
@@ -75,6 +92,8 @@ else
 	}
 
 	var routerDatabase = postgres.AddDatabase("router-database", "router");
+	var lanMtaDatabase = postgres.AddDatabase("lan-mta-database", "lan-mta");
+	var printerUaDatabase = postgres.AddDatabase("printer-ua-database", "printer-ua");
 	var nodeManagerDatabase = postgres.AddDatabase("node-manager-database", "node-manager");
 
 	var router = builder.AddProject<Projects.Router>("Router")
@@ -82,12 +101,28 @@ else
 		.WaitFor(rabbitMq)
 		.WithReference(routerDatabase)
 		.WaitFor(postgres)
-		.WithEnvironment("Router__InitialLevel1Password", routerLevel1Password);
+		.WithEnvironment("Router__InitialLevel1Password", routerLevel1Password)
+		.WithHttpEndpoint(name: "http", env: "ASPNETCORE_HTTP_PORTS")
+		.WithHttpHealthCheck("/health");
+
+	builder.AddProject<Projects.LANMTA>("LAN-MTA")
+		.WithReference(rabbitMq)
+		.WaitFor(rabbitMq)
+		.WithReference(lanMtaDatabase)
+		.WaitFor(lanMtaDatabase);
+
+	builder.AddProject<Projects.PrinterUA>("Printer-UA")
+		.WithReference(rabbitMq)
+		.WaitFor(rabbitMq)
+		.WithReference(printerUaDatabase)
+		.WaitFor(printerUaDatabase);
 
 	builder.AddProject<Projects.NodeManager>("Node-Manager-UA")
 		.WithReference(rabbitMq)
 		.WaitFor(rabbitMq)
 		.WithReference(nodeManagerDatabase)
+		.WithHttpEndpoint(name: "http", env: "ASPNETCORE_HTTP_PORTS")
+		.WithHttpHealthCheck("/health")
 		.WithEnvironment(
 			"RouterParameterRequest__LocalRouter__Port",
 			builder.Configuration["RouterParameterRequest:LocalRouter:Port"] ?? "0")
@@ -109,13 +144,5 @@ if (includeBusMtaAndIoUa)
 	builder.AddProject<Projects.BusMTA>("bus-MTA");
 	builder.AddProject<Projects.IOUA>("IO-UA");
 }
-
-builder.AddProject<Projects.LANMTA>("LAN-MTA")
-	.WithReference(rabbitMq)
-	.WaitFor(rabbitMq);
-
-builder.AddProject<Projects.PrinterUA>("Printer-UA")
-	.WithReference(rabbitMq)
-	.WaitFor(rabbitMq);
 
 builder.Build().Run();

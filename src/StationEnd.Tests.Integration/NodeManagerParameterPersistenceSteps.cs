@@ -169,13 +169,17 @@ public sealed class NodeManagerParameterPersistenceSteps
 					"--Persistence:UseExternalPostgres=true",
 					"--StationEnd:IncludeBusMTAAndIOUA=false",
 					$"--ConnectionStrings:router-database={this.ConnectionStringFor("router")}",
+					$"--ConnectionStrings:lan-mta-database={this.ConnectionStringFor("lan-mta")}",
+					$"--ConnectionStrings:printer-ua-database={this.ConnectionStringFor("printer-ua")}",
 					$"--ConnectionStrings:node-manager-database={this.ConnectionStringFor("node-manager")}"
 				]);
 
 		this.application = await appHost.BuildAsync();
 		await this.application.StartAsync();
-		await this.application.ResourceNotifications.WaitForResourceHealthyAsync("Router");
-		await this.application.ResourceNotifications.WaitForResourceHealthyAsync("Node-Manager-UA");
+		await StationEndApplicationStartup.WaitForHealthyAsync(
+			this.application,
+			"Router",
+			"Node-Manager-UA");
 
 		var rabbitMqConnectionString = await this.application.GetConnectionStringAsync("RabbitMQ")
 			?? throw new InvalidOperationException("The test RabbitMQ connection string was not provided.");
@@ -270,7 +274,12 @@ public sealed class NodeManagerParameterPersistenceSteps
 		await using var connection = new NpgsqlConnection(this.postgres.GetConnectionString());
 		await connection.OpenAsync();
 		await using var command = new NpgsqlCommand(
-			"""CREATE DATABASE "router"; CREATE DATABASE "node-manager";""",
+			"""
+			CREATE DATABASE "router";
+			CREATE DATABASE "lan-mta";
+			CREATE DATABASE "printer-ua";
+			CREATE DATABASE "node-manager";
+			""",
 			connection);
 		await command.ExecuteNonQueryAsync();
 	}

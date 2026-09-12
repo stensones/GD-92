@@ -5,4 +5,5 @@ namespace PrinterUA;
 public sealed record PrinterUaSettings(
 	CommunicationsAddress LocalAddress,
 	CommunicationsAddress LocalRouter,
+	CommunicationsAddress ControlAddress,
 	ProtocolVersion ProtocolVersion);

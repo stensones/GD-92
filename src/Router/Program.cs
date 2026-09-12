@@ -1,4 +1,5 @@
 ﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.AspNetCore.Builder;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
@@ -9,7 +10,7 @@ using Stensones.GD92.Transport.RabbitMQ;
 using Wolverine;
 using Wolverine.RabbitMQ;
 
-var builder = Host.CreateApplicationBuilder(args);
+var builder = WebApplication.CreateBuilder(args);
 builder.AddServiceDefaults();
 var routerSettings = RouterSettings.FromConfiguration(builder.Configuration);
 
@@ -57,9 +58,9 @@ builder.Services.AddScoped<IRouterIngressReceiver>(serviceProvider =>
 		serviceProvider.GetRequiredService<RouterLocalDelivery>(),
 		serviceProvider.GetRequiredService<ILogger<RouterIngressReceiver>>()));
 
-var host = builder.Build();
+var app = builder.Build();
 
-await using (var scope = host.Services.CreateAsyncScope())
+await using (var scope = app.Services.CreateAsyncScope())
 {
 	var database = scope.ServiceProvider.GetRequiredService<RouterDbContext>();
 	await database.Database.MigrateAsync();
@@ -67,7 +68,8 @@ await using (var scope = host.Services.CreateAsyncScope())
 	var bootstrapper = scope.ServiceProvider.GetRequiredService<RouterParameterBootstrapper>();
 	var projection = await bootstrapper.LoadCurrentParameterProjectionAsync(
 		routerSettings.ParameterBootstrapConfiguration);
-	host.Services.GetRequiredService<RouterCurrentParameterProjectionSource>().Publish(projection);
+	app.Services.GetRequiredService<RouterCurrentParameterProjectionSource>().Publish(projection);
 }
 
-await host.RunAsync();
+app.MapHealthChecks("/health");
+await app.RunAsync();

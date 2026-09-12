@@ -22,6 +22,19 @@ Feature: Router Parameter Request
     And the Parameter Request status eventually shows brigade or agency number 26
     And the Router retains brigade or agency number 26 in its permanent and non-volatile Parameter Tables
 
+  Scenario: Reading a discovered LAN MTA Current Parameter
+    Given NodeManager is the User Agent at Brigade 26, Node 100, and Port 25
+    And its local Router is at Brigade 26, Node 100, and Port 0
+    When I request LAN MTA Current Parameter 3
+    Then I am redirected to the pending Participant Parameter Request status
+    And the Participant Parameter Request status eventually shows interface status Idle
+
+  Scenario: Browsing each LAN MTA Current Parameter
+    Given NodeManager is the User Agent at Brigade 26, Node 100, and Port 25
+    And its local Router is at Brigade 26, Node 100, and Port 0
+    When I request every LAN MTA Current Parameter
+    Then the Participant Parameter Request statuses show the LAN MTA Current values
+
   Scenario: Presenting a Node Login form
     When I open NodeManager
     Then NodeManager presents a Node Login form that securely submits password, brigade, node, and port

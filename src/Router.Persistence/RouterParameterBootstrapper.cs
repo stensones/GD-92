@@ -31,6 +31,25 @@ public sealed class RouterParameterBootstrapper
 				RouterParameterCatalogue.BrigadeOrAgency.Encode(
 					configuration.LocalAddress.Brigade.Value)),
 			ParameterBootstrapValue.FromValues(
+				RouterParameterCatalogue.NodeNumber.Number,
+				RouterParameterCatalogue.NodeNumber.Encode(
+					configuration.LocalAddress.Node.Value)),
+			ParameterBootstrapValue.FromValues(
+				RouterParameterCatalogue.NodeName.Number,
+				RouterParameterCatalogue.NodeName.Encode(configuration.NodeName)),
+			ParameterBootstrapValue.FromValues(
+				RouterParameterCatalogue.MaximumMessageLength.Number,
+				RouterParameterCatalogue.MaximumMessageLength.Encode(
+					configuration.MaximumMessageLength)),
+			ParameterBootstrapValue.FromValues(
+				RouterParameterCatalogue.NetworkManagerAddress1.Number,
+				RouterParameterCatalogue.NetworkManagerAddress1.Encode(
+					configuration.NetworkManagerAddress1)),
+			ParameterBootstrapValue.FromValues(
+				RouterParameterCatalogue.NetworkManagerAddress2.Number,
+				RouterParameterCatalogue.NetworkManagerAddress2.Encode(
+					configuration.NetworkManagerAddress2)),
+			ParameterBootstrapValue.FromValues(
 				RouterParameterCatalogue.CurrentPassword.Number,
 				RouterParameterCatalogue.CurrentPassword.Encode(
 					CreateNeutralCurrentPassword(configuration.LocalAddress))),
@@ -39,8 +58,33 @@ public sealed class RouterParameterBootstrapper
 				RouterParameterCatalogue.NoAcknowledgementTimeout.Encode(
 					configuration.NoAcknowledgementTimeout)),
 			ParameterBootstrapValue.FromValues(
+				RouterParameterCatalogue.RouterTable.Number,
+				RouterParameterCatalogue.RouterTable.Encode(RoutingTable.FromEntries())),
+			ParameterBootstrapValue.FromValues(
+				RouterParameterCatalogue.PstnTable.Number,
+				RouterParameterCatalogue.PstnTable.Encode(PstnTable.FromEntries())),
+			ParameterBootstrapValue.FromValues(
+				RouterParameterCatalogue.WanTable.Number,
+				RouterParameterCatalogue.WanTable.Encode(WanTable.FromEntries())),
+			ParameterBootstrapValue.FromValues(
+				RouterParameterCatalogue.LanTable.Number,
+				RouterParameterCatalogue.LanTable.Encode(LanTable.FromEntries())),
+			ParameterBootstrapValue.FromValues(
+				RouterParameterCatalogue.IsdnTable.Number,
+				RouterParameterCatalogue.IsdnTable.Encode(IsdnTable.FromEntries())),
+			ParameterBootstrapValue.FromValues(
+				RouterParameterCatalogue.ManualAcknowledgementTimeout.Number,
+				RouterParameterCatalogue.ManualAcknowledgementTimeout.Encode(
+					configuration.ManualAcknowledgementTimeout)),
+			ParameterBootstrapValue.FromValues(
 				RouterParameterCatalogue.Retries.Number,
-				RouterParameterCatalogue.Retries.Encode(configuration.Retries))
+				RouterParameterCatalogue.Retries.Encode(configuration.Retries)),
+			ParameterBootstrapValue.FromValues(
+				RouterParameterCatalogue.TimeAndDate.Number,
+				RouterParameterCatalogue.TimeAndDate.Encode(configuration.TimeAndDate)),
+			ParameterBootstrapValue.FromValues(
+				RouterParameterCatalogue.MdtTable.Number,
+				RouterParameterCatalogue.MdtTable.Encode(configuration.MdtTable))
 		],
 		(nonVolatileValues, initializeCancellationToken) =>
 			this.CreateCurrentParameterProjectionAsync(

@@ -1,6 +1,9 @@
 ﻿using LANMTA;
+using LANMTA.Persistence;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using ParticipantParameters;
 using Stensones.GD92.Fields;
 using Stensones.GD92.Transport.RabbitMQ;
 using Wolverine;
@@ -25,7 +28,25 @@ builder.Services.AddWolverine(options =>
 	options.ListenForLocalParticipantIngress(localAddress);
 });
 builder.Services.AddSingleton(new LanMtaSettings(localAddress, localRouter, protocolVersion));
+builder.AddNpgsqlDbContext<LanMtaDbContext>("lan-mta-database");
+builder.Services.AddScoped<IParticipantParameterStore, EfLanMtaParameterStore>();
+builder.Services.AddScoped<LanMtaParameterBootstrapper>();
+builder.Services.AddSingleton<LanMtaCurrentParameterProjectionSource>();
 builder.Services.AddScoped<IRouterIngress, LanMtaRouterIngress>();
 builder.Services.AddScoped<ILocalParticipantIngressReceiver, LanMtaParameterReceiver>();
 
-await builder.Build().RunAsync();
+var host = builder.Build();
+
+await using (var scope = host.Services.CreateAsyncScope())
+{
+	var database = scope.ServiceProvider.GetRequiredService<LanMtaDbContext>();
+	await database.Database.MigrateAsync();
+
+	var settings = scope.ServiceProvider.GetRequiredService<LanMtaSettings>();
+	var bootstrapper = scope.ServiceProvider.GetRequiredService<LanMtaParameterBootstrapper>();
+	var projection = await bootstrapper.LoadCurrentParameterProjectionAsync(
+		LanMtaParameterBootstrapConfiguration.FromAddress(settings.LocalAddress));
+	host.Services.GetRequiredService<LanMtaCurrentParameterProjectionSource>().Publish(projection);
+}
+
+await host.RunAsync();
