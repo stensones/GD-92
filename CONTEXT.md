@@ -409,6 +409,15 @@ A fixed Protocol Field record within a table-valued Parameter. The enclosing Par
 **Table Value Field**:
 An immutable uncounted collection of Parameter Table Entries representing one complete table-valued Parameter. It decodes entries until the supplied table-value buffer is exhausted.
 
+**Scalar Parameter Fields**:
+The named one- and two-octet Protocol Fields that represent router and Message Transfer Agent settings, timers, counters, and connection limits.
+
+**MTA Minimum Message Priority**:
+A Protocol Field that restricts an MTA to accepting Messages at or above a valid GD-92 Message Priority.
+
+**Acknowledgement Character**:
+The single 7-bit ASCII Protocol Field used as the acknowledgement character of an asynchronous MTA.
+
 **Alternative Address Table Entry**:
 A Protocol Field record pairing an Address Range with its compressed alternative printed address.
 

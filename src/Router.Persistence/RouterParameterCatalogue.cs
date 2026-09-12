@@ -79,9 +79,8 @@ public static class RouterParameterCatalogue
 		ParameterValue parameterValue)
 	{
 		var buffer = new EncodedMessageBuffer(parameterValue.ToWireValue());
-		var noAcknowledgementTimeout = global::Router.Persistence.NoAcknowledgementTimeout
-			.FromEncodedMessageBuffer(
-			ref buffer);
+		var noAcknowledgementTimeout = global::Stensones.GD92.Fields.NoAcknowledgementTimeout
+			.FromEncodedMessageBuffer(ref buffer);
 
 		EnsureCompletelyRead(buffer, parameterValue, NoAcknowledgementTimeout.Number);
 		return noAcknowledgementTimeout;
@@ -97,7 +96,7 @@ public static class RouterParameterCatalogue
 	private static Retries ReadRetries(ParameterValue parameterValue)
 	{
 		var buffer = new EncodedMessageBuffer(parameterValue.ToWireValue());
-		var retries = global::Router.Persistence.Retries.FromEncodedMessageBuffer(ref buffer);
+		var retries = global::Stensones.GD92.Fields.Retries.FromEncodedMessageBuffer(ref buffer);
 
 		EnsureCompletelyRead(buffer, parameterValue, Retries.Number);
 		return retries;
