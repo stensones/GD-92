@@ -397,6 +397,21 @@ A one-byte Protocol Field reporting a Message Transfer Agent as idle, online, us
 **Configuration Fields**:
 The Protocol Fields that define Communications Node routing, bearer, peripheral-mapping, and addressing Parameters.
 
+**Input Peripheral Map**:
+A fixed three-byte Protocol Field that maps one input function to a Physical Bit, its Active State, and its Generate Alarm behavior.
+
+**Output Peripheral Map**:
+A fixed four-byte Protocol Field that maps one output function to a Physical Bit, its Active State, and its Pulse Length.
+
+**Parameter Table Entry**:
+A fixed Protocol Field record within a table-valued Parameter. The enclosing Parameter Value owns the boundary of an uncounted sequence of Parameter Table Entries.
+
+**Alternative Address Table Entry**:
+A Protocol Field record pairing an Address Range with its compressed alternative printed address.
+
+**Connection Table Entries**:
+The typed LAN, telephone (PSTN and ISDN), Mobile Data Terminal, WAN, routing, and connection-statistics Protocol Field records used by table-valued Parameters.
+
 **Active State**:
 A one-byte Protocol Field that defines whether a physical peripheral contact is active when closed or open.
 
