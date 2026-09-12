@@ -364,6 +364,9 @@ The Message Type 31 Contents by which an alarm agency or another mobilising syst
 **Alert Status**:
 The Message Type 42 Contents through which an Alerter reports a defined change in its status conditions.
 
+**Alert Engineering**:
+The Message Type 43 Contents through which a User Agent sends a defined engineering command to an Alerter.
+
 **Status Code**:
 A one-byte Protocol Field that identifies one of Volume A's defined Resource availability and incident states.
 

@@ -188,6 +188,13 @@ public sealed class EnvelopeSteps
 			AlerterStatus.FromValue(AlerterStatusValue.TotalTransmitterFailure));
 	}
 
+	[Given(@"an Alert Engineering command locking the system to transmitter A")]
+	public void GivenAnAlertEngineeringCommandLockingTheSystemToTransmitterA()
+	{
+		this.contents = AlertEng.FromFields(
+			AlerterEngineering.FromValue(AlerterEngineeringValue.LockSystemToTransmitterA));
+	}
+
 	[Given(@"a Peripheral Status Request")]
 	public void GivenAPeripheralStatusRequest()
 	{
@@ -555,6 +562,14 @@ public sealed class EnvelopeSteps
 		var contents = this.envelope!.Contents.Should().BeOfType<AlertStatus>().Which;
 
 		contents.AlerterStatus.Value.Should().Be(AlerterStatusValue.TotalTransmitterFailure);
+	}
+
+	[Then(@"its decoded Alert Engineering command locks the system to transmitter A")]
+	public void ThenItsDecodedAlertEngineeringCommandLocksTheSystemToTransmitterA()
+	{
+		var contents = this.envelope!.Contents.Should().BeOfType<AlertEng>().Which;
+
+		contents.AlerterEngineering.Value.Should().Be(AlerterEngineeringValue.LockSystemToTransmitterA);
 	}
 
 	[Then(@"its decoded Contents are a Peripheral Status Request")]
