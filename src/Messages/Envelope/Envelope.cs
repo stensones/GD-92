@@ -242,6 +242,7 @@ public sealed class Envelope
 			GD92MessageType.DatabaseQuery => DataBaseQuery.FromEncodedMessageBuffer(ref contentsBuffer),
 			GD92MessageType.FormattedText => FormattedText.FromEncodedMessageBuffer(ref contentsBuffer),
 			GD92MessageType.ProformaDefinitionQuery => ProformaDefinitionQuery.FromEncodedMessageBuffer(ref contentsBuffer),
+			GD92MessageType.ProformaDefinition => ProformaDefinition.FromEncodedMessageBuffer(ref contentsBuffer),
 			GD92MessageType.InterruptRequest => InterruptRequest.FromEncodedMessageBuffer(ref contentsBuffer),
 			GD92MessageType.ResetRequest => ResetRequest.FromEncodedMessageBuffer(ref contentsBuffer),
 			GD92MessageType.Reset => Reset.FromEncodedMessageBuffer(ref contentsBuffer),

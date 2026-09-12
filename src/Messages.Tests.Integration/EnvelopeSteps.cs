@@ -261,6 +261,14 @@ public sealed class EnvelopeSteps
 			FormatType.FromValue(FormatTypeValue.TextTable));
 	}
 
+	[Given(@"a Proforma Definition containing the text table ""(.*)""")]
+	public void GivenAProformaDefinition(string table)
+	{
+		this.contents = ProformaDefinition.FromFields(
+			FormatType.FromValue(FormatTypeValue.TextTable),
+			FieldTable.FromValue(SevenBitAsciiString.FromValue(table)));
+	}
+
 	[Given(@"a Peripheral Status Request")]
 	public void GivenAPeripheralStatusRequest()
 	{
@@ -710,6 +718,15 @@ public sealed class EnvelopeSteps
 		var contents = this.envelope!.Contents.Should().BeOfType<ProformaDefinitionQuery>().Which;
 
 		contents.FormatType.Value.Should().Be(FormatTypeValue.TextTable);
+	}
+
+	[Then(@"its decoded Proforma Definition contains the text table ""(.*)""")]
+	public void ThenItsDecodedProformaDefinitionContains(string table)
+	{
+		var contents = this.envelope!.Contents.Should().BeOfType<ProformaDefinition>().Which;
+
+		contents.FormatType.Value.Should().Be(FormatTypeValue.TextTable);
+		contents.Table.Value.Value.Should().Be(table);
 	}
 
 	[Then(@"its decoded Contents are a Peripheral Status Request")]
