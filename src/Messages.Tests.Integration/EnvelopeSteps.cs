@@ -237,6 +237,14 @@ public sealed class EnvelopeSteps
 			Stensones.GD92.Fields.Text.FromValue(text));
 	}
 
+	[Given(@"a Data Base Query with opaque query type (.*) containing ""(.*)""")]
+	public void GivenADataBaseQuery(byte queryType, string text)
+	{
+		this.contents = DataBaseQuery.FromFields(
+			QueryType.FromValue(queryType),
+			Stensones.GD92.Fields.Text.FromValue(text));
+	}
+
 	[Given(@"a Peripheral Status Request")]
 	public void GivenAPeripheralStatusRequest()
 	{
@@ -659,6 +667,15 @@ public sealed class EnvelopeSteps
 	{
 		var contents = this.envelope!.Contents.Should().BeOfType<BrigadeMessage>().Which;
 
+		contents.Text.Value.Should().Be(text);
+	}
+
+	[Then(@"its decoded Data Base Query preserves opaque query type (.*) and text ""(.*)""")]
+	public void ThenItsDecodedDataBaseQueryPreservesItsFields(byte queryType, string text)
+	{
+		var contents = this.envelope!.Contents.Should().BeOfType<DataBaseQuery>().Which;
+
+		contents.QueryType.Value.Should().Be(queryType);
 		contents.Text.Value.Should().Be(text);
 	}
 

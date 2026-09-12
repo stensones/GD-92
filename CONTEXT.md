@@ -382,6 +382,9 @@ The Message Type 67 Contents through which a Router enables or disables routes t
 **Brigade Message**:
 The Type 101 non-mandatory Contents for non-operational text sent between Communications Nodes.
 
+**Data Base Query**:
+The Type 102 non-mandatory Contents carrying an opaque Query Type and text for a remote database query.
+
 **Status Code**:
 A one-byte Protocol Field that identifies one of Volume A's defined Resource availability and incident states.
 
