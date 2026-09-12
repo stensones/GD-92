@@ -181,6 +181,13 @@ public sealed class EnvelopeSteps
 			Stensones.GD92.Fields.Text.FromValue(text));
 	}
 
+	[Given(@"an Alert Status reporting total transmitter failure")]
+	public void GivenAnAlertStatusReportingTotalTransmitterFailure()
+	{
+		this.contents = AlertStatus.FromFields(
+			AlerterStatus.FromValue(AlerterStatusValue.TotalTransmitterFailure));
+	}
+
 	[Given(@"a Peripheral Status Request")]
 	public void GivenAPeripheralStatusRequest()
 	{
@@ -540,6 +547,14 @@ public sealed class EnvelopeSteps
 		contents.AlarmSerial.Value.Value.Should().Be(alarmSerial);
 		contents.Address.AddressText.Value.Value.Should().Be(address);
 		contents.Text.Value.Should().Be(text);
+	}
+
+	[Then(@"its decoded Alert Status reports total transmitter failure")]
+	public void ThenItsDecodedAlertStatusReportsTotalTransmitterFailure()
+	{
+		var contents = this.envelope!.Contents.Should().BeOfType<AlertStatus>().Which;
+
+		contents.AlerterStatus.Value.Should().Be(AlerterStatusValue.TotalTransmitterFailure);
 	}
 
 	[Then(@"its decoded Contents are a Peripheral Status Request")]
