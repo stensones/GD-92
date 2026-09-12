@@ -100,6 +100,18 @@ public sealed class EnvelopeSteps
 			Callsign.FromValue(SevenBitAsciiString.FromValue(callsign)));
 	}
 
+	[Given(@"a Resource Status reporting resource ""(.*)"" as Available At Base with remarks ""(.*)""")]
+	public void GivenAResourceStatus(string callsign, string remarks)
+	{
+		this.contents = ResourceStatus.FromStatuses(
+			ResourceStatusEntry.FromFields(
+				Callsign.FromValue(SevenBitAsciiString.FromValue(callsign)),
+				AvlType.FromValue(AvlTypeValue.NoAvlDataSystemPresent),
+				AvlData.FromValue(SevenBitAsciiString.FromValue(string.Empty)),
+				StatusCode.FromValue(StatusCodeValue.AvailableAtBase),
+				Remarks.FromValue(SevenBitAsciiString.FromValue(remarks))));
+	}
+
 	[Given(@"a Peripheral Status Request")]
 	public void GivenAPeripheralStatusRequest()
 	{
@@ -136,6 +148,28 @@ public sealed class EnvelopeSteps
 			Callsign.FromValue(SevenBitAsciiString.FromValue(callsign)),
 			RequestCode.FromValue(RequestCodeValue.Emergency),
 			Stensones.GD92.Fields.Text.FromValue(text));
+	}
+
+	[Given(@"a Page Officer message with Emergency pager priority, alphanumeric pager number ""(.*)"", and text ""(.*)""")]
+	public void GivenAPageOfficerMessage(string pagerNumber, string text)
+	{
+		this.contents = PageOfficer.FromFields(
+			PagerPriority.FromValue(PagerPriorityValue.Emergency),
+			PagerNumber.FromValues(
+				TelephoneNumber.FromValue(SevenBitAsciiString.FromValue(pagerNumber)),
+				PagerType.FromValue(PagerTypeValue.Alphanumeric)),
+			PagerText.FromValue(SevenBitAsciiString.FromValue(text)));
+	}
+
+	[Given(@"an Area Page Message with Routine pager priority, alphanumeric pager number ""(.*)"", and text ""(.*)""")]
+	public void GivenAnAreaPageMessage(string pagerNumber, string text)
+	{
+		this.contents = AreaPageMessage.FromFields(
+			PagerPriority.FromValue(PagerPriorityValue.Routine),
+			PagerNumber.FromValues(
+				TelephoneNumber.FromValue(SevenBitAsciiString.FromValue(pagerNumber)),
+				PagerType.FromValue(PagerTypeValue.Alphanumeric)),
+			PagerText.FromValue(SevenBitAsciiString.FromValue(text)));
 	}
 
 	[Given(@"a Reset Request for a Software Reset")]
@@ -360,6 +394,19 @@ public sealed class EnvelopeSteps
 		contents.Callsigns.Select(value => value.Value.Value).Should().Equal(callsign);
 	}
 
+	[Then(@"its decoded Resource Status reports resource ""(.*)"" as Available At Base with remarks ""(.*)""")]
+	public void ThenItsDecodedResourceStatusPreservesItsEntry(string callsign, string remarks)
+	{
+		var contents = this.envelope!.Contents.Should().BeOfType<ResourceStatus>().Which;
+		var status = contents.Statuses.Should().ContainSingle().Which;
+
+		status.Callsign.Value.Value.Should().Be(callsign);
+		status.AvlType.Value.Should().Be(AvlTypeValue.NoAvlDataSystemPresent);
+		status.AvlData.Value.Value.Should().BeEmpty();
+		status.StatusCode.Value.Should().Be(StatusCodeValue.AvailableAtBase);
+		status.Remarks.Value.Value.Should().Be(remarks);
+	}
+
 	[Then(@"its decoded Contents are a Peripheral Status Request")]
 	public void ThenItsDecodedContentsAreAPeripheralStatusRequest()
 	{
@@ -396,6 +443,28 @@ public sealed class EnvelopeSteps
 		contents.Callsign.Value.Value.Should().Be(callsign);
 		contents.RequestCode.Value.Should().Be(RequestCodeValue.Emergency);
 		contents.Text.Value.Should().Be(text);
+	}
+
+	[Then(@"its decoded Page Officer message has Emergency pager priority, alphanumeric pager number ""(.*)"", and text ""(.*)""")]
+	public void ThenItsDecodedPageOfficerMessagePreservesItsFields(string pagerNumber, string text)
+	{
+		var contents = this.envelope!.Contents.Should().BeOfType<PageOfficer>().Which;
+
+		contents.PagerPriority.Value.Should().Be(PagerPriorityValue.Emergency);
+		contents.PagerNumber.TelephoneNumber.Value.Value.Should().Be(pagerNumber);
+		contents.PagerNumber.PagerType.Value.Should().Be(PagerTypeValue.Alphanumeric);
+		contents.PagerText.Value.Value.Should().Be(text);
+	}
+
+	[Then(@"its decoded Area Page Message has Routine pager priority, alphanumeric pager number ""(.*)"", and text ""(.*)""")]
+	public void ThenItsDecodedAreaPageMessagePreservesItsFields(string pagerNumber, string text)
+	{
+		var contents = this.envelope!.Contents.Should().BeOfType<AreaPageMessage>().Which;
+
+		contents.PagerPriority.Value.Should().Be(PagerPriorityValue.Routine);
+		contents.PagerNumber.TelephoneNumber.Value.Value.Should().Be(pagerNumber);
+		contents.PagerNumber.PagerType.Value.Should().Be(PagerTypeValue.Alphanumeric);
+		contents.PagerText.Value.Value.Should().Be(text);
 	}
 
 	[Then(@"its decoded Reset Request identifies a Software Reset")]

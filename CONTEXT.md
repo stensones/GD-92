@@ -343,6 +343,9 @@ A compressed ASCII Protocol Field carrying up to 200 encoded bytes of pager text
 **Resource Status Fields**:
 The Availability, location, status, and Remarks fields reported for a Resource. AVL Type and AVL Data remain opaque because Volume A reserves future AVL assignment values and does not define AVL Data coding.
 
+**Resource Status**:
+The Message Type 20 Contents comprising an ordered sequence of Resource Status entries, each reporting a Resource Callsign, AVL Type and Data, Status Code, and Remarks.
+
 **Status Code**:
 A one-byte Protocol Field that identifies one of Volume A's defined Resource availability and incident states.
 
@@ -473,6 +476,12 @@ _Avoid_: text Protocol Field, Envelope
 
 **Mobilise Command**:
 The Message Type 1 Contents, composed of Output Peripherals and a Manual Acknowledgement Request.
+
+**Page Officer**:
+The Message Type 3 Contents that carries Pager Priority, Pager Number, and Pager Text.
+
+**Area Page Message**:
+The non-mandatory Message Type 4 Contents that carries Pager Priority, Pager Number, and Pager Text.
 
 **Activate Peripheral**:
 The Message Type 7 Contents that activates the selected Output Peripherals.

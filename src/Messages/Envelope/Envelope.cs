@@ -218,10 +218,13 @@ public sealed class Envelope
 		{
 			GD92MessageType.MobiliseCommand => MobiliseCommand.FromEncodedMessageBuffer(ref contentsBuffer),
 			GD92MessageType.MobiliseMessage => MobiliseMessage.FromEncodedMessageBuffer(ref contentsBuffer),
+			GD92MessageType.PageOfficer => PageOfficer.FromEncodedMessageBuffer(ref contentsBuffer),
+			GD92MessageType.AreaPageMessage => AreaPageMessage.FromEncodedMessageBuffer(ref contentsBuffer),
 			GD92MessageType.ActivatePeripheral => ActivatePeripheral.FromEncodedMessageBuffer(ref contentsBuffer),
 			GD92MessageType.DeactivatePeripheral => DeactivatePeripheral.FromEncodedMessageBuffer(ref contentsBuffer),
 			GD92MessageType.ResourceStatusRequest => ResourceStatusRequest.FromEncodedMessageBuffer(ref contentsBuffer),
 			GD92MessageType.PeripheralStatusRequest => PeripheralStatusRequest.FromEncodedMessageBuffer(ref contentsBuffer),
+			GD92MessageType.ResourceStatus => ResourceStatus.FromEncodedMessageBuffer(ref contentsBuffer),
 			GD92MessageType.PeripheralStatus => PeripheralStatus.FromEncodedMessageBuffer(ref contentsBuffer),
 			GD92MessageType.AlertCrew => AlertCrew.FromEncodedMessageBuffer(ref contentsBuffer),
 			GD92MessageType.InterruptRequest => InterruptRequest.FromEncodedMessageBuffer(ref contentsBuffer),
