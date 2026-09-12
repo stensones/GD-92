@@ -316,6 +316,9 @@ A boolean Protocol Field indicating that a recipient must await a local Manual A
 **Alert Group**:
 A two-character Protocol Field that selects one of the seven defined Firecall team combinations.
 
+**Request Code**:
+A one-character Protocol Field that identifies a request to speak, an emergency, or a confidential request to speak.
+
 **Callsign List**:
 A counted collection of the Callsigns of Resources to which a Mobilise Message applies.
 
@@ -350,6 +353,9 @@ The Message Type 28 Contents that reports Input Peripherals followed by Output P
 
 **Alert Crew**:
 The Message Type 40 Contents that alerts a Firecall team group, optionally requires Manual Acknowledgement, and can activate Output Peripherals.
+
+**Interrupt Request**:
+The Message Type 25 Contents through which a Resource signals a request to speak or an emergency.
 
 **Mobilise Message**:
 The Message Type 2 Contents, comprising message block data, a submission Time And Date, target Callsign List, and one or more incident-detail sets.

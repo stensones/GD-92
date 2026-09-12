@@ -129,6 +129,15 @@ public sealed class EnvelopeSteps
 				OutputPeripheral.ApplianceIndicator1));
 	}
 
+	[Given(@"an Interrupt Request from resource ""(.*)"" declaring an Emergency with text ""(.*)""")]
+	public void GivenAnInterruptRequestFromResourceDeclaringAnEmergencyWithText(string callsign, string text)
+	{
+		this.contents = InterruptRequest.FromFields(
+			Callsign.FromValue(SevenBitAsciiString.FromValue(callsign)),
+			RequestCode.FromValue(RequestCodeValue.Emergency),
+			Stensones.GD92.Fields.Text.FromValue(text));
+	}
+
 	[Given(@"a single-block Mobilise Message for resource ""(.*)"" submitted at ""(.*)"" for Incident (.*)")]
 	public void GivenASingleBlockMobiliseMessageForResourceSubmittedAtForIncident(
 		string callsign,
@@ -363,6 +372,16 @@ public sealed class EnvelopeSteps
 		contents.ManualAcknowledgementRequest.Should().Be(ManualAcknowledgementRequest.Required);
 		contents.OutputPeripherals.IsOutputSet(OutputPeripheral.StationSounders).Should().BeTrue();
 		contents.OutputPeripherals.IsOutputSet(OutputPeripheral.ApplianceIndicator1).Should().BeTrue();
+	}
+
+	[Then(@"its decoded Interrupt Request identifies resource ""(.*)"", declares an Emergency, and contains text ""(.*)""")]
+	public void ThenItsDecodedInterruptRequestPreservesItsFields(string callsign, string text)
+	{
+		var contents = this.envelope!.Contents.Should().BeOfType<InterruptRequest>().Which;
+
+		contents.Callsign.Value.Value.Should().Be(callsign);
+		contents.RequestCode.Value.Should().Be(RequestCodeValue.Emergency);
+		contents.Text.Value.Should().Be(text);
 	}
 
 	[Then(@"its decoded Mobilise Message preserves the resource and incident details")]
