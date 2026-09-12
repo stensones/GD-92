@@ -237,6 +237,7 @@ public sealed class Envelope
 			GD92MessageType.Test => Test.FromEncodedMessageBuffer(ref contentsBuffer),
 			GD92MessageType.PrinterStatus => PrinterStatus.FromEncodedMessageBuffer(ref contentsBuffer),
 			GD92MessageType.MtaStatusChange => MtaStatusChange.FromEncodedMessageBuffer(ref contentsBuffer),
+			GD92MessageType.RouteStatus => RouteStatus.FromEncodedMessageBuffer(ref contentsBuffer),
 			GD92MessageType.InterruptRequest => InterruptRequest.FromEncodedMessageBuffer(ref contentsBuffer),
 			GD92MessageType.ResetRequest => ResetRequest.FromEncodedMessageBuffer(ref contentsBuffer),
 			GD92MessageType.Reset => Reset.FromEncodedMessageBuffer(ref contentsBuffer),

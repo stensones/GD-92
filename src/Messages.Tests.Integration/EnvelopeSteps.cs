@@ -216,6 +216,20 @@ public sealed class EnvelopeSteps
 			MtaStatus.FromValue(MtaStatusValue.Online));
 	}
 
+	[Given(@"a Route Status enabling routes to Brigade (.*), Nodes (.*) through (.*), and Port (.*)")]
+	public void GivenARouteStatusEnablingRoutes(
+		byte brigade,
+		ushort firstNode,
+		ushort lastNode,
+		byte port)
+	{
+		this.contents = RouteStatus.FromFields(
+			ProtocolBoolean.True,
+			DestinationNodes.FromAddressRanges(AddressRange.FromValues(
+				CreateAddress(brigade, firstNode, port),
+				CreateAddress(brigade, lastNode, port))));
+	}
+
 	[Given(@"a Peripheral Status Request")]
 	public void GivenAPeripheralStatusRequest()
 	{
@@ -616,6 +630,21 @@ public sealed class EnvelopeSteps
 		var contents = this.envelope!.Contents.Should().BeOfType<MtaStatusChange>().Which;
 
 		contents.MtaStatus.Value.Should().Be(MtaStatusValue.Online);
+	}
+
+	[Then(@"its decoded Route Status enables routes to Brigade (.*), Nodes (.*) through (.*), and Port (.*)")]
+	public void ThenItsDecodedRouteStatusEnablesRoutes(
+		byte brigade,
+		ushort firstNode,
+		ushort lastNode,
+		byte port)
+	{
+		var contents = this.envelope!.Contents.Should().BeOfType<RouteStatus>().Which;
+		var range = contents.DestinationNodes.AddressRanges.Should().ContainSingle().Which;
+
+		contents.RoutesEnabled.Value.Should().BeTrue();
+		range.FirstAddress.Should().Be(CreateAddress(brigade, firstNode, port));
+		range.LastAddress.Should().Be(CreateAddress(brigade, lastNode, port));
 	}
 
 	[Then(@"its decoded Contents are a Peripheral Status Request")]

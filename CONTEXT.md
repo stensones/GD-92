@@ -376,6 +376,9 @@ The Message Type 65 Contents through which a printer User Agent reports its offl
 **MTA Status Change**:
 The Message Type 66 Contents through which a Message Transfer Agent reports a defined change in its operational status.
 
+**Route Status**:
+The Message Type 67 Contents through which a Router enables or disables routes to Destination Nodes via the sending Communications Node.
+
 **Status Code**:
 A one-byte Protocol Field that identifies one of Volume A's defined Resource availability and incident states.
 
