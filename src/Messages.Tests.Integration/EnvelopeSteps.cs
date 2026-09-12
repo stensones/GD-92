@@ -2,6 +2,7 @@ using AwesomeAssertions;
 using Reqnroll;
 using Stensones.GD92.Fields;
 using FieldPrinterStatus = Stensones.GD92.Fields.PrinterStatus;
+using FieldTable = Stensones.GD92.Fields.Table;
 
 namespace Stensones.GD92.Messages.Tests.Integration;
 
@@ -243,6 +244,14 @@ public sealed class EnvelopeSteps
 		this.contents = DataBaseQuery.FromFields(
 			QueryType.FromValue(queryType),
 			Stensones.GD92.Fields.Text.FromValue(text));
+	}
+
+	[Given(@"Formatted Text containing the text table ""(.*)""")]
+	public void GivenFormattedText(string table)
+	{
+		this.contents = FormattedText.FromFields(
+			FormatType.FromValue(FormatTypeValue.TextTable),
+			FieldTable.FromValue(SevenBitAsciiString.FromValue(table)));
 	}
 
 	[Given(@"a Peripheral Status Request")]
@@ -677,6 +686,15 @@ public sealed class EnvelopeSteps
 
 		contents.QueryType.Value.Should().Be(queryType);
 		contents.Text.Value.Should().Be(text);
+	}
+
+	[Then(@"its decoded Formatted Text contains the text table ""(.*)""")]
+	public void ThenItsDecodedFormattedTextContains(string table)
+	{
+		var contents = this.envelope!.Contents.Should().BeOfType<FormattedText>().Which;
+
+		contents.FormatType.Value.Should().Be(FormatTypeValue.TextTable);
+		contents.Table.Value.Value.Should().Be(table);
 	}
 
 	[Then(@"its decoded Contents are a Peripheral Status Request")]

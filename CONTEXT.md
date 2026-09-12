@@ -385,6 +385,9 @@ The Type 101 non-mandatory Contents for non-operational text sent between Commun
 **Data Base Query**:
 The Type 102 non-mandatory Contents carrying an opaque Query Type and text for a remote database query.
 
+**Formatted Text**:
+The Type 103 non-mandatory Contents carrying a Format Type and table data for display or printing.
+
 **Status Code**:
 A one-byte Protocol Field that identifies one of Volume A's defined Resource availability and incident states.
 
