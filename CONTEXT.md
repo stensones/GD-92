@@ -355,6 +355,9 @@ The Message Type 22 Contents that identifies the reporting Resource and Incident
 **Stop**:
 The Message Type 23 Contents by which a Resource identifies an Incident as stopped using a Stop Code, allowing control to prevent further deployment.
 
+**Make-up**:
+The Message Type 24 Contents by which a Resource requests up to 12 typed and quantified additional Appliances for an Incident.
+
 **Status Code**:
 A one-byte Protocol Field that identifies one of Volume A's defined Resource availability and incident states.
 

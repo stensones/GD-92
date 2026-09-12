@@ -142,6 +142,17 @@ public sealed class EnvelopeSteps
 			StopCode.FromValue(SevenBitAsciiString.FromValue(stopCode)));
 	}
 
+	[Given(@"a Make-up from resource ""(.*)"" for incident (.*) requesting (.*) ""(.*)"" appliances")]
+	public void GivenAMakeUp(string callsign, uint incidentNumber, byte quantity, string applianceType)
+	{
+		this.contents = MakeUp.FromFields(
+			Callsign.FromValue(SevenBitAsciiString.FromValue(callsign)),
+			IncidentNumber.FromValue(incidentNumber),
+			MakeUpAppliance.FromFields(
+				ApplianceType.FromValue(SevenBitAsciiString.FromValue(applianceType)),
+				ApplianceQuantity.FromValue(quantity)));
+	}
+
 	[Given(@"a Peripheral Status Request")]
 	public void GivenAPeripheralStatusRequest()
 	{
@@ -468,6 +479,18 @@ public sealed class EnvelopeSteps
 		contents.Callsign.Value.Value.Should().Be(callsign);
 		contents.IncidentNumber.Value.Should().Be(incidentNumber);
 		contents.StopCode.Value.Value.Should().Be(stopCode);
+	}
+
+	[Then(@"its decoded Make-up identifies resource ""(.*)"", incident (.*), and requests (.*) ""(.*)"" appliances")]
+	public void ThenItsDecodedMakeUpPreservesItsFields(string callsign, uint incidentNumber, byte quantity, string applianceType)
+	{
+		var contents = this.envelope!.Contents.Should().BeOfType<MakeUp>().Which;
+		var appliance = contents.Appliances.Should().ContainSingle().Which;
+
+		contents.Callsign.Value.Value.Should().Be(callsign);
+		contents.IncidentNumber.Value.Should().Be(incidentNumber);
+		appliance.Type.Value.Value.Should().Be(applianceType);
+		appliance.Quantity.Value.Should().Be(quantity);
 	}
 
 	[Then(@"its decoded Contents are a Peripheral Status Request")]
