@@ -406,6 +406,9 @@ A fixed four-byte Protocol Field that maps one output function to a Physical Bit
 **Parameter Table Entry**:
 A fixed Protocol Field record within a table-valued Parameter. The enclosing Parameter Value owns the boundary of an uncounted sequence of Parameter Table Entries.
 
+**Table Value Field**:
+An immutable uncounted collection of Parameter Table Entries representing one complete table-valued Parameter. It decodes entries until the supplied table-value buffer is exhausted.
+
 **Alternative Address Table Entry**:
 A Protocol Field record pairing an Address Range with its compressed alternative printed address.
 

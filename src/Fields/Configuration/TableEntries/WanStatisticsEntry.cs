@@ -1,6 +1,6 @@
 namespace Stensones.GD92.Fields;
 
-public sealed record WanStatisticsEntry : IGD9Field
+public sealed record WanStatisticsEntry : IUncountedTableEntry
 {
 	private WanStatisticsEntry(
 		ParameterEntryIndex index,

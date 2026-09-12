@@ -1,6 +1,6 @@
 namespace Stensones.GD92.Fields;
 
-public sealed record TelephoneTableEntry : IGD9Field
+public sealed record TelephoneTableEntry : IUncountedTableEntry
 {
 	private const int BooleanBitCount = 8;
 

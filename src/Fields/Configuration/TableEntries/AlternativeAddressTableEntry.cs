@@ -1,6 +1,6 @@
 namespace Stensones.GD92.Fields;
 
-public sealed record AlternativeAddressTableEntry : IGD9Field
+public sealed record AlternativeAddressTableEntry : IUncountedTableEntry
 {
 	private AlternativeAddressTableEntry(AddressRange addressRange, AddressString addressString)
 	{
