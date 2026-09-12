@@ -319,6 +319,9 @@ A two-character Protocol Field that selects one of the seven defined Firecall te
 **Request Code**:
 A one-character Protocol Field that identifies a request to speak, an emergency, or a confidential request to speak.
 
+**Reset Type**:
+A one-byte Protocol Field that identifies the requested reset severity. Volume A currently defines Software Reset.
+
 **Callsign List**:
 A counted collection of the Callsigns of Resources to which a Mobilise Message applies.
 
@@ -356,6 +359,9 @@ The Message Type 40 Contents that alerts a Firecall team group, optionally requi
 
 **Interrupt Request**:
 The Message Type 25 Contents through which a Resource signals a request to speak or an emergency.
+
+**Reset Request**:
+The Message Type 10 Contents that asks an addressed Router to perform a specified Reset Type.
 
 **Mobilise Message**:
 The Message Type 2 Contents, comprising message block data, a submission Time And Date, target Callsign List, and one or more incident-detail sets.

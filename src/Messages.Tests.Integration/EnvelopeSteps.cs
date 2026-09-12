@@ -138,6 +138,13 @@ public sealed class EnvelopeSteps
 			Stensones.GD92.Fields.Text.FromValue(text));
 	}
 
+	[Given(@"a Reset Request for a Software Reset")]
+	public void GivenAResetRequestForASoftwareReset()
+	{
+		this.contents = ResetRequest.FromFields(
+			ResetType.FromValue(ResetTypeValue.SoftwareReset));
+	}
+
 	[Given(@"a single-block Mobilise Message for resource ""(.*)"" submitted at ""(.*)"" for Incident (.*)")]
 	public void GivenASingleBlockMobiliseMessageForResourceSubmittedAtForIncident(
 		string callsign,
@@ -382,6 +389,14 @@ public sealed class EnvelopeSteps
 		contents.Callsign.Value.Value.Should().Be(callsign);
 		contents.RequestCode.Value.Should().Be(RequestCodeValue.Emergency);
 		contents.Text.Value.Should().Be(text);
+	}
+
+	[Then(@"its decoded Reset Request identifies a Software Reset")]
+	public void ThenItsDecodedResetRequestIdentifiesASoftwareReset()
+	{
+		var contents = this.envelope!.Contents.Should().BeOfType<ResetRequest>().Which;
+
+		contents.ResetType.Value.Should().Be(ResetTypeValue.SoftwareReset);
 	}
 
 	[Then(@"its decoded Mobilise Message preserves the resource and incident details")]
