@@ -230,6 +230,7 @@ public sealed class Envelope
 			GD92MessageType.Stop => Stop.FromEncodedMessageBuffer(ref contentsBuffer),
 			GD92MessageType.MakeUp => MakeUp.FromEncodedMessageBuffer(ref contentsBuffer),
 			GD92MessageType.PeripheralStatus => PeripheralStatus.FromEncodedMessageBuffer(ref contentsBuffer),
+			GD92MessageType.IncidentNotification => IncidentNotification.FromEncodedMessageBuffer(ref contentsBuffer),
 			GD92MessageType.AlertCrew => AlertCrew.FromEncodedMessageBuffer(ref contentsBuffer),
 			GD92MessageType.InterruptRequest => InterruptRequest.FromEncodedMessageBuffer(ref contentsBuffer),
 			GD92MessageType.ResetRequest => ResetRequest.FromEncodedMessageBuffer(ref contentsBuffer),

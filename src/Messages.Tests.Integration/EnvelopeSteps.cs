@@ -153,6 +153,34 @@ public sealed class EnvelopeSteps
 				ApplianceQuantity.FromValue(quantity)));
 	}
 
+	[Given(@"an Incident Notification for alarm ""(.*)"" from agency ""(.*)"" with contact ""(.*)"", reference (.*), serial ""(.*)"", address ""(.*)"", and text ""(.*)""")]
+	public void GivenAnIncidentNotification(
+		string alarmType,
+		string callAgency,
+		string telephoneNumber,
+		ushort alarmReference,
+		string alarmSerial,
+		string address,
+		string text)
+	{
+		this.contents = IncidentNotification.FromFields(
+			AlarmType.FromValue(SevenBitAsciiString.FromValue(alarmType)),
+			CallAgency.FromValue(SevenBitAsciiString.FromValue(callAgency)),
+			TelephoneNumber.FromValue(SevenBitAsciiString.FromValue(telephoneNumber)),
+			AlarmReference.FromValue(alarmReference),
+			AlarmSerial.FromValue(SevenBitAsciiString.FromValue(alarmSerial)),
+			IncidentAddress.FromValues(
+				AddressText.FromValue(SevenBitAsciiString.FromValue(address)),
+				HouseNumber.FromValue(SevenBitAsciiString.FromValue(string.Empty)),
+				Street.FromValue(SevenBitAsciiString.FromValue(string.Empty)),
+				SubDistrict.FromValue(SevenBitAsciiString.FromValue(string.Empty)),
+				District.FromValue(SevenBitAsciiString.FromValue(string.Empty)),
+				Town.FromValue(SevenBitAsciiString.FromValue(string.Empty)),
+				County.FromValue(SevenBitAsciiString.FromValue(string.Empty)),
+				Postcode.FromValue(SevenBitAsciiString.FromValue(string.Empty))),
+			Stensones.GD92.Fields.Text.FromValue(text));
+	}
+
 	[Given(@"a Peripheral Status Request")]
 	public void GivenAPeripheralStatusRequest()
 	{
@@ -491,6 +519,27 @@ public sealed class EnvelopeSteps
 		contents.IncidentNumber.Value.Should().Be(incidentNumber);
 		appliance.Type.Value.Value.Should().Be(applianceType);
 		appliance.Quantity.Value.Should().Be(quantity);
+	}
+
+	[Then(@"its decoded Incident Notification identifies alarm ""(.*)"", agency ""(.*)"", contact ""(.*)"", reference (.*), serial ""(.*)"", address ""(.*)"", and text ""(.*)""")]
+	public void ThenItsDecodedIncidentNotificationPreservesItsFields(
+		string alarmType,
+		string callAgency,
+		string telephoneNumber,
+		ushort alarmReference,
+		string alarmSerial,
+		string address,
+		string text)
+	{
+		var contents = this.envelope!.Contents.Should().BeOfType<IncidentNotification>().Which;
+
+		contents.AlarmType.Value.Value.Should().Be(alarmType);
+		contents.CallAgency.Value.Value.Should().Be(callAgency);
+		contents.TelephoneNumber.Value.Value.Should().Be(telephoneNumber);
+		contents.AlarmReference.Value.Should().Be(alarmReference);
+		contents.AlarmSerial.Value.Value.Should().Be(alarmSerial);
+		contents.Address.AddressText.Value.Value.Should().Be(address);
+		contents.Text.Value.Should().Be(text);
 	}
 
 	[Then(@"its decoded Contents are a Peripheral Status Request")]

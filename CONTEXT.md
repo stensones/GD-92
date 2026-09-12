@@ -358,6 +358,9 @@ The Message Type 23 Contents by which a Resource identifies an Incident as stopp
 **Make-up**:
 The Message Type 24 Contents by which a Resource requests up to 12 typed and quantified additional Appliances for an Incident.
 
+**Incident Notification**:
+The Message Type 31 Contents by which an alarm agency or another mobilising system reports an Incident's source, contact details, identifiers, address, and supporting text.
+
 **Status Code**:
 A one-byte Protocol Field that identifies one of Volume A's defined Resource availability and incident states.
 
