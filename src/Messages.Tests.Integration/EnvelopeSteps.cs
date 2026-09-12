@@ -209,6 +209,13 @@ public sealed class EnvelopeSteps
 			FieldPrinterStatus.FromValue(PrinterStatusValue.Offline));
 	}
 
+	[Given(@"an MTA Status Change reporting online")]
+	public void GivenAnMtaStatusChangeReportingOnline()
+	{
+		this.contents = MtaStatusChange.FromFields(
+			MtaStatus.FromValue(MtaStatusValue.Online));
+	}
+
 	[Given(@"a Peripheral Status Request")]
 	public void GivenAPeripheralStatusRequest()
 	{
@@ -601,6 +608,14 @@ public sealed class EnvelopeSteps
 			.Should().BeOfType<global::Stensones.GD92.Messages.PrinterStatus>().Which;
 
 		contents.Status.Value.Should().Be(PrinterStatusValue.Offline);
+	}
+
+	[Then(@"its decoded MTA Status Change reports online")]
+	public void ThenItsDecodedMtaStatusChangeReportsOnline()
+	{
+		var contents = this.envelope!.Contents.Should().BeOfType<MtaStatusChange>().Which;
+
+		contents.MtaStatus.Value.Should().Be(MtaStatusValue.Online);
 	}
 
 	[Then(@"its decoded Contents are a Peripheral Status Request")]
