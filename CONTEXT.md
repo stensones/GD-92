@@ -322,6 +322,9 @@ A one-character Protocol Field that identifies a request to speak, an emergency,
 **Reset Type**:
 A one-byte Protocol Field that identifies the requested reset severity. Volume A currently defines Software Reset.
 
+**Reset Reason**:
+A one-byte Protocol Field that reports whether a reset was requested, caused by software failure, or followed power-on.
+
 **Callsign List**:
 A counted collection of the Callsigns of Resources to which a Mobilise Message applies.
 
@@ -362,6 +365,9 @@ The Message Type 25 Contents through which a Resource signals a request to speak
 
 **Reset Request**:
 The Message Type 10 Contents that asks an addressed Router to perform a specified Reset Type.
+
+**Reset**:
+The Message Type 30 Contents through which a User Agent reports its Reset Reason.
 
 **Mobilise Message**:
 The Message Type 2 Contents, comprising message block data, a submission Time And Date, target Callsign List, and one or more incident-detail sets.

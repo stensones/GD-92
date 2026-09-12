@@ -145,6 +145,13 @@ public sealed class EnvelopeSteps
 			ResetType.FromValue(ResetTypeValue.SoftwareReset));
 	}
 
+	[Given(@"a Reset report declaring Power On")]
+	public void GivenAResetReportDeclaringPowerOn()
+	{
+		this.contents = Reset.FromFields(
+			ResetReason.FromValue(ResetReasonValue.PowerOn));
+	}
+
 	[Given(@"a single-block Mobilise Message for resource ""(.*)"" submitted at ""(.*)"" for Incident (.*)")]
 	public void GivenASingleBlockMobiliseMessageForResourceSubmittedAtForIncident(
 		string callsign,
@@ -397,6 +404,14 @@ public sealed class EnvelopeSteps
 		var contents = this.envelope!.Contents.Should().BeOfType<ResetRequest>().Which;
 
 		contents.ResetType.Value.Should().Be(ResetTypeValue.SoftwareReset);
+	}
+
+	[Then(@"its decoded Reset report identifies Power On")]
+	public void ThenItsDecodedResetReportIdentifiesPowerOn()
+	{
+		var contents = this.envelope!.Contents.Should().BeOfType<Reset>().Which;
+
+		contents.ResetReason.Value.Should().Be(ResetReasonValue.PowerOn);
 	}
 
 	[Then(@"its decoded Mobilise Message preserves the resource and incident details")]
