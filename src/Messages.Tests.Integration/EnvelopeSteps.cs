@@ -124,6 +124,15 @@ public sealed class EnvelopeSteps
 				Remarks.FromValue(SevenBitAsciiString.FromValue(remarks))));
 	}
 
+	[Given(@"a Log Update from resource ""(.*)"" for incident (.*) containing ""(.*)""")]
+	public void GivenALogUpdate(string callsign, uint incidentNumber, string update)
+	{
+		this.contents = LogUpdate.FromFields(
+			Callsign.FromValue(SevenBitAsciiString.FromValue(callsign)),
+			IncidentNumber.FromValue(incidentNumber),
+			Update.FromValue(SevenBitAsciiString.FromValue(update)));
+	}
+
 	[Given(@"a Peripheral Status Request")]
 	public void GivenAPeripheralStatusRequest()
 	{
@@ -430,6 +439,16 @@ public sealed class EnvelopeSteps
 		entry.Riders.Value.Should().Be(riders);
 		entry.StatusCode.Value.Should().Be(StatusCodeValue.AvailableAtBase);
 		entry.Remarks.Value.Value.Should().Be(remarks);
+	}
+
+	[Then(@"its decoded Log Update identifies resource ""(.*)"", incident (.*), and update ""(.*)""")]
+	public void ThenItsDecodedLogUpdatePreservesItsFields(string callsign, uint incidentNumber, string update)
+	{
+		var contents = this.envelope!.Contents.Should().BeOfType<LogUpdate>().Which;
+
+		contents.Callsign.Value.Value.Should().Be(callsign);
+		contents.IncidentNumber.Value.Should().Be(incidentNumber);
+		contents.Update.Value.Value.Should().Be(update);
 	}
 
 	[Then(@"its decoded Contents are a Peripheral Status Request")]

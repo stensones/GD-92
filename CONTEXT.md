@@ -349,6 +349,9 @@ The Message Type 20 Contents comprising an ordered sequence of Resource Status e
 **Duty Staffing Update**:
 The Message Type 21 Contents comprising an ordered sequence of Duty Staffing entries, each reporting a Resource Callsign, Officer in Charge, number of Riders, Status Code, and Remarks.
 
+**Log Update**:
+The Message Type 22 Contents that identifies the reporting Resource and Incident, and carries a compressed text update for that Incident's log.
+
 **Status Code**:
 A one-byte Protocol Field that identifies one of Volume A's defined Resource availability and incident states.
 
