@@ -370,6 +370,9 @@ The Message Type 43 Contents through which a User Agent sends a defined engineer
 **Test**:
 The Message Type 64 Contents that requests a remote test through an opaque Test Type selected by the receiving Message Transfer Agent.
 
+**Printer Status**:
+The Message Type 65 Contents through which a printer User Agent reports its offline, paper-out, or online condition to the Network Management User Agent.
+
 **Status Code**:
 A one-byte Protocol Field that identifies one of Volume A's defined Resource availability and incident states.
 

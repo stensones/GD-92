@@ -56,10 +56,10 @@ Feature: Envelopes
     And its complete Envelope bytes are "1A191902011A191912FCD13C01010004464952451C"
 
   Scenario: Rejecting a known unsupported Envelope with a Negative Acknowledgement
-    Given encoded Envelope bytes "1A191902011A191912FCD140010100044649524560"
+    Given encoded Envelope bytes "1A191902011A191912FCD142010100044649524562"
     And the affected destination is Brigade 26, Node 101, Port 26
     When the Envelope is decoded
-    Then its Contents are preserved as Message Type 64 with bytes "0101000446495245"
+    Then its Contents are preserved as Message Type 66 with bytes "0101000446495245"
     When a Negative Acknowledgement Envelope is created by Brigade 26, Node 101, Port 26 using protocol version 2 and the General Reason Code "inv_mess"
     Then its complete Envelope bytes are "1A195A01811A1919127CD133011A195A010315"
 

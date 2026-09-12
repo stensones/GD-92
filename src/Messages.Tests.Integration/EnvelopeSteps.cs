@@ -1,6 +1,7 @@
 using AwesomeAssertions;
 using Reqnroll;
 using Stensones.GD92.Fields;
+using FieldPrinterStatus = Stensones.GD92.Fields.PrinterStatus;
 
 namespace Stensones.GD92.Messages.Tests.Integration;
 
@@ -199,6 +200,13 @@ public sealed class EnvelopeSteps
 	public void GivenATestWithOpaqueTestType(byte testType)
 	{
 		this.contents = Test.FromFields(TestType.FromValue(testType));
+	}
+
+	[Given(@"a Printer Status reporting offline")]
+	public void GivenAPrinterStatusReportingOffline()
+	{
+		this.contents = global::Stensones.GD92.Messages.PrinterStatus.FromFields(
+			FieldPrinterStatus.FromValue(PrinterStatusValue.Offline));
 	}
 
 	[Given(@"a Peripheral Status Request")]
@@ -584,6 +592,15 @@ public sealed class EnvelopeSteps
 		var contents = this.envelope!.Contents.Should().BeOfType<Test>().Which;
 
 		contents.TestType.Value.Should().Be(testType);
+	}
+
+	[Then(@"its decoded Printer Status reports offline")]
+	public void ThenItsDecodedPrinterStatusReportsOffline()
+	{
+		var contents = this.envelope!.Contents
+			.Should().BeOfType<global::Stensones.GD92.Messages.PrinterStatus>().Which;
+
+		contents.Status.Value.Should().Be(PrinterStatusValue.Offline);
 	}
 
 	[Then(@"its decoded Contents are a Peripheral Status Request")]
