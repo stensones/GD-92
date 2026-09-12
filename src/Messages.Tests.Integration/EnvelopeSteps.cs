@@ -254,6 +254,13 @@ public sealed class EnvelopeSteps
 			FieldTable.FromValue(SevenBitAsciiString.FromValue(table)));
 	}
 
+	[Given(@"a Proforma Definition Query for the text table format")]
+	public void GivenAProformaDefinitionQuery()
+	{
+		this.contents = ProformaDefinitionQuery.FromFields(
+			FormatType.FromValue(FormatTypeValue.TextTable));
+	}
+
 	[Given(@"a Peripheral Status Request")]
 	public void GivenAPeripheralStatusRequest()
 	{
@@ -695,6 +702,14 @@ public sealed class EnvelopeSteps
 
 		contents.FormatType.Value.Should().Be(FormatTypeValue.TextTable);
 		contents.Table.Value.Value.Should().Be(table);
+	}
+
+	[Then(@"its decoded Proforma Definition Query identifies the text table format")]
+	public void ThenItsDecodedProformaDefinitionQueryIdentifiesTextTableFormat()
+	{
+		var contents = this.envelope!.Contents.Should().BeOfType<ProformaDefinitionQuery>().Which;
+
+		contents.FormatType.Value.Should().Be(FormatTypeValue.TextTable);
 	}
 
 	[Then(@"its decoded Contents are a Peripheral Status Request")]
