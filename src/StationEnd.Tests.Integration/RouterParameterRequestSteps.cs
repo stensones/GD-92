@@ -2,11 +2,14 @@ using Aspire.Hosting;
 using Aspire.Hosting.ApplicationModel;
 using Aspire.Hosting.Testing;
 using AwesomeAssertions;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Npgsql;
 using RabbitMQ.Client;
 using RabbitMQ.Client.Exceptions;
 using Reqnroll;
+using Router.Persistence;
+using Stensones.GD92.Fields;
 using System.Net;
 using System.Text.Json;
 
@@ -51,12 +54,54 @@ public sealed class RouterParameterRequestSteps
 		this.applicationProfile = RouterParameterRequestApplicationProfile.HighConcurrencyInventoryScan;
 	}
 
+	[Given(@"the local Router has Routing Table entry 1 to next node 26.101.0")]
+	public async Task GivenTheLocalRouterHasRoutingTableEntryOne()
+	{
+		this.applicationProfile = RouterParameterRequestApplicationProfile.RouterWithRoutingTableEntry;
+		await this.EnsureApplicationStartedAsync();
+		var connectionString = await this.application!.GetConnectionStringAsync("router-database")
+			?? throw new InvalidOperationException(
+				"The test Router database connection string was not provided.");
+		var options = new DbContextOptionsBuilder<RouterDbContext>()
+			.UseNpgsql(connectionString)
+			.Options;
+		await using var database = new RouterDbContext(options);
+		var parameterStore = new EfRouterParameterStore(database);
+		var nextNode = CommunicationsAddress.FromValues(
+			Brigade.FromValue(BrigadeOrAgencyIdentifier.FromValue(26)),
+			Node.FromValue(NodeIdentifier.FromValue(101)),
+			Port.FromValue(PortIdentifier.FromValue(0)));
+		var routingTable = RoutingTable.FromEntries(
+			RoutingTableEntry.FromValues(
+				ParameterEntryIndex.FromValue(1),
+				ProtocolBoolean.True,
+				nextNode,
+				DestinationNodes.FromAddressRanges(),
+				AgentType.FromValue(AgentTypeValue.LanMessageTransferAgent),
+				RoutingPreference.FromValue(0)));
+
+		await parameterStore.StoreAsync(
+			ParameterTable.NonVolatile,
+			RouterParameterCatalogue.RouterTable.Number,
+			RouterParameterCatalogue.RouterTable.Encode(routingTable));
+	}
+
 	[When(@"I request the local Router brigade or agency number")]
 	public async Task WhenIRequestTheLocalRouterBrigadeOrAgencyNumber()
 	{
 		await this.EnsureApplicationStartedAsync();
 
 		this.response = await this.client!.PostAsync("/router/parameters/brigade-or-agency-number", null);
+	}
+
+	[When(@"I request local Router Routing Table entry 1")]
+	public async Task WhenIRequestLocalRouterRoutingTableEntryOne()
+	{
+		await this.EnsureApplicationStartedAsync();
+
+		this.response = await this.client!.PostAsync(
+			"/router/parameters/current/13/entries/1-1",
+			null);
 	}
 
 	[When(@"I request LAN MTA Current Parameter (.*)")]
@@ -173,6 +218,37 @@ public sealed class RouterParameterRequestSteps
 		this.pageContent.Should().Contain("""type="number" name="node""");
 		this.pageContent.Should().Contain("""type="number" name="port""");
 		this.pageContent.Should().Contain("""type="submit">Log on</button>""");
+	}
+
+	[Then(@"NodeManager presents Routing Table entry selection")]
+	public void ThenNodeManagerPresentsRoutingTableEntrySelection()
+	{
+		this.pageContent.Should().Contain("id=\"router-routing-table-entry-selection\"");
+	}
+
+	[Then(@"NodeManager enables Routing Table entry selection")]
+	public void ThenNodeManagerEnablesRoutingTableEntrySelection()
+	{
+		this.pageContent.Should().Contain("id=\"router-routing-table-entry-selection\"");
+		this.pageContent.Should().NotContain(
+			"id=\"router-routing-table-entry-selection\" disabled");
+	}
+
+	[Then(@"NodeManager submits selected Routing Table entries through GD-92")]
+	public void ThenNodeManagerSubmitsSelectedRoutingTableEntries()
+	{
+		this.pageContent.Should().Contain(
+			"const routerRoutingTableEntrySelection = document.getElementById(" +
+			"\"router-routing-table-entry-selection\");");
+		this.pageContent.Should().Contain(
+			"/router/parameters/current/13/entries/${firstEntry}-${lastEntry}");
+	}
+
+	[Then(@"NodeManager renders returned Routing Table entries")]
+	public void ThenNodeManagerRendersReturnedRoutingTableEntries()
+	{
+		this.pageContent.Should().Contain(
+			"Routing Table entry ${entry.index}: next node ${entry.nextNode}");
 	}
 
 	[Then(@"NodeManager follows a Node Login status redirect")]
@@ -457,6 +533,34 @@ public sealed class RouterParameterRequestSteps
 
 		throw new Xunit.Sdk.XunitException(
 			$"The Parameter Request status did not show brigade or agency number {brigadeOrAgencyNumber}.");
+	}
+
+	[Then(@"the Parameter Request status eventually shows Routing Table entry 1 to next node 26.101.0")]
+	public async Task ThenTheParameterRequestStatusEventuallyShowsRoutingTableEntryOne()
+	{
+		var statusAddress = this.response!.Headers.Location!;
+
+		for (var attempt = 0; attempt < 30; attempt++)
+		{
+			using var status = await this.client!.GetAsync(statusAddress);
+			if (status.StatusCode == HttpStatusCode.OK)
+			{
+				using var document = JsonDocument.Parse(await status.Content.ReadAsStringAsync());
+				if (document.RootElement.GetProperty("state").GetString() == "received" &&
+					document.RootElement.GetProperty("routingTableEntries")[0]
+						.GetProperty("index").GetInt32() == 1 &&
+					document.RootElement.GetProperty("routingTableEntries")[0]
+						.GetProperty("nextNode").GetString() == "26.101.0")
+				{
+					return;
+				}
+			}
+
+			await Task.Delay(TimeSpan.FromSeconds(1));
+		}
+
+		throw new Xunit.Sdk.XunitException(
+			"The Parameter Request status did not show Routing Table entry 1 to next node 26.101.0.");
 	}
 
 	[Then(@"the Parameter Request status eventually shows timed-out")]
@@ -935,7 +1039,8 @@ public sealed class RouterParameterRequestSteps
 		Default,
 		NonrespondingRouter,
 		HighConcurrencyInventoryScan,
-		FreshParameterTables
+		FreshParameterTables,
+		RouterWithRoutingTableEntry
 	}
 
 	private sealed class RouterParameterRequestApplicationPool : IAsyncDisposable

@@ -10,6 +10,9 @@ public sealed class RouterParametersController(
 	IRouterParameterRequestService routerParameterRequests,
 	ManagementTransactions managementTransactions) : Controller
 {
+	private static readonly ParameterNumber RoutingTableParameterNumber =
+		ParameterNumber.FromValue(13);
+
 	[HttpPost("brigade-or-agency-number")]
 	public async Task<IActionResult> RequestBrigadeOrAgencyNumber(CancellationToken cancellationToken)
 	{
@@ -50,6 +53,33 @@ public sealed class RouterParametersController(
 
 		return new SeeOtherRedirectResult(
 			$"/router/parameters/{parameterTable}/{parameterNumber}/status/{statusIdentifier}");
+	}
+
+	[HttpPost("{parameterTable}/{parameterNumber}/entries/{firstEntry}-{lastEntry}")]
+	public async Task<IActionResult> RequestParameterEntries(
+		string parameterTable,
+		byte parameterNumber,
+		ushort firstEntry,
+		ushort lastEntry,
+		CancellationToken cancellationToken)
+	{
+		if (!ParameterTableRoute.TryParse(parameterTable, out var table))
+		{
+			return this.BadRequest("Parameter Table must be permanent, non-volatile, or current.");
+		}
+
+		var entrySelection = ParameterEntrySelection.Range(
+			ParameterEntryIndex.FromValue(firstEntry),
+			ParameterEntryIndex.FromValue(lastEntry));
+		var statusIdentifier = await routerParameterRequests.RequestLocalRouterParameterEntries(
+			table,
+			ParameterNumber.FromValue(parameterNumber),
+			entrySelection,
+			cancellationToken);
+
+		return new SeeOtherRedirectResult(
+			$"/router/parameters/{parameterTable}/{parameterNumber}/entries/" +
+			$"{firstEntry}-{lastEntry}/status/{statusIdentifier}");
 	}
 
 	[HttpPost("logon")]
@@ -103,6 +133,17 @@ public sealed class RouterParametersController(
 		return this.Status(identifier, ParameterNumber.FromValue(parameterNumber));
 	}
 
+	[HttpGet("{parameterTable}/{parameterNumber}/entries/{firstEntry}-{lastEntry}/status/{identifier}")]
+	public IActionResult ParameterEntryStatus(
+		string parameterTable,
+		byte parameterNumber,
+		ushort firstEntry,
+		ushort lastEntry,
+		string identifier)
+	{
+		return this.Status(identifier, ParameterNumber.FromValue(parameterNumber));
+	}
+
 	private IActionResult Status(
 		string identifier,
 		ParameterNumber? parameterNumber)
@@ -150,6 +191,9 @@ public sealed class RouterParametersController(
 		string? parameterValue = status is ReceivedRouterParameterRequestStatus receivedParameter
 			? FormatParameterValue(parameterNumber, receivedParameter.ParameterValue)
 			: null;
+		var routingTableEntries = status is ReceivedRouterParameterRequestStatus receivedRoutingTable
+			? FormatRoutingTableEntries(parameterNumber, receivedRoutingTable.ParameterValue)
+			: null;
 
 		return new RouterParameterRequestStatusResponse(
 			status.Identifier.ToString(),
@@ -157,7 +201,33 @@ public sealed class RouterParametersController(
 			brigadeOrAgencyNumber,
 			userAgentAddress,
 			parameterNumber?.Value,
-			parameterValue);
+			parameterValue,
+			routingTableEntries);
+	}
+
+	private static IReadOnlyList<RoutingTableEntryStatusResponse>? FormatRoutingTableEntries(
+		ParameterNumber? parameterNumber,
+		ParameterValue parameterValue)
+	{
+		if (parameterNumber != RoutingTableParameterNumber)
+		{
+			return null;
+		}
+
+		var buffer = new EncodedMessageBuffer(parameterValue.ToWireValue());
+		var routingTable = RoutingTable.FromEncodedMessageBuffer(ref buffer);
+		if (buffer.RemainingBitCount != 0)
+		{
+			throw new ArgumentException(
+				"Router Routing Table Parameter contains trailing encoded data.",
+				nameof(parameterValue));
+		}
+
+		return routingTable.Entries
+			.Select(entry => new RoutingTableEntryStatusResponse(
+				entry.Index.Value,
+				Format(entry.NextNode)))
+			.ToArray();
 	}
 
 	private static string? FormatParameterValue(

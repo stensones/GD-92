@@ -47,6 +47,37 @@ public sealed class RouterParameterRequestService(
 			cancellationToken);
 	}
 
+	public async Task<RouterParameterRequestStatusIdentifier> RequestLocalRouterParameterEntries(
+		ParameterTable parameterTable,
+		ParameterNumber parameterNumber,
+		ParameterEntrySelection entrySelection,
+		CancellationToken cancellationToken)
+	{
+		ArgumentNullException.ThrowIfNull(parameterTable);
+		ArgumentNullException.ThrowIfNull(parameterNumber);
+		ArgumentNullException.ThrowIfNull(entrySelection);
+
+		return await managementTransactions.SubmitAsync(
+			new ManagementTransactionRequest(
+				settings.MessageOriginator,
+				settings.LocalRouter,
+				sequenceNumber => Envelope.FromValues(
+					settings.MessageOriginator,
+					Destinations.FromAddresses(settings.LocalRouter),
+					ProtocolAndPriority.FromValues(
+						MessagePriority.FromValue(MessagePriorityLevel.FromValue(3)),
+						ProtocolVersion.FromValue(ProtocolVersionNumber.FromValue(2))),
+					AcknowledgementAndSequence.FromValues(
+						sequenceNumber,
+						AcknowledgementRequest.Requested),
+					ParameterRequestMultiple.FromFields(
+						parameterTable,
+						parameterNumber,
+						entrySelection)),
+				ManagementTransactionKind.ParameterRequest),
+			cancellationToken);
+	}
+
 	public async Task<RouterParameterRequestStatusIdentifier> RequestLocalRouterLogon(
 		CommunicationsAddress communicationsAddress,
 		PasswordValue password,

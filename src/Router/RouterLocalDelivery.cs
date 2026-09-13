@@ -93,7 +93,8 @@ internal sealed class RouterLocalDelivery
 	{
 		return envelope.Contents switch
 		{
-			ParameterRequest => this.routerParameterRead.HandleAsync(envelope, cancellationToken),
+			ParameterRequest or ParameterRequestMultiple =>
+				this.routerParameterRead.HandleAsync(envelope, cancellationToken),
 			SetParameter
 			{
 				ParameterTable: var table,

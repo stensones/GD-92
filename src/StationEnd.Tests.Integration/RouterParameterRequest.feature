@@ -72,6 +72,24 @@ Feature: Router Parameter Request
     Then I am redirected to the pending Participant Parameter Request status
     And the Participant Parameter Request status eventually shows retained value 1
 
+  Scenario: Browsing a local Router Routing Table entry
+    Given NodeManager is the User Agent at Brigade 26, Node 100, and Port 25
+    And its local Router is at Brigade 26, Node 100, and Port 0
+    And the local Router has Routing Table entry 1 to next node 26.101.0
+    When I open NodeManager
+    Then NodeManager presents Routing Table entry selection
+    When I request local Router Routing Table entry 1
+    Then I am redirected to the pending Parameter Request status
+    And the Parameter Request status eventually shows Routing Table entry 1 to next node 26.101.0
+
+  Scenario: Submitting a local Router Routing Table entry request
+    Given NodeManager is the User Agent at Brigade 26, Node 100, and Port 25
+    And its local Router is at Brigade 26, Node 100, and Port 0
+    When I open NodeManager
+    Then NodeManager enables Routing Table entry selection
+    And NodeManager submits selected Routing Table entries through GD-92
+    And NodeManager renders returned Routing Table entries
+
   Scenario: Presenting a Node Login form
     When I open NodeManager
     Then NodeManager presents a Node Login form that securely submits password, brigade, node, and port

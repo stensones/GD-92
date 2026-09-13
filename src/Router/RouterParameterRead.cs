@@ -1,4 +1,5 @@
 using Router.Persistence;
+using ParticipantParameters;
 using Stensones.GD92.Fields;
 using Stensones.GD92.Messages;
 
@@ -11,51 +12,93 @@ internal sealed class RouterParameterRead
 	private readonly CommunicationsAddress localAddress;
 	private readonly ProtocolVersion protocolVersion;
 	private readonly RouterCurrentParameterProjectionSource? currentParameterSource;
+	private readonly IParticipantParameterStore? parameterStore;
 
 	public RouterParameterRead(
 		CommunicationsAddress localAddress,
 		ProtocolVersion protocolVersion,
-		RouterCurrentParameterProjectionSource? currentParameterSource = null)
+		RouterCurrentParameterProjectionSource? currentParameterSource = null,
+		IParticipantParameterStore? parameterStore = null)
 	{
 		this.localAddress = localAddress ?? throw new ArgumentNullException(nameof(localAddress));
 		this.protocolVersion = protocolVersion ?? throw new ArgumentNullException(nameof(protocolVersion));
 		this.currentParameterSource = currentParameterSource;
+		this.parameterStore = parameterStore;
 	}
 
-	public ValueTask<Envelope?> HandleAsync(
+	public async ValueTask<Envelope?> HandleAsync(
 		Envelope envelope,
 		CancellationToken cancellationToken)
 	{
 		ArgumentNullException.ThrowIfNull(envelope);
 
-		if (envelope.Contents is not ParameterRequest
+		if (envelope.Contents is ParameterRequest
 			{
 				ParameterTable: var table,
 				ParameterNumber: var number
-			} ||
-			table != ParameterTable.Current)
+			} &&
+			table == ParameterTable.Current)
 		{
-			return ValueTask.FromResult<Envelope?>(null);
+			var parameterValue = RouterParameterCatalogue.IsPasswordNumber(number)
+				? ParameterValue.FromWireValue(RedactedPassword.ToWireValue())
+				: this.CurrentParameterValue(number);
+
+			if (parameterValue is null)
+			{
+				return null;
+			}
+
+			return Envelope.CreateParameterResponse(
+				envelope,
+				this.localAddress,
+				this.protocolVersion,
+				Parameter.FromFields(
+					MoreValues.No,
+					parameterValue));
 		}
 
-		var parameterValue = RouterParameterCatalogue.IsPasswordNumber(number)
-			? ParameterValue.FromWireValue(RedactedPassword.ToWireValue())
-			: this.CurrentParameterValue(number);
-
-		if (parameterValue is null)
+		if (envelope.Contents is not ParameterRequestMultiple
+			{
+				ParameterTable: var parameterTable,
+				ParameterNumber: var parameterNumber
+			} parameterRequest ||
+			parameterTable != ParameterTable.Current ||
+			parameterNumber != RouterParameterCatalogue.RouterTable.Number ||
+			this.parameterStore is null)
 		{
-			return ValueTask.FromResult<Envelope?>(null);
+			return null;
 		}
 
-		var response = Envelope.CreateParameterResponse(
+		var routingTableParameterValue = await this.parameterStore.GetAsync(
+			ParameterTable.NonVolatile,
+			RouterParameterCatalogue.RouterTable.Number,
+			cancellationToken);
+		if (routingTableParameterValue is null)
+		{
+			return null;
+		}
+
+		var routingTable = RouterParameterCatalogue.RouterTable.Read(routingTableParameterValue);
+		var selectionBuffer = new EncodedMessageBuffer(parameterRequest.EntrySelection.ToWireValue());
+		var firstEntry = ParameterEntryIndex.FromEncodedMessageBuffer(ref selectionBuffer);
+		var lastEntry = ParameterEntryIndex.FromEncodedMessageBuffer(ref selectionBuffer);
+		if (firstEntry.Value == 0)
+		{
+			return null;
+		}
+
+		var entries = routingTable.Entries
+			.Where(entry => entry.Index.Value >= firstEntry.Value &&
+				entry.Index.Value <= lastEntry.Value)
+			.ToArray();
+
+		return Envelope.CreateParameterResponse(
 			envelope,
 			this.localAddress,
 			this.protocolVersion,
 			Parameter.FromFields(
 				MoreValues.No,
-				parameterValue));
-
-		return ValueTask.FromResult<Envelope?>(response);
+				RouterParameterCatalogue.RouterTable.Encode(RoutingTable.FromEntries(entries))));
 	}
 
 	private ParameterValue? CurrentParameterValue(ParameterNumber number)

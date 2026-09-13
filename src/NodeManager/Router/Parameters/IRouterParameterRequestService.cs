@@ -1,4 +1,5 @@
 using Stensones.GD92.Fields;
+using Stensones.GD92.Messages;
 
 namespace NodeManager.Router.Parameters;
 
@@ -14,6 +15,12 @@ public interface IRouterParameterRequestService
 	Task<RouterParameterRequestStatusIdentifier> RequestLocalRouterParameter(
 		ParameterTable parameterTable,
 		ParameterNumber parameterNumber,
+		CancellationToken cancellationToken);
+
+	Task<RouterParameterRequestStatusIdentifier> RequestLocalRouterParameterEntries(
+		ParameterTable parameterTable,
+		ParameterNumber parameterNumber,
+		ParameterEntrySelection entrySelection,
 		CancellationToken cancellationToken);
 
 	Task<RouterParameterRequestStatusIdentifier> RequestLocalRouterLogon(

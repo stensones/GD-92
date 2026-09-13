@@ -30,7 +30,8 @@ builder.Services.AddScoped(serviceProvider =>
 	new RouterParameterRead(
 		routerSettings.LocalAddress,
 		routerSettings.ProtocolVersion,
-		serviceProvider.GetRequiredService<RouterCurrentParameterProjectionSource>()));
+		serviceProvider.GetRequiredService<RouterCurrentParameterProjectionSource>(),
+		serviceProvider.GetRequiredService<IParticipantParameterStore>()));
 builder.Services.AddScoped(serviceProvider =>
 	new NodeLogin(
 		routerSettings.LocalAddress,

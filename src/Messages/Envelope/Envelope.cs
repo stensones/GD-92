@@ -172,9 +172,10 @@ public sealed class Envelope
 		ArgumentNullException.ThrowIfNull(protocolVersion);
 		ArgumentNullException.ThrowIfNull(parameter);
 
-		if (requestEnvelope.Contents is not ParameterRequest)
+		if (requestEnvelope.Contents is not (ParameterRequest or ParameterRequestMultiple))
 		{
-			throw new InvalidOperationException("A Parameter response can only respond to a Parameter Request Envelope.");
+			throw new InvalidOperationException(
+				"A Parameter response can only respond to a Parameter Request or Parameter Request Multiple Envelope.");
 		}
 
 		return FromValues(

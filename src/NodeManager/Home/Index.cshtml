@@ -109,6 +109,23 @@
                     <option value="current" selected>Current</option>
                 </select>
             </label>
+            <form class="inline-action" id="router-routing-table-entry-selection"
+                  aria-describedby="router-routing-table-entry-selection-status">
+                <fieldset>
+                    <legend>Router Current Routing Table entries</legend>
+                    <label>
+                        First entry
+                        <input name="first-entry" type="number" min="1" value="1" required />
+                    </label>
+                    <label>
+                        Last entry
+                        <input name="last-entry" type="number" min="1" value="1" required />
+                    </label>
+                    <button type="submit">Request entries</button>
+                </fieldset>
+            </form>
+            <p id="router-routing-table-entry-selection-status" role="status" hidden></p>
+            <ul id="router-routing-table-entry-results" hidden></ul>
             <p id="router-parameter-list-status" role="status" hidden></p>
             <table id="router-parameter-list" hidden>
                 <caption>Local Router Current Parameters</caption>
@@ -154,6 +171,9 @@
     const routerParameterListStatus = document.getElementById("router-parameter-list-status");
     const routerParameterListRows = routerParameterList.querySelector("tbody");
     const participantParameterTable = document.getElementById("participant-parameter-table");
+    const routerRoutingTableEntrySelection = document.getElementById("router-routing-table-entry-selection");
+    const routerRoutingTableEntrySelectionStatus = document.getElementById("router-routing-table-entry-selection-status");
+    const routerRoutingTableEntryResults = document.getElementById("router-routing-table-entry-results");
     const redactedPasswordMarker = "PASSWORD";
     const participantCurrentParameterCatalogues = {
         router: [
@@ -354,6 +374,69 @@
             }
 
             window.setTimeout(poll, 1000);
+        };
+
+        poll();
+    });
+
+    routerRoutingTableEntrySelection.addEventListener("submit", async event => {
+        event.preventDefault();
+        const formData = new FormData(routerRoutingTableEntrySelection);
+        const firstEntry = Number(formData.get("first-entry"));
+        const lastEntry = Number(formData.get("last-entry"));
+
+        routerRoutingTableEntrySelectionStatus.hidden = false;
+        routerRoutingTableEntryResults.hidden = true;
+        routerRoutingTableEntryResults.replaceChildren();
+        if (!Number.isInteger(firstEntry) || !Number.isInteger(lastEntry) ||
+            firstEntry < 1 || lastEntry < firstEntry) {
+            routerRoutingTableEntrySelectionStatus.textContent =
+                "Last entry must be greater than or equal to first entry.";
+            return;
+        }
+
+        routerRoutingTableEntrySelectionStatus.textContent = "Requesting Routing Table entries...";
+        const response = await fetch(
+            `/router/parameters/current/13/entries/${firstEntry}-${lastEntry}`,
+            { method: "POST" });
+        const statusUrl = response.url;
+        if (!response.ok || !statusUrl) {
+            routerRoutingTableEntrySelectionStatus.textContent =
+                "The Routing Table request could not be submitted.";
+            return;
+        }
+
+        const poll = async () => {
+            const result = await fetch(statusUrl);
+            if (!result.ok) {
+                routerRoutingTableEntrySelectionStatus.textContent =
+                    "The Routing Table request could not be completed.";
+                return;
+            }
+
+            const request = await result.json();
+            if (request.state === "pending") {
+                window.setTimeout(poll, 1000);
+                return;
+            }
+
+            if (request.state !== "received") {
+                routerRoutingTableEntrySelectionStatus.textContent =
+                    `Routing Table request ${request.state}.`;
+                return;
+            }
+
+            const entries = request.routingTableEntries ?? [];
+            for (const entry of entries) {
+                const item = document.createElement("li");
+                item.textContent = `Routing Table entry ${entry.index}: next node ${entry.nextNode}`;
+                routerRoutingTableEntryResults.append(item);
+            }
+
+            routerRoutingTableEntryResults.hidden = false;
+            routerRoutingTableEntrySelectionStatus.textContent = entries.length === 0
+                ? "No Routing Table entries were returned."
+                : "Routing Table entries received.";
         };
 
         poll();

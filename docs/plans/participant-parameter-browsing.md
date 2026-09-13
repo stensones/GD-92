@@ -25,8 +25,11 @@ and priority, with `ack_req` cleared. Invalid Parameter Numbers and Parameter
 Tables return a parameter `NAK`; they must not be silently ignored.
 
 Table-shaped Parameters use Message 63 (`Param_req_multiple`) and page through
-the selected entries. `more_values` indicates that the user may request the next
-page.
+the selected entries. Router Current Parameter 13 (`Routing Table`) currently
+supports a requested entry range and returns decoded entry index and next-node
+values through Node Manager's status API. `more_values` indicates that the user
+may request the next page; browser submission is available, while paging remains
+outstanding.
 
 ## Browse catalogues
 

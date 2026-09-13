@@ -6,4 +6,9 @@ public sealed record RouterParameterRequestStatusResponse(
 	byte? BrigadeOrAgencyNumber,
 	string? UserAgentAddress,
 	byte? ParameterNumber,
-	string? ParameterValue);
+	string? ParameterValue,
+	IReadOnlyList<RoutingTableEntryStatusResponse>? RoutingTableEntries);
+
+public sealed record RoutingTableEntryStatusResponse(
+	ushort Index,
+	string NextNode);

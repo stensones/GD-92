@@ -1,5 +1,6 @@
 using AwesomeAssertions;
 using Microsoft.Extensions.Logging.Abstractions;
+using ParticipantParameters;
 using Router.Persistence;
 using Stensones.GD92.Fields;
 using Stensones.GD92.Messages;
@@ -32,6 +33,56 @@ public sealed class RouterLocalDeliveryTests
 
 		userAgentIngress.Envelope!.Contents.Should().BeOfType<Parameter>().Which.ParameterValue
 			.ToWireValue().Should().Equal([42]);
+	}
+
+	[Fact]
+	public async Task Delivers_a_requested_Routing_Table_entry_to_User_Agent_Ingress()
+	{
+		var routerAddress = RouterParameterModuleTestSupport.CreateAddress(26, 100, 0);
+		var nextNode = RouterParameterModuleTestSupport.CreateAddress(26, 101, 0);
+		var currentParameters = new RouterCurrentParameterProjectionSource();
+		currentParameters.Publish(
+			RouterParameterModuleTestSupport.CreateCurrentParameters(routerAddress));
+		var routingTable = RoutingTable.FromEntries(
+			RoutingTableEntry.FromValues(
+				ParameterEntryIndex.FromValue(1),
+				ProtocolBoolean.True,
+				nextNode,
+				DestinationNodes.FromAddressRanges(),
+				AgentType.FromValue(AgentTypeValue.LanMessageTransferAgent),
+				RoutingPreference.FromValue(0)));
+		var userAgentIngress = new CapturingUserAgentIngress();
+		var localDelivery = CreateLocalDelivery(
+			routerAddress,
+			currentParameters,
+			userAgentIngress,
+			new CapturingLocalParticipantIngress(),
+			new RetainedParameterStore(
+				RouterParameterCatalogue.RouterTable.Encode(routingTable)));
+		var request = Envelope.FromValues(
+			RouterParameterModuleTestSupport.CreateAddress(26, 100, 25),
+			Destinations.FromAddresses(routerAddress),
+			ProtocolAndPriority.FromValues(
+				MessagePriority.FromValue(MessagePriorityLevel.FromValue(3)),
+				RouterParameterModuleTestSupport.ProtocolVersion),
+			AcknowledgementAndSequence.FromValues(
+				SequenceNumber.FromValue(MessageSequenceIdentifier.FromValue(7)),
+				AcknowledgementRequest.Requested),
+			ParameterRequestMultiple.FromFields(
+				ParameterTable.Current,
+				RouterParameterCatalogue.RouterTable.Number,
+				ParameterEntrySelection.Range(
+					ParameterEntryIndex.FromValue(1),
+					ParameterEntryIndex.FromValue(1))));
+
+		await localDelivery.ReceiveAsync(request, CancellationToken.None);
+
+		var response = userAgentIngress.Envelope!.Contents.Should().BeOfType<Parameter>().Which;
+		var buffer = new EncodedMessageBuffer(response.ParameterValue.ToWireValue());
+		var returnedEntry = RoutingTable.FromEncodedMessageBuffer(ref buffer).Entries.Single();
+		returnedEntry.Index.Value.Should().Be(1);
+		returnedEntry.NextNode.Should().Be(nextNode);
+		buffer.RemainingBitCount.Should().Be(0);
 	}
 
 	[Fact]
@@ -280,13 +331,15 @@ public sealed class RouterLocalDeliveryTests
 		CommunicationsAddress routerAddress,
 		RouterCurrentParameterProjectionSource currentParameters,
 		IUserAgentIngress userAgentIngress,
-		ILocalParticipantIngress localParticipantIngress) =>
+		ILocalParticipantIngress localParticipantIngress,
+		IParticipantParameterStore? parameterStore = null) =>
 		new(
 			routerAddress,
 			new RouterParameterRead(
 				routerAddress,
 				RouterParameterModuleTestSupport.ProtocolVersion,
-				currentParameters),
+				currentParameters,
+				parameterStore),
 			new NodeLogin(
 				routerAddress,
 				RouterParameterModuleTestSupport.ProtocolVersion,
@@ -299,6 +352,32 @@ public sealed class RouterLocalDeliveryTests
 			userAgentIngress,
 			localParticipantIngress,
 			NullLogger<RouterLocalDelivery>.Instance);
+
+	private sealed class RetainedParameterStore(ParameterValue routingTable) :
+		IParticipantParameterStore
+	{
+		public ValueTask<ParameterValue?> GetAsync(
+			ParameterTable parameterTable,
+			ParameterNumber parameterNumber,
+			CancellationToken cancellationToken = default) =>
+			ValueTask.FromResult<ParameterValue?>(
+				parameterTable == ParameterTable.NonVolatile &&
+				parameterNumber == RouterParameterCatalogue.RouterTable.Number
+					? routingTable
+					: null);
+
+		public ValueTask StoreAsync(
+			ParameterTable parameterTable,
+			ParameterNumber parameterNumber,
+			ParameterValue parameterValue,
+			CancellationToken cancellationToken = default) =>
+			throw new NotSupportedException();
+
+		public ValueTask<T> ExecuteInitializationAsync<T>(
+			Func<CancellationToken, ValueTask<T>> initialize,
+			CancellationToken cancellationToken = default) =>
+			throw new NotSupportedException();
+	}
 
 	private sealed class CapturingUserAgentIngress : IUserAgentIngress
 	{

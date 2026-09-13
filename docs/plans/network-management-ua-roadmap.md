@@ -30,6 +30,9 @@ The Node Manager currently:
 - lets an operator select a Parameter Table before requesting a modeled scalar
   Parameter; LAN MTA supports its Current, Non-Volatile, and Permanent scalar
   reads through this path;
+- supports a first Current Router Routing Table read through `Param_req_multiple`
+  for a requested entry range, returning decoded entry index and next-node
+  values through an operator-facing Parameters form; paging remains outstanding;
 - requests Router Parameter values and performs Router logon/logoff;
 - correlates expected `Parameter`, `ACK`, and `NAK` responses with retry and
   timeout status for operator polling;
@@ -49,8 +52,9 @@ changes.
 
 1. Allow the operator to select `Permanent`, `Non-Volatile`, or `Current`
    before requesting a Parameter.
-2. Implement `Param_req_multiple` for table-shaped Parameters, including
-   entry selection, `more_values`, and browser paging.
+2. Started with Router Routing Table Current-table entry ranges: implement
+   `Param_req_multiple` for remaining table-shaped Parameters, including
+   `more_values` and browser paging.
 3. Ensure every participant returns parameter `NAK`s for invalid Parameter
    Tables, Parameter Numbers, fields, and entries.
 4. Add authorised generic `Set_parameter` workflows. Preserve
