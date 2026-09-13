@@ -117,6 +117,56 @@ public sealed class RouterParametersControllerTests
 	}
 
 	[Fact]
+	public async Task Presents_a_parameter_Invalid_Entry_rejection_reason()
+	{
+		using var managementTransactions = new TestManagementTransactions();
+		var identifier = await managementTransactions.Transactions.SubmitAsync(
+			new ManagementTransactionRequest(
+				Address(25),
+				Address(0),
+				sequenceNumber => Envelope.FromValues(
+					Address(25),
+					Destinations.FromAddresses(Address(0)),
+					ProtocolAndPriority.FromValues(
+						MessagePriority.FromValue(MessagePriorityLevel.FromValue(3)),
+						ProtocolVersion.FromValue(ProtocolVersionNumber.FromValue(2))),
+					AcknowledgementAndSequence.FromValues(
+						sequenceNumber,
+						AcknowledgementRequest.Requested),
+					ParameterRequestMultiple.FromFields(
+						ParameterTable.Current,
+						ParameterNumber.FromValue(13),
+						ParameterEntrySelection.Range(
+							ParameterEntryIndex.FromValue(2),
+							ParameterEntryIndex.FromValue(2)))),
+				ManagementTransactionKind.ParameterRequest),
+			CancellationToken.None);
+		await managementTransactions.Transactions.ReceiveAsync(Envelope.FromValues(
+			Address(0),
+			Destinations.FromAddresses(Address(25)),
+			ProtocolAndPriority.FromValues(
+				MessagePriority.FromValue(MessagePriorityLevel.FromValue(3)),
+				ProtocolVersion.FromValue(ProtocolVersionNumber.FromValue(2))),
+			AcknowledgementAndSequence.FromValues(
+				identifier.USWR.SequenceNumber,
+				AcknowledgementRequest.NotRequested),
+			NegativeAcknowledgement.FromValues(
+				Destinations.FromAddresses(Address(0)),
+				ReasonCode.FromParameterReasonCode(ParameterReasonCode.InvalidEntry))),
+			CancellationToken.None);
+		var controller = new RouterParametersController(
+			new ReturningRouterParameterRequestService(identifier),
+			managementTransactions.Transactions);
+
+		var response = controller.Status(identifier.ToString())
+			.Should().BeOfType<OkObjectResult>().Which.Value
+			.Should().BeOfType<RouterParameterRequestStatusResponse>().Which;
+
+		response.State.Should().Be("rejected");
+		response.RejectionReason.Should().Be("Parameter / Invalid Entry");
+	}
+
+	[Fact]
 	public async Task Presents_a_received_Current_Password_without_exposing_its_secret()
 	{
 		using var managementTransactions = new TestManagementTransactions();

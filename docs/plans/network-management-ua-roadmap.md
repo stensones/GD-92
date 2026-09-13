@@ -58,8 +58,9 @@ changes.
    `Param_req_multiple`, `more_values`, and browser paging. Extend these
    semantics to remaining table-shaped Parameters only through separately
    approved workflows.
-3. Ensure every participant returns parameter `NAK`s for invalid Parameter
-   Tables, Parameter Numbers, fields, and entries.
+3. Router Current Routing Table reads reject a missing entry with
+   `NAK(parameter / inv_entry)`. Extend parameter `NAK`s to every participant
+   for invalid Parameter Tables, Parameter Numbers, fields, and entries.
 4. Add authorised generic `Set_parameter` workflows. Preserve
    participant-owned validation, persistence, and password/access rules.
 5. Add a configurable catalogue/provider model for new Agent Types and

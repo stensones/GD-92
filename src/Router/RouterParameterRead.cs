@@ -91,6 +91,16 @@ internal sealed class RouterParameterRead
 			.Where(entry => entry.Index.Value >= firstEntry.Value &&
 				entry.Index.Value <= lastEntry.Value)
 			.ToArray();
+		if (entries.Length == 0)
+		{
+			return Envelope.CreateNegativeAcknowledgement(
+				envelope,
+				this.localAddress,
+				this.protocolVersion,
+				envelope.Destinations,
+				ReasonCode.FromParameterReasonCode(ParameterReasonCode.InvalidEntry));
+		}
+
 		var moreValues = routingTable.Entries.Any(entry => entry.Index.Value > lastEntry.Value)
 			? MoreValues.Yes
 			: MoreValues.No;

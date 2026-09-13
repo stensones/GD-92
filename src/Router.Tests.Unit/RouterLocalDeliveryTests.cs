@@ -141,6 +141,52 @@ public sealed class RouterLocalDeliveryTests
 	}
 
 	[Fact]
+	public async Task Rejects_a_missing_Routing_Table_entry_with_a_parameter_Invalid_Entry_NAK()
+	{
+		var routerAddress = RouterParameterModuleTestSupport.CreateAddress(26, 100, 0);
+		var nextNode = RouterParameterModuleTestSupport.CreateAddress(26, 101, 0);
+		var currentParameters = new RouterCurrentParameterProjectionSource();
+		currentParameters.Publish(
+			RouterParameterModuleTestSupport.CreateCurrentParameters(routerAddress));
+		var routingTable = RoutingTable.FromEntries(
+			RoutingTableEntry.FromValues(
+				ParameterEntryIndex.FromValue(1),
+				ProtocolBoolean.True,
+				nextNode,
+				DestinationNodes.FromAddressRanges(),
+				AgentType.FromValue(AgentTypeValue.LanMessageTransferAgent),
+				RoutingPreference.FromValue(0)));
+		var userAgentIngress = new CapturingUserAgentIngress();
+		var localDelivery = CreateLocalDelivery(
+			routerAddress,
+			currentParameters,
+			userAgentIngress,
+			new CapturingLocalParticipantIngress(),
+			new RetainedParameterStore(
+				RouterParameterCatalogue.RouterTable.Encode(routingTable)));
+		var request = Envelope.FromValues(
+			RouterParameterModuleTestSupport.CreateAddress(26, 100, 25),
+			Destinations.FromAddresses(routerAddress),
+			ProtocolAndPriority.FromValues(
+				MessagePriority.FromValue(MessagePriorityLevel.FromValue(3)),
+				RouterParameterModuleTestSupport.ProtocolVersion),
+			AcknowledgementAndSequence.FromValues(
+				SequenceNumber.FromValue(MessageSequenceIdentifier.FromValue(7)),
+				AcknowledgementRequest.Requested),
+			ParameterRequestMultiple.FromFields(
+				ParameterTable.Current,
+				RouterParameterCatalogue.RouterTable.Number,
+				ParameterEntrySelection.Range(
+					ParameterEntryIndex.FromValue(2),
+					ParameterEntryIndex.FromValue(2))));
+
+		await localDelivery.ReceiveAsync(request, CancellationToken.None);
+
+		userAgentIngress.Envelope!.Contents.Should().BeOfType<NegativeAcknowledgement>().Which
+			.ReasonCode.ParameterReasonCode.Should().Be(ParameterReasonCode.InvalidEntry);
+	}
+
+	[Fact]
 	public async Task Delivers_a_Node_Login_response_to_User_Agent_Ingress()
 	{
 		var routerAddress = RouterParameterModuleTestSupport.CreateAddress(26, 100, 0);

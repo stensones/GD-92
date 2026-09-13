@@ -8,7 +8,8 @@ public sealed record RouterParameterRequestStatusResponse(
 	byte? ParameterNumber,
 	string? ParameterValue,
 	IReadOnlyList<RoutingTableEntryStatusResponse>? RoutingTableEntries,
-	bool? MoreValues);
+	bool? MoreValues,
+	string? RejectionReason);
 
 public sealed record RoutingTableEntryStatusResponse(
 	ushort Index,

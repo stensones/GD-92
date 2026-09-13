@@ -117,6 +117,16 @@ public sealed class RouterParameterRequestSteps
 			null);
 	}
 
+	[When(@"I request local Router Routing Table entry 2")]
+	public async Task WhenIRequestLocalRouterRoutingTableEntryTwo()
+	{
+		await this.EnsureApplicationStartedAsync();
+
+		this.response = await this.client!.PostAsync(
+			"/router/parameters/current/13/entries/2-2",
+			null);
+	}
+
 	[When(@"I request the next local Router Routing Table entry")]
 	public async Task WhenIRequestTheNextLocalRouterRoutingTableEntry()
 	{
@@ -656,6 +666,39 @@ public sealed class RouterParameterRequestSteps
 		throw new Xunit.Sdk.XunitException(
 			$"The Parameter Request status did not show Routing Table entry {expectedIndex} " +
 			$"to next node {expectedNextNode} with more values {hasMoreValues}.");
+	}
+
+	[Then(@"the Parameter Request status shows Parameter \/ Invalid Entry rejection")]
+	public async Task ThenTheParameterRequestStatusShowsParameterInvalidEntryRejection()
+	{
+		var statusAddress = this.response!.Headers.Location!;
+
+		for (var attempt = 0; attempt < 30; attempt++)
+		{
+			using var status = await this.client!.GetAsync(statusAddress);
+			if (status.StatusCode == HttpStatusCode.OK)
+			{
+				using var document = JsonDocument.Parse(await status.Content.ReadAsStringAsync());
+				if (document.RootElement.GetProperty("state").GetString() == "rejected" &&
+					document.RootElement.GetProperty("rejectionReason").GetString() ==
+					"Parameter / Invalid Entry")
+				{
+					return;
+				}
+			}
+
+			await Task.Delay(TimeSpan.FromSeconds(1));
+		}
+
+		throw new Xunit.Sdk.XunitException(
+			"The Parameter Request status did not show a Parameter / Invalid Entry rejection.");
+	}
+
+	[Then(@"NodeManager renders the Routing Table rejection reason")]
+	public void ThenNodeManagerRendersTheRoutingTableRejectionReason()
+	{
+		this.pageContent.Should().Contain(
+			"Routing Table request ${request.state}: ${request.rejectionReason}.");
 	}
 
 	[Then(@"the Parameter Request status eventually shows timed-out")]

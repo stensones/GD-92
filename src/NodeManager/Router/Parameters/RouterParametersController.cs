@@ -197,6 +197,9 @@ public sealed class RouterParametersController(
 		bool? moreValues = status is ReceivedRouterParameterRequestStatus receivedMoreValues
 			? receivedMoreValues.MoreValues.Value == ProtocolBoolean.True
 			: null;
+		string? rejectionReason = status is RejectedRouterParameterRequestStatus rejected
+			? FormatRejectionReason(rejected.ReasonCode)
+			: null;
 
 		return new RouterParameterRequestStatusResponse(
 			status.Identifier.ToString(),
@@ -206,7 +209,39 @@ public sealed class RouterParametersController(
 			parameterNumber?.Value,
 			parameterValue,
 			routingTableEntries,
-			moreValues);
+			moreValues,
+			rejectionReason);
+	}
+
+	private static string FormatRejectionReason(ReasonCode reasonCode)
+	{
+		ArgumentNullException.ThrowIfNull(reasonCode);
+
+		if (reasonCode.ParameterReasonCode is { } parameterReasonCode)
+		{
+			return $"Parameter / {FormatReasonCode(parameterReasonCode)}";
+		}
+
+		if (reasonCode.GeneralReasonCode is { } generalReasonCode)
+		{
+			return $"General / {FormatReasonCode(generalReasonCode)}";
+		}
+
+		if (reasonCode.PrinterReasonCode is { } printerReasonCode)
+		{
+			return $"Printer / {FormatReasonCode(printerReasonCode)}";
+		}
+
+		throw new InvalidOperationException("The rejection Reason Code has no supported reason set.");
+	}
+
+	private static string FormatReasonCode<TReasonCode>(TReasonCode reasonCode)
+		where TReasonCode : struct, Enum
+	{
+		return string.Concat(reasonCode.ToString().Select((character, index) =>
+			index > 0 && char.IsUpper(character)
+				? $" {character}"
+				: character.ToString()));
 	}
 
 	private static IReadOnlyList<RoutingTableEntryStatusResponse>? FormatRoutingTableEntries(

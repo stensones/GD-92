@@ -418,7 +418,9 @@
 
             if (request.state !== "received") {
                 routerRoutingTableEntrySelectionStatus.textContent =
-                    `Routing Table request ${request.state}.`;
+                    request.rejectionReason
+                        ? `Routing Table request ${request.state}: ${request.rejectionReason}.`
+                        : `Routing Table request ${request.state}.`;
                 return;
             }
 
