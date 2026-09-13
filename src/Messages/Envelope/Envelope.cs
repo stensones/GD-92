@@ -4,6 +4,8 @@ namespace Stensones.GD92.Messages;
 
 public sealed class Envelope
 {
+	public const int MaximumContentsLength = 1023;
+
 	private readonly byte[] contentsWireValue;
 
 	private Envelope(
@@ -53,7 +55,7 @@ public sealed class Envelope
 		var contentsWireValue = contents.ToWireValue();
 		ArgumentNullException.ThrowIfNull(contentsWireValue);
 
-		if (contentsWireValue.Length > 1023)
+		if (contentsWireValue.Length > MaximumContentsLength)
 		{
 			throw new ArgumentOutOfRangeException(nameof(contents));
 		}

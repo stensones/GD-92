@@ -93,16 +93,16 @@ Feature: Router Parameter Request
   Scenario: Paging local Router Routing Table entries
     Given NodeManager is the User Agent at Brigade 26, Node 100, and Port 25
     And its local Router is at Brigade 26, Node 100, and Port 0
-    And the local Router has Routing Table entries 1 and 2
+    And the local Router has Routing Table entries 1 through 200
     When I open NodeManager
     Then NodeManager presents a hidden Routing Table next-page control
     And NodeManager requests the next contiguous Routing Table entry range
-    When I request local Router Routing Table entry 1
+    When I request local Router Routing Table entries 1 through 200
     Then I am redirected to the pending Parameter Request status
-    And the Parameter Request status shows Routing Table entry 1 to next node 26.101.0 with more values
-    When I request the next local Router Routing Table entry
+    And the Parameter Request status shows a capacity-limited Routing Table page with more values
+    When I request the remaining local Router Routing Table entries
     Then I am redirected to the pending Parameter Request status
-    And the Parameter Request status shows Routing Table entry 2 to next node 26.102.0 with no more values
+    And the Parameter Request status shows the final Routing Table page through entry 200
 
   Scenario: Rejecting a missing local Router Routing Table entry
     Given NodeManager is the User Agent at Brigade 26, Node 100, and Port 25

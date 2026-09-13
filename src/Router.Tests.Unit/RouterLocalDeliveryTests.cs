@@ -87,7 +87,7 @@ public sealed class RouterLocalDeliveryTests
 	}
 
 	[Fact]
-	public async Task Indicates_more_values_when_a_Routing_Table_entry_follows_the_requested_range()
+	public async Task Does_not_indicate_more_values_when_all_requested_Routing_Table_entries_fit()
 	{
 		var routerAddress = RouterParameterModuleTestSupport.CreateAddress(26, 100, 0);
 		var firstNextNode = RouterParameterModuleTestSupport.CreateAddress(26, 101, 0);
@@ -137,7 +137,60 @@ public sealed class RouterLocalDeliveryTests
 		await localDelivery.ReceiveAsync(request, CancellationToken.None);
 
 		userAgentIngress.Envelope!.Contents.Should().BeOfType<Parameter>().Which.MoreValues
-			.Should().Be(MoreValues.Yes);
+			.Should().Be(MoreValues.No);
+	}
+
+	[Fact]
+	public async Task Returns_the_longest_Routing_Table_prefix_that_fits_in_a_Parameter_Response()
+	{
+		var routerAddress = RouterParameterModuleTestSupport.CreateAddress(26, 100, 0);
+		var routingTable = RoutingTable.FromEntries(
+			[.. Enumerable.Range(1, 200).Select(index =>
+				RoutingTableEntry.FromValues(
+					ParameterEntryIndex.FromValue((ushort)index),
+					ProtocolBoolean.True,
+					RouterParameterModuleTestSupport.CreateAddress(26, (ushort)(100 + index), 0),
+					DestinationNodes.FromAddressRanges(),
+					AgentType.FromValue(AgentTypeValue.LanMessageTransferAgent),
+					RoutingPreference.FromValue(0)))]);
+		var parameterRead = new RouterParameterRead(
+			routerAddress,
+			RouterParameterModuleTestSupport.ProtocolVersion,
+			parameterStore: new RetainedParameterStore(
+				RouterParameterCatalogue.RouterTable.Encode(routingTable)));
+		var request = Envelope.FromValues(
+			RouterParameterModuleTestSupport.CreateAddress(26, 100, 25),
+			Destinations.FromAddresses(routerAddress),
+			ProtocolAndPriority.FromValues(
+				MessagePriority.FromValue(MessagePriorityLevel.FromValue(3)),
+				RouterParameterModuleTestSupport.ProtocolVersion),
+			AcknowledgementAndSequence.FromValues(
+				SequenceNumber.FromValue(MessageSequenceIdentifier.FromValue(7)),
+				AcknowledgementRequest.Requested),
+			ParameterRequestMultiple.FromFields(
+				ParameterTable.Current,
+				RouterParameterCatalogue.RouterTable.Number,
+				ParameterEntrySelection.Range(
+					ParameterEntryIndex.FromValue(1),
+					ParameterEntryIndex.FromValue(200))));
+
+		var response = await parameterRead.HandleAsync(request, CancellationToken.None);
+
+		response!.CountAndLength.MessageLength.Value.Should().BeLessThanOrEqualTo(
+			(ushort)Envelope.MaximumContentsLength);
+		var parameter = response.Contents.Should().BeOfType<Parameter>().Which;
+		parameter.MoreValues.Should().Be(MoreValues.Yes);
+		var buffer = new EncodedMessageBuffer(parameter.ParameterValue.ToWireValue());
+		var returnedEntries = RoutingTable.FromEncodedMessageBuffer(ref buffer).Entries;
+		returnedEntries.Should().NotBeEmpty();
+		returnedEntries.Should().HaveCountLessThan(200);
+		returnedEntries[0].Index.Value.Should().Be(1);
+		buffer.RemainingBitCount.Should().Be(0);
+		Parameter.FromFields(
+			MoreValues.Yes,
+			RouterParameterCatalogue.RouterTable.Encode(RoutingTable.FromEntries(
+				[.. returnedEntries, routingTable.Entries[returnedEntries.Count]])))
+			.ToWireValue().Length.Should().BeGreaterThan(Envelope.MaximumContentsLength);
 	}
 
 	[Fact]

@@ -32,9 +32,10 @@ The Node Manager currently:
   reads through this path;
 - supports paged Current Router Routing Table reads through `Param_req_multiple`
   for requested entry ranges, returning decoded entry index, next-node values,
-  and `more_values` through an operator-facing Parameters form; **Next entries**
-  requests the next same-sized contiguous range and is unavailable on the final
-  page;
+  and `more_values` through an operator-facing Parameters form when the
+  1,023-byte GD-92 Parameter message-content limit truncates a response; **Next
+  entries** requests from the last returned index through the original range
+  upper bound and is unavailable on the final page;
 - requests Router Parameter values and performs Router logon/logoff;
 - correlates expected `Parameter`, `ACK`, and `NAK` responses with retry and
   timeout status for operator polling;
@@ -55,9 +56,9 @@ changes.
 1. Allow the operator to select `Permanent`, `Non-Volatile`, or `Current`
    before requesting a Parameter.
 2. Router Routing Table Current-table entry ranges now support
-   `Param_req_multiple`, `more_values`, and browser paging. Extend these
-   semantics to remaining table-shaped Parameters only through separately
-   approved workflows.
+   `Param_req_multiple`, capacity-limited `more_values`, and browser paging.
+   Extend these semantics to remaining table-shaped Parameters only through
+   separately approved workflows.
 3. Router Current Routing Table reads reject a missing entry with
    `NAK(parameter / inv_entry)`. Extend parameter `NAK`s to every participant
    for invalid Parameter Tables, Parameter Numbers, fields, and entries.

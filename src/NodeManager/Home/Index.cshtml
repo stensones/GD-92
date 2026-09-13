@@ -384,7 +384,6 @@
     });
 
     const requestRoutingTableEntries = async (firstEntry, lastEntry) => {
-        const pageSize = lastEntry - firstEntry + 1;
         nextRoutingTableEntryRange = null;
         routerRoutingTableNextPage.hidden = true;
         routerRoutingTableNextPage.disabled = true;
@@ -433,11 +432,12 @@
             }
 
             routerRoutingTableEntryResults.hidden = false;
-            nextRoutingTableEntryRange = hasMoreValues
-                ? { firstEntry: lastEntry + 1, lastEntry: lastEntry + pageSize }
+            nextRoutingTableEntryRange = hasMoreValues && entries.length > 0
+                ? { firstEntry: entries.at(-1).index + 1, lastEntry }
                 : null;
-            routerRoutingTableNextPage.hidden = !hasMoreValues;
-            routerRoutingTableNextPage.disabled = !hasMoreValues;
+            const hasNextPage = nextRoutingTableEntryRange !== null;
+            routerRoutingTableNextPage.hidden = !hasNextPage;
+            routerRoutingTableNextPage.disabled = !hasNextPage;
             routerRoutingTableEntrySelectionStatus.textContent = entries.length === 0
                 ? "No Routing Table entries were returned."
                 : "Routing Table entries received.";

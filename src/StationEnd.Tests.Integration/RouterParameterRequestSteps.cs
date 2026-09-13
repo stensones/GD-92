@@ -28,6 +28,7 @@ public sealed class RouterParameterRequestSteps
 	private Uri? inventoryScanStatusAddress;
 	private IReadOnlyDictionary<byte, Uri>? routerParameterStatusAddresses;
 	private IReadOnlyDictionary<byte, Uri>? participantParameterStatusAddresses;
+	private ushort? lastReturnedRoutingTableEntry;
 	private RouterParameterRequestApplicationProfile applicationProfile;
 
 	[Given(@"NodeManager is the User Agent at Brigade (.*), Node (.*), and Port (.*)")]
@@ -68,6 +69,15 @@ public sealed class RouterParameterRequestSteps
 		this.applicationProfile = RouterParameterRequestApplicationProfile.RouterWithRoutingTableEntry;
 		await this.EnsureApplicationStartedAsync();
 		await this.ConfigureLocalRouterRoutingTableAsync(101, 102);
+	}
+
+	[Given(@"the local Router has Routing Table entries 1 through 200")]
+	public async Task GivenTheLocalRouterHasRoutingTableEntriesOneThroughTwoHundred()
+	{
+		this.applicationProfile = RouterParameterRequestApplicationProfile.RouterWithRoutingTableEntry;
+		await this.EnsureApplicationStartedAsync();
+		await this.ConfigureLocalRouterRoutingTableAsync(
+			[.. Enumerable.Range(101, 200).Select(number => (ushort)number)]);
 	}
 
 	private async Task ConfigureLocalRouterRoutingTableAsync(params ushort[] nextNodeNumbers)
@@ -134,6 +144,27 @@ public sealed class RouterParameterRequestSteps
 
 		this.response = await this.client!.PostAsync(
 			"/router/parameters/current/13/entries/2-2",
+			null);
+	}
+
+	[When(@"I request local Router Routing Table entries 1 through 200")]
+	public async Task WhenIRequestLocalRouterRoutingTableEntriesOneThroughTwoHundred()
+	{
+		await this.EnsureApplicationStartedAsync();
+
+		this.response = await this.client!.PostAsync(
+			"/router/parameters/current/13/entries/1-200",
+			null);
+	}
+
+	[When(@"I request the remaining local Router Routing Table entries")]
+	public async Task WhenIRequestTheRemainingLocalRouterRoutingTableEntries()
+	{
+		await this.EnsureApplicationStartedAsync();
+		var nextFirstEntry = (ushort)(this.lastReturnedRoutingTableEntry!.Value + 1);
+
+		this.response = await this.client!.PostAsync(
+			$"/router/parameters/current/13/entries/{nextFirstEntry}-200",
 			null);
 	}
 
@@ -278,7 +309,11 @@ public sealed class RouterParameterRequestSteps
 			"nextRoutingTableEntryRange.lastEntry);");
 		this.pageContent.Should().Contain("const hasMoreValues = request.moreValues === true;");
 		this.pageContent.Should().Contain(
-			"routerRoutingTableNextPage.hidden = !hasMoreValues;");
+			"const hasNextPage = nextRoutingTableEntryRange !== null;");
+		this.pageContent.Should().Contain("firstEntry: entries.at(-1).index + 1,");
+		this.pageContent.Should().Contain("lastEntry }");
+		this.pageContent.Should().Contain(
+			"routerRoutingTableNextPage.hidden = !hasNextPage;");
 	}
 
 	[Then(@"NodeManager enables Routing Table entry selection")]
@@ -666,6 +701,65 @@ public sealed class RouterParameterRequestSteps
 		throw new Xunit.Sdk.XunitException(
 			$"The Parameter Request status did not show Routing Table entry {expectedIndex} " +
 			$"to next node {expectedNextNode} with more values {hasMoreValues}.");
+	}
+
+	[Then(@"the Parameter Request status shows a capacity-limited Routing Table page with more values")]
+	public async Task ThenTheParameterRequestStatusShowsACapacityLimitedRoutingTablePage()
+	{
+		var statusAddress = this.response!.Headers.Location!;
+
+		for (var attempt = 0; attempt < 30; attempt++)
+		{
+			using var status = await this.client!.GetAsync(statusAddress);
+			if (status.StatusCode == HttpStatusCode.OK)
+			{
+				using var document = JsonDocument.Parse(await status.Content.ReadAsStringAsync());
+				var entries = document.RootElement.GetProperty("routingTableEntries");
+				if (document.RootElement.GetProperty("state").GetString() == "received" &&
+					document.RootElement.GetProperty("moreValues").GetBoolean() &&
+					entries.GetArrayLength() is > 0 and < 200 &&
+					entries[0].GetProperty("index").GetInt32() == 1)
+				{
+					this.lastReturnedRoutingTableEntry = (ushort)entries[entries.GetArrayLength() - 1]
+						.GetProperty("index").GetInt32();
+					return;
+				}
+			}
+
+			await Task.Delay(TimeSpan.FromSeconds(1));
+		}
+
+		throw new Xunit.Sdk.XunitException(
+			"The Parameter Request status did not show a capacity-limited Routing Table page.");
+	}
+
+	[Then(@"the Parameter Request status shows the final Routing Table page through entry 200")]
+	public async Task ThenTheParameterRequestStatusShowsTheFinalRoutingTablePage()
+	{
+		var statusAddress = this.response!.Headers.Location!;
+
+		for (var attempt = 0; attempt < 30; attempt++)
+		{
+			using var status = await this.client!.GetAsync(statusAddress);
+			if (status.StatusCode == HttpStatusCode.OK)
+			{
+				using var document = JsonDocument.Parse(await status.Content.ReadAsStringAsync());
+				var entries = document.RootElement.GetProperty("routingTableEntries");
+				if (document.RootElement.GetProperty("state").GetString() == "received" &&
+					!document.RootElement.GetProperty("moreValues").GetBoolean() &&
+					entries[0].GetProperty("index").GetInt32() ==
+					this.lastReturnedRoutingTableEntry!.Value + 1 &&
+					entries[entries.GetArrayLength() - 1].GetProperty("index").GetInt32() == 200)
+				{
+					return;
+				}
+			}
+
+			await Task.Delay(TimeSpan.FromSeconds(1));
+		}
+
+		throw new Xunit.Sdk.XunitException(
+			"The Parameter Request status did not show the final Routing Table page through entry 200.");
 	}
 
 	[Then(@"the Parameter Request status shows Parameter \/ Invalid Entry rejection")]

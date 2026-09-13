@@ -90,6 +90,7 @@ internal sealed class RouterParameterRead
 		var entries = routingTable.Entries
 			.Where(entry => entry.Index.Value >= firstEntry.Value &&
 				entry.Index.Value <= lastEntry.Value)
+			.OrderBy(entry => entry.Index.Value)
 			.ToArray();
 		if (entries.Length == 0)
 		{
@@ -101,7 +102,27 @@ internal sealed class RouterParameterRead
 				ReasonCode.FromParameterReasonCode(ParameterReasonCode.InvalidEntry));
 		}
 
-		var moreValues = routingTable.Entries.Any(entry => entry.Index.Value > lastEntry.Value)
+		var responseEntries = new List<RoutingTableEntry>();
+		foreach (var entry in entries)
+		{
+			var candidateValue = RouterParameterCatalogue.RouterTable.Encode(
+				RoutingTable.FromEntries([.. responseEntries, entry]));
+			if (Parameter.FromFields(MoreValues.No, candidateValue).ToWireValue().Length >
+				Envelope.MaximumContentsLength)
+			{
+				break;
+			}
+
+			responseEntries.Add(entry);
+		}
+
+		if (responseEntries.Count == 0)
+		{
+			throw new InvalidOperationException(
+				"A Routing Table entry cannot fit in a GD-92 Parameter response.");
+		}
+
+		var moreValues = responseEntries.Count < entries.Length
 			? MoreValues.Yes
 			: MoreValues.No;
 
@@ -111,7 +132,8 @@ internal sealed class RouterParameterRead
 			this.protocolVersion,
 			Parameter.FromFields(
 				moreValues,
-				RouterParameterCatalogue.RouterTable.Encode(RoutingTable.FromEntries(entries))));
+				RouterParameterCatalogue.RouterTable.Encode(
+					RoutingTable.FromEntries([.. responseEntries]))));
 	}
 
 	private ParameterValue? CurrentParameterValue(ParameterNumber number)
