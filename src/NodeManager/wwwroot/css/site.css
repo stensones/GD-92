@@ -19,7 +19,9 @@
 }
 
 body {
-    min-height: 100vh;
+    display: grid;
+    grid-template-rows: auto minmax(0, 1fr) auto;
+    height: 100dvh;
     margin: 0;
     color: var(--text);
     background: var(--canvas);
@@ -118,14 +120,16 @@ body {
 
 .app-shell {
     display: grid;
-    min-height: calc(100vh - 4.75rem);
     grid-template-columns: 14rem minmax(0, 1fr);
+    min-height: 0;
+    overflow: hidden;
 }
 
 .app-navigation {
     padding: 2rem 1rem;
     border-right: 1px solid var(--border);
     background: var(--surface-muted);
+    overflow-y: auto;
 }
 
 .navigation-label {
@@ -157,7 +161,15 @@ body {
 
 .app-content {
     width: min(100%, 85rem);
+    min-height: 0;
     padding: clamp(1.5rem, 4vw, 3.5rem);
+    display: grid;
+    grid-template-rows: auto minmax(0, 1fr);
+    overflow: hidden;
+}
+
+.workspace {
+    display: contents;
 }
 
 .workspace-header {
@@ -166,6 +178,7 @@ body {
     align-items: end;
     justify-content: space-between;
     margin-bottom: 2rem;
+    grid-row: 1;
 }
 
 .eyebrow {
@@ -220,6 +233,11 @@ h2 {
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 1.25rem;
+    grid-row: 2;
+    align-content: start;
+    min-height: 0;
+    padding-right: .5rem;
+    overflow-y: auto;
 }
 
 .panel {
@@ -351,6 +369,18 @@ td button {
     font-size: .82rem;
 }
 
+.app-footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    min-height: 2.5rem;
+    padding: .5rem clamp(1.25rem, 4vw, 3.5rem);
+    border-top: 1px solid var(--border);
+    color: var(--text-muted);
+    background: var(--surface-muted);
+    font-size: .78rem;
+}
+
 @media (max-width: 48rem) {
     .app-header,
     .workspace-header {
@@ -358,13 +388,15 @@ td button {
     }
 
     .app-shell {
-        display: block;
+        grid-template-columns: 1fr;
+        grid-template-rows: auto minmax(0, 1fr);
     }
 
     .app-navigation {
         display: flex;
         gap: .25rem;
         overflow-x: auto;
+        overflow-y: hidden;
         padding: .6rem 1rem;
         border-right: 0;
         border-bottom: 1px solid var(--border);
@@ -384,6 +416,7 @@ td button {
 
     .dashboard-grid {
         grid-template-columns: 1fr;
+        padding-right: 0;
     }
 
     .panel-wide {

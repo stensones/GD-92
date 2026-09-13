@@ -17,88 +17,88 @@
         </div>
     </header>
 
-<div class="dashboard-grid">
-<section class="panel panel-compact" aria-labelledby="router-parameters">
-    <h2 id="router-parameters">Local Router parameters</h2>
-    <p>Request the configured Brigade or Agency number from the local Router.</p>
+    <div class="dashboard-grid">
+        <section class="panel panel-compact" aria-labelledby="router-parameters">
+            <h2 id="router-parameters">Local Router parameters</h2>
+            <p>Request the configured Brigade or Agency number from the local Router.</p>
 
-    <form class="inline-action" id="router-brigade-request"
-          action="/router/parameters/brigade-or-agency-number"
-          method="post">
-        <button type="submit">Get Brigade or Agency number</button>
-    </form>
+            <form class="inline-action" id="router-brigade-request"
+                  action="/router/parameters/brigade-or-agency-number"
+                  method="post">
+                <button type="submit">Get Brigade or Agency number</button>
+            </form>
 
-    <p id="router-brigade-status" role="status" hidden></p>
-</section>
+            <p id="router-brigade-status" role="status" hidden></p>
+        </section>
 
-<section class="panel panel-compact" id="router-access" aria-labelledby="node-login">
-    <h2 id="node-login">Node Login</h2>
-    <p>Log on a User Agent at the local Router.</p>
+        <section class="panel panel-compact" id="router-access" aria-labelledby="node-login">
+            <h2 id="node-login">Node Login</h2>
+            <p>Log on a User Agent at the local Router.</p>
 
-    <form class="login-form" id="router-logon" action="/router/parameters/logon" method="post">
-        <label>
-            Password
-            <input type="password" name="password" required />
-        </label>
-        <label>
-            Brigade or Agency
-            <input type="number" name="brigade" min="0" max="255" required />
-        </label>
-        <label>
-            Node
-            <input type="number" name="node" min="0" max="65535" required />
-        </label>
-        <label>
-            Port
-            <input type="number" name="port" min="0" max="255" required />
-        </label>
-        <button type="submit">Log on</button>
-    </form>
+            <form class="login-form" id="router-logon" action="/router/parameters/logon" method="post">
+                <label>
+                    Password
+                    <input type="password" name="password" required />
+                </label>
+                <label>
+                    Brigade or Agency
+                    <input type="number" name="brigade" min="0" max="255" required />
+                </label>
+                <label>
+                    Node
+                    <input type="number" name="node" min="0" max="65535" required />
+                </label>
+                <label>
+                    Port
+                    <input type="number" name="port" min="0" max="255" required />
+                </label>
+                <button type="submit">Log on</button>
+            </form>
 
-    <p id="router-logon-status" role="status" hidden></p>
-</section>
+            <p id="router-logon-status" role="status" hidden></p>
+        </section>
 
-<section class="panel panel-wide" id="participant-discovery" aria-labelledby="participant-discovery-heading">
-    <h2 id="participant-discovery-heading">Local participants</h2>
-    <p>Discover the Router, Message Transfer Agents, and User Agents at the local Communications Node.</p>
+        <section class="panel panel-wide" id="participant-discovery" aria-labelledby="participant-discovery-heading">
+            <h2 id="participant-discovery-heading">Local participants</h2>
+            <p>Discover the Router, Message Transfer Agents, and User Agents at the local Communications Node.</p>
 
-    <form class="inline-action" id="router-participant-discovery" action="/router/participants/discovery" method="post">
-        <button id="router-participant-discovery-submit" type="submit">Discover local participants</button>
-    </form>
+            <form class="inline-action" id="router-participant-discovery" action="/router/participants/discovery" method="post">
+                <button id="router-participant-discovery-submit" type="submit">Discover local participants</button>
+            </form>
 
-    <p id="router-participant-discovery-status" role="status" hidden></p>
-    <table id="router-participant-discovery-results" hidden>
-        <caption>Discovered local participants</caption>
-        <thead>
-            <tr>
-                <th scope="col">Port</th>
-                <th scope="col">Kind</th>
-                <th scope="col">Agent Type</th>
-                <th scope="col">Parameters</th>
-            </tr>
-        </thead>
-        <tbody></tbody>
-    </table>
-    <div id="router-participant-discovery-summary" hidden></div>
-</section>
+            <p id="router-participant-discovery-status" role="status" hidden></p>
+            <table id="router-participant-discovery-results" hidden>
+                <caption>Discovered local participants</caption>
+                <thead>
+                    <tr>
+                        <th scope="col">Port</th>
+                        <th scope="col">Kind</th>
+                        <th scope="col">Agent Type</th>
+                        <th scope="col">Parameters</th>
+                    </tr>
+                </thead>
+                <tbody></tbody>
+            </table>
+            <div id="router-participant-discovery-summary" hidden></div>
+        </section>
 
-<section class="panel panel-wide" aria-labelledby="router-parameter-list-heading">
-    <h2 id="router-parameter-list-heading">Participant Parameters</h2>
-    <p class="panel-description">Select <strong>View parameters</strong> on a discovered participant to inspect its Current Parameter Table.</p>
-    <p id="router-parameter-list-status" role="status" hidden></p>
-    <table id="router-parameter-list" hidden>
-        <caption>Local Router Current Parameters</caption>
-        <thead>
-            <tr>
-                <th scope="col">Number</th>
-                <th scope="col">Parameter</th>
-                <th scope="col">Value</th>
-            </tr>
-        </thead>
-        <tbody></tbody>
-    </table>
-</section>
-</div>
+        <section class="panel panel-wide" aria-labelledby="router-parameter-list-heading">
+            <h2 id="router-parameter-list-heading">Participant Parameters</h2>
+            <p class="panel-description">Select <strong>View parameters</strong> on a discovered participant to inspect its Current Parameter Table.</p>
+            <p id="router-parameter-list-status" role="status" hidden></p>
+            <table id="router-parameter-list" hidden>
+                <caption>Local Router Current Parameters</caption>
+                <thead>
+                    <tr>
+                        <th scope="col">Number</th>
+                        <th scope="col">Parameter</th>
+                        <th scope="col">Value</th>
+                    </tr>
+                </thead>
+                <tbody></tbody>
+            </table>
+        </section>
+    </div>
 </div>
 
 <script>
