@@ -59,6 +59,19 @@ public sealed class RouterParameterRequestSteps
 	{
 		this.applicationProfile = RouterParameterRequestApplicationProfile.RouterWithRoutingTableEntry;
 		await this.EnsureApplicationStartedAsync();
+		await this.ConfigureLocalRouterRoutingTableAsync(101);
+	}
+
+	[Given(@"the local Router has Routing Table entries 1 and 2")]
+	public async Task GivenTheLocalRouterHasRoutingTableEntriesOneAndTwo()
+	{
+		this.applicationProfile = RouterParameterRequestApplicationProfile.RouterWithRoutingTableEntry;
+		await this.EnsureApplicationStartedAsync();
+		await this.ConfigureLocalRouterRoutingTableAsync(101, 102);
+	}
+
+	private async Task ConfigureLocalRouterRoutingTableAsync(params ushort[] nextNodeNumbers)
+	{
 		var connectionString = await this.application!.GetConnectionStringAsync("router-database")
 			?? throw new InvalidOperationException(
 				"The test Router database connection string was not provided.");
@@ -67,18 +80,18 @@ public sealed class RouterParameterRequestSteps
 			.Options;
 		await using var database = new RouterDbContext(options);
 		var parameterStore = new EfRouterParameterStore(database);
-		var nextNode = CommunicationsAddress.FromValues(
-			Brigade.FromValue(BrigadeOrAgencyIdentifier.FromValue(26)),
-			Node.FromValue(NodeIdentifier.FromValue(101)),
-			Port.FromValue(PortIdentifier.FromValue(0)));
 		var routingTable = RoutingTable.FromEntries(
-			RoutingTableEntry.FromValues(
-				ParameterEntryIndex.FromValue(1),
-				ProtocolBoolean.True,
-				nextNode,
-				DestinationNodes.FromAddressRanges(),
-				AgentType.FromValue(AgentTypeValue.LanMessageTransferAgent),
-				RoutingPreference.FromValue(0)));
+			[.. nextNodeNumbers.Select((nextNodeNumber, offset) =>
+				RoutingTableEntry.FromValues(
+					ParameterEntryIndex.FromValue((ushort)(offset + 1)),
+					ProtocolBoolean.True,
+					CommunicationsAddress.FromValues(
+						Brigade.FromValue(BrigadeOrAgencyIdentifier.FromValue(26)),
+						Node.FromValue(NodeIdentifier.FromValue(nextNodeNumber)),
+						Port.FromValue(PortIdentifier.FromValue(0))),
+					DestinationNodes.FromAddressRanges(),
+					AgentType.FromValue(AgentTypeValue.LanMessageTransferAgent),
+					RoutingPreference.FromValue(0)))]);
 
 		await parameterStore.StoreAsync(
 			ParameterTable.NonVolatile,
@@ -101,6 +114,16 @@ public sealed class RouterParameterRequestSteps
 
 		this.response = await this.client!.PostAsync(
 			"/router/parameters/current/13/entries/1-1",
+			null);
+	}
+
+	[When(@"I request the next local Router Routing Table entry")]
+	public async Task WhenIRequestTheNextLocalRouterRoutingTableEntry()
+	{
+		await this.EnsureApplicationStartedAsync();
+
+		this.response = await this.client!.PostAsync(
+			"/router/parameters/current/13/entries/2-2",
 			null);
 	}
 
@@ -224,6 +247,28 @@ public sealed class RouterParameterRequestSteps
 	public void ThenNodeManagerPresentsRoutingTableEntrySelection()
 	{
 		this.pageContent.Should().Contain("id=\"router-routing-table-entry-selection\"");
+	}
+
+	[Then(@"NodeManager presents a hidden Routing Table next-page control")]
+	public void ThenNodeManagerPresentsAHiddenRoutingTableNextPageControl()
+	{
+		this.pageContent.Should().Contain("""id="router-routing-table-next-page" hidden""");
+	}
+
+	[Then(@"NodeManager requests the next contiguous Routing Table entry range")]
+	public void ThenNodeManagerRequestsTheNextContiguousRoutingTableEntryRange()
+	{
+		this.pageContent.Should().Contain(
+			"const routerRoutingTableNextPage = document.getElementById(" +
+			"\"router-routing-table-next-page\");");
+		this.pageContent.Should().Contain(
+			"routerRoutingTableNextPage.addEventListener(\"click\", () =>");
+		this.pageContent.Should().Contain(
+			"requestRoutingTableEntries(nextRoutingTableEntryRange.firstEntry, " +
+			"nextRoutingTableEntryRange.lastEntry);");
+		this.pageContent.Should().Contain("const hasMoreValues = request.moreValues === true;");
+		this.pageContent.Should().Contain(
+			"routerRoutingTableNextPage.hidden = !hasMoreValues;");
 	}
 
 	[Then(@"NodeManager enables Routing Table entry selection")]
@@ -561,6 +606,56 @@ public sealed class RouterParameterRequestSteps
 
 		throw new Xunit.Sdk.XunitException(
 			"The Parameter Request status did not show Routing Table entry 1 to next node 26.101.0.");
+	}
+
+	[Then(@"the Parameter Request status shows Routing Table entry 1 to next node 26.101.0 with more values")]
+	public Task ThenTheParameterRequestStatusShowsRoutingTableEntryOneWithMoreValues()
+	{
+		return this.ThenTheParameterRequestStatusShowsRoutingTableEntryWithMoreValues(
+			1,
+			"26.101.0",
+			hasMoreValues: true);
+	}
+
+	[Then(@"the Parameter Request status shows Routing Table entry 2 to next node 26.102.0 with no more values")]
+	public Task ThenTheParameterRequestStatusShowsRoutingTableEntryTwoWithNoMoreValues()
+	{
+		return this.ThenTheParameterRequestStatusShowsRoutingTableEntryWithMoreValues(
+			2,
+			"26.102.0",
+			hasMoreValues: false);
+	}
+
+	private async Task ThenTheParameterRequestStatusShowsRoutingTableEntryWithMoreValues(
+		ushort expectedIndex,
+		string expectedNextNode,
+		bool hasMoreValues)
+	{
+		var statusAddress = this.response!.Headers.Location!;
+
+		for (var attempt = 0; attempt < 30; attempt++)
+		{
+			using var status = await this.client!.GetAsync(statusAddress);
+			if (status.StatusCode == HttpStatusCode.OK)
+			{
+				using var document = JsonDocument.Parse(await status.Content.ReadAsStringAsync());
+				if (document.RootElement.GetProperty("state").GetString() == "received" &&
+					document.RootElement.GetProperty("routingTableEntries")[0]
+						.GetProperty("index").GetInt32() == expectedIndex &&
+					document.RootElement.GetProperty("routingTableEntries")[0]
+						.GetProperty("nextNode").GetString() == expectedNextNode &&
+					document.RootElement.GetProperty("moreValues").GetBoolean() == hasMoreValues)
+				{
+					return;
+				}
+			}
+
+			await Task.Delay(TimeSpan.FromSeconds(1));
+		}
+
+		throw new Xunit.Sdk.XunitException(
+			$"The Parameter Request status did not show Routing Table entry {expectedIndex} " +
+			$"to next node {expectedNextNode} with more values {hasMoreValues}.");
 	}
 
 	[Then(@"the Parameter Request status eventually shows timed-out")]

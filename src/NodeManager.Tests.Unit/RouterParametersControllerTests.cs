@@ -113,6 +113,7 @@ public sealed class RouterParametersControllerTests
 
 		response.State.Should().Be("received");
 		response.BrigadeOrAgencyNumber.Should().Be(26);
+		response.MoreValues.Should().BeFalse();
 	}
 
 	[Fact]

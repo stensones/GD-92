@@ -268,6 +268,7 @@ public sealed class ManagementTransactions(
 
 			this.statuses[uswr] = new ReceivedRouterParameterRequestStatus(
 				new RouterParameterRequestStatusIdentifier(uswr),
+				((Parameter)envelope.Contents).MoreValues,
 				((Parameter)envelope.Contents).ParameterValue);
 			this.ReleaseSequence(uswr);
 			return true;

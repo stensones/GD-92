@@ -27,9 +27,10 @@ Tables return a parameter `NAK`; they must not be silently ignored.
 Table-shaped Parameters use Message 63 (`Param_req_multiple`) and page through
 the selected entries. Router Current Parameter 13 (`Routing Table`) currently
 supports a requested entry range and returns decoded entry index and next-node
-values through Node Manager's status API. `more_values` indicates that the user
-may request the next page; browser submission is available, while paging remains
-outstanding.
+values through Node Manager's status API. The Router returns `more_values` when
+a retained Routing Table entry follows the requested inclusive range. The browser
+then enables **Next entries**, requesting the next contiguous range at the
+original page size; it hides and disables the control on the final page.
 
 ## Browse catalogues
 

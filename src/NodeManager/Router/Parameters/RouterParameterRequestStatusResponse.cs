@@ -7,7 +7,8 @@ public sealed record RouterParameterRequestStatusResponse(
 	string? UserAgentAddress,
 	byte? ParameterNumber,
 	string? ParameterValue,
-	IReadOnlyList<RoutingTableEntryStatusResponse>? RoutingTableEntries);
+	IReadOnlyList<RoutingTableEntryStatusResponse>? RoutingTableEntries,
+	bool? MoreValues);
 
 public sealed record RoutingTableEntryStatusResponse(
 	ushort Index,

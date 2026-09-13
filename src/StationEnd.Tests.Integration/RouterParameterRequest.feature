@@ -90,6 +90,20 @@ Feature: Router Parameter Request
     And NodeManager submits selected Routing Table entries through GD-92
     And NodeManager renders returned Routing Table entries
 
+  Scenario: Paging local Router Routing Table entries
+    Given NodeManager is the User Agent at Brigade 26, Node 100, and Port 25
+    And its local Router is at Brigade 26, Node 100, and Port 0
+    And the local Router has Routing Table entries 1 and 2
+    When I open NodeManager
+    Then NodeManager presents a hidden Routing Table next-page control
+    And NodeManager requests the next contiguous Routing Table entry range
+    When I request local Router Routing Table entry 1
+    Then I am redirected to the pending Parameter Request status
+    And the Parameter Request status shows Routing Table entry 1 to next node 26.101.0 with more values
+    When I request the next local Router Routing Table entry
+    Then I am redirected to the pending Parameter Request status
+    And the Parameter Request status shows Routing Table entry 2 to next node 26.102.0 with no more values
+
   Scenario: Presenting a Node Login form
     When I open NodeManager
     Then NodeManager presents a Node Login form that securely submits password, brigade, node, and port

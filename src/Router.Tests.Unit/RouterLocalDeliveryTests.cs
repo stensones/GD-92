@@ -78,11 +78,66 @@ public sealed class RouterLocalDeliveryTests
 		await localDelivery.ReceiveAsync(request, CancellationToken.None);
 
 		var response = userAgentIngress.Envelope!.Contents.Should().BeOfType<Parameter>().Which;
+		response.MoreValues.Should().Be(MoreValues.No);
 		var buffer = new EncodedMessageBuffer(response.ParameterValue.ToWireValue());
 		var returnedEntry = RoutingTable.FromEncodedMessageBuffer(ref buffer).Entries.Single();
 		returnedEntry.Index.Value.Should().Be(1);
 		returnedEntry.NextNode.Should().Be(nextNode);
 		buffer.RemainingBitCount.Should().Be(0);
+	}
+
+	[Fact]
+	public async Task Indicates_more_values_when_a_Routing_Table_entry_follows_the_requested_range()
+	{
+		var routerAddress = RouterParameterModuleTestSupport.CreateAddress(26, 100, 0);
+		var firstNextNode = RouterParameterModuleTestSupport.CreateAddress(26, 101, 0);
+		var secondNextNode = RouterParameterModuleTestSupport.CreateAddress(26, 102, 0);
+		var currentParameters = new RouterCurrentParameterProjectionSource();
+		currentParameters.Publish(
+			RouterParameterModuleTestSupport.CreateCurrentParameters(routerAddress));
+		var routingTable = RoutingTable.FromEntries(
+			RoutingTableEntry.FromValues(
+				ParameterEntryIndex.FromValue(1),
+				ProtocolBoolean.True,
+				firstNextNode,
+				DestinationNodes.FromAddressRanges(),
+				AgentType.FromValue(AgentTypeValue.LanMessageTransferAgent),
+				RoutingPreference.FromValue(0)),
+			RoutingTableEntry.FromValues(
+				ParameterEntryIndex.FromValue(2),
+				ProtocolBoolean.True,
+				secondNextNode,
+				DestinationNodes.FromAddressRanges(),
+				AgentType.FromValue(AgentTypeValue.LanMessageTransferAgent),
+				RoutingPreference.FromValue(0)));
+		var userAgentIngress = new CapturingUserAgentIngress();
+		var localDelivery = CreateLocalDelivery(
+			routerAddress,
+			currentParameters,
+			userAgentIngress,
+			new CapturingLocalParticipantIngress(),
+			new RetainedParameterStore(
+				RouterParameterCatalogue.RouterTable.Encode(routingTable)));
+		var request = Envelope.FromValues(
+			RouterParameterModuleTestSupport.CreateAddress(26, 100, 25),
+			Destinations.FromAddresses(routerAddress),
+			ProtocolAndPriority.FromValues(
+				MessagePriority.FromValue(MessagePriorityLevel.FromValue(3)),
+				RouterParameterModuleTestSupport.ProtocolVersion),
+			AcknowledgementAndSequence.FromValues(
+				SequenceNumber.FromValue(MessageSequenceIdentifier.FromValue(7)),
+				AcknowledgementRequest.Requested),
+			ParameterRequestMultiple.FromFields(
+				ParameterTable.Current,
+				RouterParameterCatalogue.RouterTable.Number,
+				ParameterEntrySelection.Range(
+					ParameterEntryIndex.FromValue(1),
+					ParameterEntryIndex.FromValue(1))));
+
+		await localDelivery.ReceiveAsync(request, CancellationToken.None);
+
+		userAgentIngress.Envelope!.Contents.Should().BeOfType<Parameter>().Which.MoreValues
+			.Should().Be(MoreValues.Yes);
 	}
 
 	[Fact]

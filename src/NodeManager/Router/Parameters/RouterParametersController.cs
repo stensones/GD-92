@@ -194,6 +194,9 @@ public sealed class RouterParametersController(
 		var routingTableEntries = status is ReceivedRouterParameterRequestStatus receivedRoutingTable
 			? FormatRoutingTableEntries(parameterNumber, receivedRoutingTable.ParameterValue)
 			: null;
+		bool? moreValues = status is ReceivedRouterParameterRequestStatus receivedMoreValues
+			? receivedMoreValues.MoreValues.Value == ProtocolBoolean.True
+			: null;
 
 		return new RouterParameterRequestStatusResponse(
 			status.Identifier.ToString(),
@@ -202,7 +205,8 @@ public sealed class RouterParametersController(
 			userAgentAddress,
 			parameterNumber?.Value,
 			parameterValue,
-			routingTableEntries);
+			routingTableEntries,
+			moreValues);
 	}
 
 	private static IReadOnlyList<RoutingTableEntryStatusResponse>? FormatRoutingTableEntries(

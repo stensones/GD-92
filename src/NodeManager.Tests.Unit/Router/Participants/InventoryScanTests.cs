@@ -210,6 +210,7 @@ public sealed class InventoryScanTests
 			{
 				1 => new ReceivedRouterParameterRequestStatus(
 					statusIdentifier,
+					MoreValues.No,
 					ParameterValue.FromWireValue([10])),
 				2 => new RejectedRouterParameterRequestStatus(
 					statusIdentifier,

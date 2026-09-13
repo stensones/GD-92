@@ -126,6 +126,8 @@
             </form>
             <p id="router-routing-table-entry-selection-status" role="status" hidden></p>
             <ul id="router-routing-table-entry-results" hidden></ul>
+            <button id="router-routing-table-next-page" hidden type="button" disabled
+                    aria-controls="router-routing-table-entry-results">Next entries</button>
             <p id="router-parameter-list-status" role="status" hidden></p>
             <table id="router-parameter-list" hidden>
                 <caption>Local Router Current Parameters</caption>
@@ -174,6 +176,8 @@
     const routerRoutingTableEntrySelection = document.getElementById("router-routing-table-entry-selection");
     const routerRoutingTableEntrySelectionStatus = document.getElementById("router-routing-table-entry-selection-status");
     const routerRoutingTableEntryResults = document.getElementById("router-routing-table-entry-results");
+    const routerRoutingTableNextPage = document.getElementById("router-routing-table-next-page");
+    let nextRoutingTableEntryRange = null;
     const redactedPasswordMarker = "PASSWORD";
     const participantCurrentParameterCatalogues = {
         router: [
@@ -379,22 +383,14 @@
         poll();
     });
 
-    routerRoutingTableEntrySelection.addEventListener("submit", async event => {
-        event.preventDefault();
-        const formData = new FormData(routerRoutingTableEntrySelection);
-        const firstEntry = Number(formData.get("first-entry"));
-        const lastEntry = Number(formData.get("last-entry"));
-
+    const requestRoutingTableEntries = async (firstEntry, lastEntry) => {
+        const pageSize = lastEntry - firstEntry + 1;
+        nextRoutingTableEntryRange = null;
+        routerRoutingTableNextPage.hidden = true;
+        routerRoutingTableNextPage.disabled = true;
         routerRoutingTableEntrySelectionStatus.hidden = false;
         routerRoutingTableEntryResults.hidden = true;
         routerRoutingTableEntryResults.replaceChildren();
-        if (!Number.isInteger(firstEntry) || !Number.isInteger(lastEntry) ||
-            firstEntry < 1 || lastEntry < firstEntry) {
-            routerRoutingTableEntrySelectionStatus.textContent =
-                "Last entry must be greater than or equal to first entry.";
-            return;
-        }
-
         routerRoutingTableEntrySelectionStatus.textContent = "Requesting Routing Table entries...";
         const response = await fetch(
             `/router/parameters/current/13/entries/${firstEntry}-${lastEntry}`,
@@ -427,6 +423,7 @@
             }
 
             const entries = request.routingTableEntries ?? [];
+            const hasMoreValues = request.moreValues === true;
             for (const entry of entries) {
                 const item = document.createElement("li");
                 item.textContent = `Routing Table entry ${entry.index}: next node ${entry.nextNode}`;
@@ -434,12 +431,40 @@
             }
 
             routerRoutingTableEntryResults.hidden = false;
+            nextRoutingTableEntryRange = hasMoreValues
+                ? { firstEntry: lastEntry + 1, lastEntry: lastEntry + pageSize }
+                : null;
+            routerRoutingTableNextPage.hidden = !hasMoreValues;
+            routerRoutingTableNextPage.disabled = !hasMoreValues;
             routerRoutingTableEntrySelectionStatus.textContent = entries.length === 0
                 ? "No Routing Table entries were returned."
                 : "Routing Table entries received.";
         };
 
         poll();
+    };
+
+    routerRoutingTableEntrySelection.addEventListener("submit", async event => {
+        event.preventDefault();
+        const formData = new FormData(routerRoutingTableEntrySelection);
+        const firstEntry = Number(formData.get("first-entry"));
+        const lastEntry = Number(formData.get("last-entry"));
+
+        if (!Number.isInteger(firstEntry) || !Number.isInteger(lastEntry) ||
+            firstEntry < 1 || lastEntry < firstEntry) {
+            routerRoutingTableEntrySelectionStatus.hidden = false;
+            routerRoutingTableEntrySelectionStatus.textContent =
+                "Last entry must be greater than or equal to first entry.";
+            return;
+        }
+
+        requestRoutingTableEntries(firstEntry, lastEntry);
+    });
+
+    routerRoutingTableNextPage.addEventListener("click", () => {
+        if (nextRoutingTableEntryRange !== null) {
+            requestRoutingTableEntries(nextRoutingTableEntryRange.firstEntry, nextRoutingTableEntryRange.lastEntry);
+        }
     });
 
     logonForm.addEventListener("submit", async event => {

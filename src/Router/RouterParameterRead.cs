@@ -91,13 +91,16 @@ internal sealed class RouterParameterRead
 			.Where(entry => entry.Index.Value >= firstEntry.Value &&
 				entry.Index.Value <= lastEntry.Value)
 			.ToArray();
+		var moreValues = routingTable.Entries.Any(entry => entry.Index.Value > lastEntry.Value)
+			? MoreValues.Yes
+			: MoreValues.No;
 
 		return Envelope.CreateParameterResponse(
 			envelope,
 			this.localAddress,
 			this.protocolVersion,
 			Parameter.FromFields(
-				MoreValues.No,
+				moreValues,
 				RouterParameterCatalogue.RouterTable.Encode(RoutingTable.FromEntries(entries))));
 	}
 
