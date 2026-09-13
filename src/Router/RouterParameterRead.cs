@@ -92,7 +92,8 @@ internal sealed class RouterParameterRead
 				entry.Index.Value <= lastEntry.Value)
 			.OrderBy(entry => entry.Index.Value)
 			.ToArray();
-		if (entries.Length == 0)
+		var requestedEntryCount = lastEntry.Value - firstEntry.Value + 1;
+		if (entries.Length != requestedEntryCount)
 		{
 			return Envelope.CreateNegativeAcknowledgement(
 				envelope,

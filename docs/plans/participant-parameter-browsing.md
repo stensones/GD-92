@@ -32,11 +32,11 @@ when all requested entries cannot fit in the 1,023-byte GD-92 Parameter message
 content limit. The browser then enables **Next entries**, requesting from the
 index after the last returned entry through the original upper bound; it hides
 and disables the control on the final page.
-Requesting a missing Router Routing Table entry returns
-`NAK(parameter / inv_entry)`. Node Manager exposes this as
-`Parameter / Invalid Entry` and displays it in the Routing Table request
-status. Broader invalid-table, Parameter-number, field, and participant
-validation remains pending.
+Requesting a Router Routing Table range that contains any missing entry returns
+`NAK(parameter / inv_entry)`, rather than a partial Parameter response. Node
+Manager exposes this as `Parameter / Invalid Entry` and displays it in the
+Routing Table request status. Broader invalid-table, Parameter-number, field,
+and participant validation remains pending.
 
 ## Browse catalogues
 

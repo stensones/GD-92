@@ -114,6 +114,14 @@ Feature: Router Parameter Request
     And the Parameter Request status shows Parameter / Invalid Entry rejection
     And NodeManager renders the Routing Table rejection reason
 
+  Scenario: Rejecting a partially missing local Router Routing Table range
+    Given NodeManager is the User Agent at Brigade 26, Node 100, and Port 25
+    And its local Router is at Brigade 26, Node 100, and Port 0
+    And the local Router has Routing Table entry 1 to next node 26.101.0
+    When I request local Router Routing Table entries 1 through 2
+    Then I am redirected to the pending Parameter Request status
+    And the Parameter Request status shows Parameter / Invalid Entry rejection
+
   Scenario: Presenting a Node Login form
     When I open NodeManager
     Then NodeManager presents a Node Login form that securely submits password, brigade, node, and port

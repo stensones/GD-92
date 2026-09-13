@@ -194,7 +194,7 @@ public sealed class RouterLocalDeliveryTests
 	}
 
 	[Fact]
-	public async Task Rejects_a_missing_Routing_Table_entry_with_a_parameter_Invalid_Entry_NAK()
+	public async Task Rejects_a_Routing_Table_range_containing_a_missing_entry_with_a_parameter_Invalid_Entry_NAK()
 	{
 		var routerAddress = RouterParameterModuleTestSupport.CreateAddress(26, 100, 0);
 		var nextNode = RouterParameterModuleTestSupport.CreateAddress(26, 101, 0);
@@ -230,7 +230,7 @@ public sealed class RouterLocalDeliveryTests
 				ParameterTable.Current,
 				RouterParameterCatalogue.RouterTable.Number,
 				ParameterEntrySelection.Range(
-					ParameterEntryIndex.FromValue(2),
+					ParameterEntryIndex.FromValue(1),
 					ParameterEntryIndex.FromValue(2))));
 
 		await localDelivery.ReceiveAsync(request, CancellationToken.None);

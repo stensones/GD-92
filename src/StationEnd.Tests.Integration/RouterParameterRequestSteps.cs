@@ -137,6 +137,16 @@ public sealed class RouterParameterRequestSteps
 			null);
 	}
 
+	[When(@"I request local Router Routing Table entries 1 through 2")]
+	public async Task WhenIRequestLocalRouterRoutingTableEntriesOneThroughTwo()
+	{
+		await this.EnsureApplicationStartedAsync();
+
+		this.response = await this.client!.PostAsync(
+			"/router/parameters/current/13/entries/1-2",
+			null);
+	}
+
 	[When(@"I request the next local Router Routing Table entry")]
 	public async Task WhenIRequestTheNextLocalRouterRoutingTableEntry()
 	{
