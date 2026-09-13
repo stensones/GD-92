@@ -2,12 +2,38 @@
 <html>
 	<head>
 		<meta charset="utf-8" />
-		<title>@ViewData["Title"]</title>
+		<meta name="viewport" content="width=device-width, initial-scale=1" />
+		<title>@(ViewData["Title"] ?? "Node Manager") | GD-92</title>
 		<link rel="stylesheet" href="~/css/site.css" />
 	</head>
 	<body>
-		<h1>ARse!</h1>
-		@RenderBody() <!-- main content -->
+		<a class="skip-link" href="#main-content">Skip to main content</a>
+		<header class="app-header">
+			<a class="brand" href="/" aria-label="GD-92 Node Manager home">
+				<span class="brand-mark" aria-hidden="true">GD</span>
+				<span>
+					<span class="brand-product">GD-92</span>
+					<span class="brand-name">Node Manager</span>
+				</span>
+			</a>
+			<div class="station-identity">
+				<span class="status-indicator" aria-hidden="true"></span>
+				<span>Station End</span>
+				<span class="station-address">26.100</span>
+			</div>
+		</header>
+		<div class="app-shell">
+			<nav class="app-navigation" aria-label="Node Manager">
+				<p class="navigation-label">Workspace</p>
+				<a class="navigation-link is-active" href="#overview">Overview</a>
+				<a class="navigation-link" href="#participant-discovery">Participants</a>
+				<a class="navigation-link" href="#router-parameter-list-heading">Parameters</a>
+				<a class="navigation-link" href="#router-access">Router access</a>
+			</nav>
+			<main id="main-content" class="app-content">
+				@RenderBody()
+			</main>
+		</div>
 		@RenderSection("Scripts", required: false)
 	</body>
 </html>

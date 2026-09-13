@@ -71,7 +71,7 @@ public sealed class RouterDbContext : DbContext
 				"security",
 				table => table.HasCheckConstraint(
 					"CK_password_verifier_ParameterNumber",
-					"\"ParameterNumber\" = 5"));
+					"\"ParameterNumber\" BETWEEN 5 AND 8"));
 			entity.HasKey(passwordVerifier => new
 			{
 				passwordVerifier.ParameterSetId,

@@ -109,6 +109,24 @@ public static class RouterParameterCatalogue
 			ReadMdtTable);
 
 	public static ParameterNumber Level1PasswordNumber { get; } = ParameterNumber.FromValue(5);
+	public static ParameterNumber Level2PasswordNumber { get; } = ParameterNumber.FromValue(6);
+	public static ParameterNumber Level3PasswordNumber { get; } = ParameterNumber.FromValue(7);
+	public static ParameterNumber Level4PasswordNumber { get; } = ParameterNumber.FromValue(8);
+
+	public static IReadOnlyList<ParameterNumber> PasswordNumbers { get; } =
+		[
+			Level1PasswordNumber,
+			Level2PasswordNumber,
+			Level3PasswordNumber,
+			Level4PasswordNumber
+		];
+
+	public static bool IsPasswordNumber(ParameterNumber parameterNumber)
+	{
+		ArgumentNullException.ThrowIfNull(parameterNumber);
+
+		return PasswordNumbers.Contains(parameterNumber);
+	}
 
 	private static ParameterValue EncodeBrigadeOrAgencyIdentifier(
 		BrigadeOrAgencyIdentifier brigadeOrAgencyIdentifier)

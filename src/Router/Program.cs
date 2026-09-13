@@ -23,7 +23,7 @@ builder.Services.AddWolverine(options =>
 builder.Services.AddSingleton(routerSettings);
 builder.AddNpgsqlDbContext<RouterDbContext>("router-database");
 builder.Services.AddScoped<IParticipantParameterStore, EfRouterParameterStore>();
-builder.Services.AddScoped<IRouterLevel1PasswordVerifierStore, EfRouterPasswordVerifierStore>();
+builder.Services.AddScoped<IRouterPasswordVerifierStore, EfRouterPasswordVerifierStore>();
 builder.Services.AddScoped<RouterParameterBootstrapper>();
 builder.Services.AddSingleton<RouterCurrentParameterProjectionSource>();
 builder.Services.AddScoped(serviceProvider =>
@@ -41,7 +41,7 @@ builder.Services.AddScoped(serviceProvider =>
 		routerSettings.LocalAddress,
 		routerSettings.ProtocolVersion,
 		serviceProvider.GetRequiredService<RouterCurrentParameterProjectionSource>(),
-		serviceProvider.GetRequiredService<IRouterLevel1PasswordVerifierStore>()));
+		serviceProvider.GetRequiredService<IRouterPasswordVerifierStore>()));
 builder.Services.AddScoped(serviceProvider =>
 	new RouterLocalDelivery(
 		routerSettings.LocalAddress,

@@ -1,13 +1,28 @@
 ﻿@{
+    ViewData["Title"] = "Node Manager";
 }
 
-<h1>Node Manager</h1>
+<div class="workspace" id="overview">
+    <header class="workspace-header">
+        <div>
+            <p class="eyebrow">Operational workspace</p>
+            <h1>Node Manager</h1>
+            <p class="workspace-introduction">
+                Discover and manage participants on the local GD-92 communications node.
+            </p>
+        </div>
+        <div class="workspace-context" aria-label="Current workspace context">
+            <span>Local node</span>
+            <strong>26.100</strong>
+        </div>
+    </header>
 
-<section aria-labelledby="router-parameters">
+<div class="dashboard-grid">
+<section class="panel panel-compact" aria-labelledby="router-parameters">
     <h2 id="router-parameters">Local Router parameters</h2>
     <p>Request the configured Brigade or Agency number from the local Router.</p>
 
-    <form id="router-brigade-request"
+    <form class="inline-action" id="router-brigade-request"
           action="/router/parameters/brigade-or-agency-number"
           method="post">
         <button type="submit">Get Brigade or Agency number</button>
@@ -16,11 +31,11 @@
     <p id="router-brigade-status" role="status" hidden></p>
 </section>
 
-<section aria-labelledby="node-login">
+<section class="panel panel-compact" id="router-access" aria-labelledby="node-login">
     <h2 id="node-login">Node Login</h2>
     <p>Log on a User Agent at the local Router.</p>
 
-    <form id="router-logon" action="/router/parameters/logon" method="post">
+    <form class="login-form" id="router-logon" action="/router/parameters/logon" method="post">
         <label>
             Password
             <input type="password" name="password" required />
@@ -43,11 +58,11 @@
     <p id="router-logon-status" role="status" hidden></p>
 </section>
 
-<section aria-labelledby="participant-discovery">
-    <h2 id="participant-discovery">Local participants</h2>
+<section class="panel panel-wide" id="participant-discovery" aria-labelledby="participant-discovery-heading">
+    <h2 id="participant-discovery-heading">Local participants</h2>
     <p>Discover the Router, Message Transfer Agents, and User Agents at the local Communications Node.</p>
 
-    <form id="router-participant-discovery" action="/router/participants/discovery" method="post">
+    <form class="inline-action" id="router-participant-discovery" action="/router/participants/discovery" method="post">
         <button id="router-participant-discovery-submit" type="submit">Discover local participants</button>
     </form>
 
@@ -67,8 +82,9 @@
     <div id="router-participant-discovery-summary" hidden></div>
 </section>
 
-<section aria-labelledby="router-parameter-list-heading">
-    <h2 id="router-parameter-list-heading">Router Parameters</h2>
+<section class="panel panel-wide" aria-labelledby="router-parameter-list-heading">
+    <h2 id="router-parameter-list-heading">Participant Parameters</h2>
+    <p class="panel-description">Select <strong>View parameters</strong> on a discovered participant to inspect its Current Parameter Table.</p>
     <p id="router-parameter-list-status" role="status" hidden></p>
     <table id="router-parameter-list" hidden>
         <caption>Local Router Current Parameters</caption>
@@ -82,6 +98,8 @@
         <tbody></tbody>
     </table>
 </section>
+</div>
+</div>
 
 <script>
     const requestForm = document.getElementById("router-brigade-request");
@@ -98,22 +116,64 @@
     const routerParameterListStatus = document.getElementById("router-parameter-list-status");
     const routerParameterListRows = routerParameterList.querySelector("tbody");
     const redactedPasswordMarker = "PASSWORD";
-    const routerCurrentParameters = [
-        { number: 1, name: "Brigade or Agency" },
-        { number: 4, name: "Current Password" },
-        { number: 5, name: "Level 1 Password" },
-        { number: 12, name: "No Acknowledgement Timeout" },
-        { number: 19, name: "Retries" }
-    ];
+    const participantCurrentParameterCatalogues = {
+        router: [
+            { number: 1, name: "Brigade or Agency" },
+            { number: 4, name: "Current Password" },
+            { number: 5, name: "Level 1 Password" },
+            { number: 6, name: "Level 2 Password" },
+            { number: 7, name: "Level 3 Password" },
+            { number: 8, name: "Level 4 Password" },
+            { number: 12, name: "No Acknowledgement Timeout" },
+            { number: 19, name: "Retries" }
+        ],
+        "LAN MTA (10)": [
+            { number: 1, name: "Port Number" },
+            { number: 2, name: "Agent Type" },
+            { number: 3, name: "Interface Status" },
+            { number: 4, name: "Notify Status Changes" },
+            { number: 5, name: "Frame Transmit Count" },
+            { number: 6, name: "Frame Receive Count" },
+            { number: 7, name: "Frame Transmit Failure Count" },
+            { number: 8, name: "Frame Receive Failure Count" },
+            { number: 9, name: "Minimum Message Priority" },
+            { number: 10, name: "Next Nodes" },
+            { number: 21, name: "LAN Address" }
+        ],
+        "Printer (4)": [
+            { number: 1, name: "Port Number" },
+            { number: 2, name: "Agent Type" },
+            { number: 3, name: "Control Address" },
+            { number: 21, name: "Default Source" },
+            { number: 22, name: "Notify Printer Available" },
+            { number: 23, name: "Alternative Source" },
+            { number: 24, name: "Reprint Message" }
+        ],
+        "Network Management UA (12)": [
+            { number: 1, name: "Port Number" },
+            { number: 2, name: "Agent Type" },
+            { number: 3, name: "Control Address" }
+        ]
+    };
 
-    const renderPendingRouterParameters = () => {
+    const getCurrentParameterCatalogue = participant =>
+        participant.kind === "router"
+            ? participantCurrentParameterCatalogues.router
+            : participantCurrentParameterCatalogues[participant.agentType];
+
+    const participantName = participant =>
+        participant.kind === "router" ? "Router" : participant.agentType;
+
+    const renderPendingParameters = (participant, parameters) => {
         routerParameterList.hidden = false;
         routerParameterListStatus.hidden = false;
-        routerParameterListStatus.textContent = "Router Parameters selected.";
+        routerParameterList.querySelector("caption").textContent =
+            `${participantName(participant)} Current Parameters`;
+        routerParameterListStatus.textContent = `${participantName(participant)} Parameters selected.`;
         routerParameterListRows.replaceChildren();
         const valueCells = new Map();
 
-        for (const parameter of routerCurrentParameters) {
+        for (const parameter of parameters) {
             const row = document.createElement("tr");
 
             for (const [index, value] of [parameter.number, parameter.name, "Pending"].entries()) {
@@ -131,77 +191,84 @@
         return valueCells;
     };
 
-    const displayRouterParameterValue = parameter => {
-        if (parameter.parameterNumber === 5) {
+    const displayParameterValue = (participant, parameter) => {
+        if (participant.kind === "router" &&
+            parameter.parameterNumber >= 5 &&
+            parameter.parameterNumber <= 8) {
             return redactedPasswordMarker;
         }
 
         return parameter.parameterValue;
     };
 
-    const pollRouterParameter = async (statusUrl, valueCell) => {
+    const pollParticipantParameter = async (participant, statusUrl, valueCell) => {
         const response = await fetch(statusUrl);
 
         if (!response.ok) {
-            valueCell.textContent = "The Router Parameter Request could not be completed.";
+            valueCell.textContent = "The Parameter Request could not be completed.";
             return;
         }
 
         const parameter = await response.json();
 
         if (parameter.state === "received") {
-            valueCell.textContent = displayRouterParameterValue(parameter)
-                ?? "The Router Parameter Request did not return a value.";
+            valueCell.textContent = displayParameterValue(participant, parameter)
+                ?? "The Parameter Request did not return a value.";
             return;
         }
 
         if (parameter.state === "pending") {
-            window.setTimeout(() => pollRouterParameter(statusUrl, valueCell), 1000);
+            window.setTimeout(() => pollParticipantParameter(participant, statusUrl, valueCell), 1000);
             return;
         }
 
-        valueCell.textContent = `Router Parameter Request ${parameter.state}.`;
+        valueCell.textContent = `Parameter Request ${parameter.state}.`;
     };
 
-    const requestRouterParameter = async (parameter, valueCell) => {
+    const requestParticipantParameter = async (participant, parameter, valueCell) => {
         try {
-            const response = await fetch(`/router/parameters/current/${parameter.number}`, {
+            const requestUrl = participant.kind === "router"
+                ? `/router/parameters/current/${parameter.number}`
+                : `/participants/${participant.port}/parameters/current/${parameter.number}`;
+            const response = await fetch(requestUrl, {
                 method: "POST"
             });
             const statusUrl = response.url;
 
             if (!response.ok || !statusUrl) {
-                valueCell.textContent = "The Router Parameter Request could not be submitted.";
+                valueCell.textContent = "The Parameter Request could not be submitted.";
                 return;
             }
 
-            pollRouterParameter(statusUrl, valueCell);
+            pollParticipantParameter(participant, statusUrl, valueCell);
         } catch {
-            valueCell.textContent = "The Router Parameter Request could not be submitted.";
+            valueCell.textContent = "The Parameter Request could not be submitted.";
         }
     };
 
-    const requestRouterParameters = async button => {
+    const requestParticipantParameters = async (participant, button) => {
+        const parameters = getCurrentParameterCatalogue(participant);
+        if (!parameters) {
+            routerParameterList.hidden = true;
+            routerParameterListRows.replaceChildren();
+            routerParameterListStatus.hidden = false;
+            routerParameterListStatus.textContent =
+                "No Current Parameter catalogue is available for this participant.";
+            return;
+        }
+
         button.disabled = true;
-        const valueCells = renderPendingRouterParameters();
-        routerParameterListStatus.textContent = "Requesting Router Parameters...";
+        const valueCells = renderPendingParameters(participant, parameters);
+        routerParameterListStatus.textContent = `Requesting ${participantName(participant)} Parameters...`;
 
         try {
-            await Promise.all(routerCurrentParameters.map(parameter =>
-                requestRouterParameter(parameter, valueCells.get(parameter.number))));
+            await Promise.all(parameters.map(parameter =>
+                requestParticipantParameter(participant, parameter, valueCells.get(parameter.number))));
 
-            routerParameterListStatus.textContent = "Router Parameters requested.";
+            routerParameterListStatus.textContent = `${participantName(participant)} Parameters requested.`;
         } finally {
             button.disabled = false;
         }
-    };
-
-    const renderUnavailableParameterListing = () => {
-        routerParameterList.hidden = true;
-        routerParameterListRows.replaceChildren();
-        routerParameterListStatus.hidden = false;
-        routerParameterListStatus.textContent =
-            "Parameter listing is not available for this participant.";
     };
 
     requestForm.addEventListener("submit", async event => {
@@ -295,14 +362,8 @@
             viewParametersButton.type = "button";
             viewParametersButton.textContent = "View parameters";
             viewParametersButton.disabled = scan.completedProbeCount < 63;
-            if (participant.kind === "router") {
-                viewParametersButton.addEventListener("click", () =>
-                    requestRouterParameters(viewParametersButton));
-            } else {
-                viewParametersButton.addEventListener(
-                    "click",
-                    renderUnavailableParameterListing);
-            }
+            viewParametersButton.addEventListener("click", () =>
+                requestParticipantParameters(participant, viewParametersButton));
             parametersCell.append(viewParametersButton);
             row.append(parametersCell);
 

@@ -48,9 +48,10 @@ public sealed class RouterPasswordVerifierPersistenceSteps
 			PasswordVerifierWorkFactor.Default);
 
 		await using var context = this.CreateContext();
-		IRouterLevel1PasswordVerifierStore store = new EfRouterPasswordVerifierStore(context);
+		IRouterPasswordVerifierStore store = new EfRouterPasswordVerifierStore(context);
 		await store.StoreAsync(
 			ParameterTable.Permanent,
+			RouterParameterCatalogue.Level1PasswordNumber,
 			verifier);
 	}
 
@@ -58,10 +59,11 @@ public sealed class RouterPasswordVerifierPersistenceSteps
 	public async Task ThenAFreshStoreRetrievesTheOriginalPasswordVerifier()
 	{
 		await using var context = this.CreateContext();
-		IRouterLevel1PasswordVerifierStore store = new EfRouterPasswordVerifierStore(context);
+		IRouterPasswordVerifierStore store = new EfRouterPasswordVerifierStore(context);
 
 		this.reloadedVerifier = await store.GetAsync(
-			ParameterTable.Permanent);
+			ParameterTable.Permanent,
+			RouterParameterCatalogue.Level1PasswordNumber);
 
 		this.reloadedVerifier.Should().NotBeNull();
 		this.reloadedVerifier!.Verifies(this.originalPassword!.Value).Should().BeTrue();

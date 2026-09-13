@@ -9,13 +9,13 @@ internal sealed class Level1PasswordModification
 	private readonly CommunicationsAddress localAddress;
 	private readonly ProtocolVersion protocolVersion;
 	private readonly RouterCurrentParameterProjectionSource currentParameterSource;
-	private readonly IRouterLevel1PasswordVerifierStore passwordVerifierStore;
+	private readonly IRouterPasswordVerifierStore passwordVerifierStore;
 
 	public Level1PasswordModification(
 		CommunicationsAddress localAddress,
 		ProtocolVersion protocolVersion,
 		RouterCurrentParameterProjectionSource currentParameterSource,
-		IRouterLevel1PasswordVerifierStore passwordVerifierStore)
+		IRouterPasswordVerifierStore passwordVerifierStore)
 	{
 		this.localAddress = localAddress ?? throw new ArgumentNullException(nameof(localAddress));
 		this.protocolVersion = protocolVersion ?? throw new ArgumentNullException(nameof(protocolVersion));
@@ -76,6 +76,7 @@ internal sealed class Level1PasswordModification
 		{
 			await this.passwordVerifierStore.StoreAsync(
 				ParameterTable.NonVolatile,
+				RouterParameterCatalogue.Level1PasswordNumber,
 				passwordVerifier,
 				cancellationToken);
 		}

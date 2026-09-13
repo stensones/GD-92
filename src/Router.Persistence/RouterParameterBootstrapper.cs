@@ -7,11 +7,11 @@ namespace Router.Persistence;
 public sealed class RouterParameterBootstrapper
 {
 	private readonly ParticipantParameterBootstrapper parameterBootstrapper;
-	private readonly IRouterLevel1PasswordVerifierStore passwordVerifierStore;
+	private readonly IRouterPasswordVerifierStore passwordVerifierStore;
 
 	public RouterParameterBootstrapper(
 		IParticipantParameterStore store,
-		IRouterLevel1PasswordVerifierStore passwordVerifierStore)
+		IRouterPasswordVerifierStore passwordVerifierStore)
 	{
 		this.parameterBootstrapper = new ParticipantParameterBootstrapper(store);
 		this.passwordVerifierStore = passwordVerifierStore ??
@@ -89,18 +89,31 @@ public sealed class RouterParameterBootstrapper
 		(nonVolatileValues, initializeCancellationToken) =>
 			this.CreateCurrentParameterProjectionAsync(
 				nonVolatileValues,
-				configuration.InitialLevel1Password,
+				configuration,
 				initializeCancellationToken),
 		cancellationToken);
 	}
 
 	private async ValueTask<RouterCurrentParameterProjection> CreateCurrentParameterProjectionAsync(
 		IReadOnlyDictionary<ParameterNumber, ParameterValue> nonVolatileValues,
-		PasswordValue initialLevel1Password,
+		RouterParameterBootstrapConfiguration configuration,
 		CancellationToken cancellationToken)
 	{
-		var level1PasswordVerifier = await this.LoadLevel1PasswordVerifierAsync(
-			initialLevel1Password,
+		var level1PasswordVerifier = await this.LoadPasswordVerifierAsync(
+			RouterParameterCatalogue.Level1PasswordNumber,
+			configuration.InitialLevel1Password,
+			cancellationToken);
+		var level2PasswordVerifier = await this.LoadPasswordVerifierAsync(
+			RouterParameterCatalogue.Level2PasswordNumber,
+			configuration.InitialLevel2Password,
+			cancellationToken);
+		var level3PasswordVerifier = await this.LoadPasswordVerifierAsync(
+			RouterParameterCatalogue.Level3PasswordNumber,
+			configuration.InitialLevel3Password,
+			cancellationToken);
+		var level4PasswordVerifier = await this.LoadPasswordVerifierAsync(
+			RouterParameterCatalogue.Level4PasswordNumber,
+			configuration.InitialLevel4Password,
 			cancellationToken);
 
 		return RouterCurrentParameterProjection.FromNonVolatileParameters(
@@ -109,28 +122,34 @@ public sealed class RouterParameterBootstrapper
 			RouterParameterCatalogue.CurrentPassword.Read(
 				nonVolatileValues[RouterParameterCatalogue.CurrentPassword.Number]),
 			level1PasswordVerifier,
+			level2PasswordVerifier,
+			level3PasswordVerifier,
+			level4PasswordVerifier,
 			RouterParameterCatalogue.NoAcknowledgementTimeout.Read(
 				nonVolatileValues[RouterParameterCatalogue.NoAcknowledgementTimeout.Number]),
 			RouterParameterCatalogue.Retries.Read(
 				nonVolatileValues[RouterParameterCatalogue.Retries.Number]));
 	}
 
-	private async ValueTask<PasswordVerifier> LoadLevel1PasswordVerifierAsync(
-		PasswordValue initialLevel1Password,
+	private async ValueTask<PasswordVerifier> LoadPasswordVerifierAsync(
+		ParameterNumber parameterNumber,
+		PasswordValue initialPassword,
 		CancellationToken cancellationToken)
 	{
 		var permanentVerifier = await GetPasswordVerifierAsync(
 			this.passwordVerifierStore,
 			ParameterTable.Permanent,
+			parameterNumber,
 			cancellationToken);
 		var permanentWasMissing = permanentVerifier is null;
 		if (permanentWasMissing)
 		{
 			permanentVerifier = PasswordVerifier.Create(
-				initialLevel1Password,
+				initialPassword,
 				PasswordVerifierWorkFactor.Default);
 			await this.passwordVerifierStore.StoreAsync(
 				ParameterTable.Permanent,
+				parameterNumber,
 				permanentVerifier,
 				cancellationToken);
 		}
@@ -138,6 +157,7 @@ public sealed class RouterParameterBootstrapper
 		var nonVolatileVerifier = await GetPasswordVerifierAsync(
 			this.passwordVerifierStore,
 			ParameterTable.NonVolatile,
+			parameterNumber,
 			cancellationToken);
 		if (nonVolatileVerifier is not null)
 		{
@@ -147,33 +167,36 @@ public sealed class RouterParameterBootstrapper
 		if (!permanentWasMissing)
 		{
 			throw new InvalidOperationException(
-				"Router Non-Volatile Parameter 5 password verifier is missing while its Permanent verifier exists.");
+				$"Router Non-Volatile Parameter {parameterNumber.Value} password verifier is missing while its Permanent verifier exists.");
 		}
 
 		await this.passwordVerifierStore.StoreAsync(
 			ParameterTable.NonVolatile,
+			parameterNumber,
 			permanentVerifier!,
 			cancellationToken);
 
 		return permanentVerifier ?? throw new InvalidOperationException(
-			"Router Parameter 5 password verifier bootstrap did not produce a verifier.");
+			$"Router Parameter {parameterNumber.Value} password verifier bootstrap did not produce a verifier.");
 	}
 
 	private static async ValueTask<PasswordVerifier?> GetPasswordVerifierAsync(
-		IRouterLevel1PasswordVerifierStore passwordVerifierStore,
+		IRouterPasswordVerifierStore passwordVerifierStore,
 		ParameterTable parameterTable,
+		ParameterNumber parameterNumber,
 		CancellationToken cancellationToken)
 	{
 		try
 		{
 			return await passwordVerifierStore.GetAsync(
 				parameterTable,
+				parameterNumber,
 				cancellationToken);
 		}
 		catch (ArgumentException exception)
 		{
 			throw new InvalidOperationException(
-				$"Router {ParameterTableName(parameterTable)} Parameter 5 password verifier is malformed.",
+				$"Router {ParameterTableName(parameterTable)} Parameter {parameterNumber.Value} password verifier is malformed.",
 				exception);
 		}
 	}

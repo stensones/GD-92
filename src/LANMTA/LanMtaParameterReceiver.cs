@@ -17,15 +17,25 @@ public sealed class LanMtaParameterReceiver(
 
 		if (envelope.Destinations.Addresses.Count != 1 ||
 			envelope.Destinations.Addresses[0] != settings.LocalAddress ||
-			envelope.Contents is not ParameterRequest parameterRequest ||
-			parameterRequest.ParameterTable != ParameterTable.Current)
+			envelope.Contents is not ParameterRequest parameterRequest)
 		{
 			return;
 		}
 
 		var projection = currentParameters.GetCurrent();
-		if (!projection.TryGet(parameterRequest.ParameterNumber, out var parameterValue))
+		if (parameterRequest.ParameterTable != ParameterTable.Current ||
+			!projection.TryGet(parameterRequest.ParameterNumber, out var parameterValue))
 		{
+			var reasonCode = parameterRequest.ParameterTable != ParameterTable.Current
+				? ParameterReasonCode.InvalidTable
+				: ParameterReasonCode.InvalidParameter;
+			var rejection = Envelope.CreateNegativeAcknowledgement(
+				envelope,
+				settings.LocalAddress,
+				settings.ProtocolVersion,
+				envelope.Destinations,
+				ReasonCode.FromParameterReasonCode(reasonCode));
+			await routerIngress.SubmitAsync(rejection, cancellationToken);
 			return;
 		}
 

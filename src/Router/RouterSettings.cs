@@ -15,6 +15,9 @@ internal sealed class RouterSettings
 		CommunicationsAddress networkManagerAddress2,
 		ProtocolVersion protocolVersion,
 		PasswordValue initialLevel1Password,
+		PasswordValue initialLevel2Password,
+		PasswordValue initialLevel3Password,
+		PasswordValue initialLevel4Password,
 		NoAcknowledgementTimeout noAcknowledgementTimeout,
 		Retries retries,
 		ManualAcknowledgementTimeout manualAcknowledgementTimeout,
@@ -27,6 +30,9 @@ internal sealed class RouterSettings
 		this.NetworkManagerAddress2 = networkManagerAddress2;
 		this.ProtocolVersion = protocolVersion;
 		this.InitialLevel1Password = initialLevel1Password;
+		this.InitialLevel2Password = initialLevel2Password;
+		this.InitialLevel3Password = initialLevel3Password;
+		this.InitialLevel4Password = initialLevel4Password;
 		this.NoAcknowledgementTimeout = noAcknowledgementTimeout;
 		this.Retries = retries;
 		this.ManualAcknowledgementTimeout = manualAcknowledgementTimeout;
@@ -38,6 +44,9 @@ internal sealed class RouterSettings
 			networkManagerAddress1,
 			networkManagerAddress2,
 			initialLevel1Password,
+			initialLevel2Password,
+			initialLevel3Password,
+			initialLevel4Password,
 			noAcknowledgementTimeout,
 			retries,
 			manualAcknowledgementTimeout,
@@ -52,6 +61,9 @@ internal sealed class RouterSettings
 	public CommunicationsAddress NetworkManagerAddress2 { get; }
 	public ProtocolVersion ProtocolVersion { get; }
 	public PasswordValue InitialLevel1Password { get; }
+	public PasswordValue InitialLevel2Password { get; }
+	public PasswordValue InitialLevel3Password { get; }
+	public PasswordValue InitialLevel4Password { get; }
 	public NoAcknowledgementTimeout NoAcknowledgementTimeout { get; }
 	public Retries Retries { get; }
 	public ManualAcknowledgementTimeout ManualAcknowledgementTimeout { get; }
@@ -76,7 +88,10 @@ internal sealed class RouterSettings
 			ParseCommunicationsAddress(routerConfiguration.GetRequiredSection("NetworkManagerAddress2")),
 			ProtocolVersion.FromValue(
 				ProtocolVersionNumber.FromValue(routerConfiguration.GetValue<byte>("ProtocolVersion"))),
-			ParseInitialLevel1Password(routerConfiguration["InitialLevel1Password"]),
+			ParseInitialPassword(routerConfiguration["InitialLevel1Password"], "InitialLevel1Password"),
+			ParseInitialPassword(routerConfiguration["InitialLevel2Password"], "InitialLevel2Password"),
+			ParseInitialPassword(routerConfiguration["InitialLevel3Password"], "InitialLevel3Password"),
+			ParseInitialPassword(routerConfiguration["InitialLevel4Password"], "InitialLevel4Password"),
 			NoAcknowledgementTimeout.FromValue(ParseRequiredWord8(
 				routerConfiguration,
 				"NoAcknowledgementTimeout")),
@@ -107,12 +122,12 @@ internal sealed class RouterSettings
 		}
 	}
 
-	private static PasswordValue ParseInitialLevel1Password(string? value)
+	private static PasswordValue ParseInitialPassword(string? value, string settingName)
 	{
 		if (string.IsNullOrEmpty(value))
 		{
 			throw new InvalidOperationException(
-				"Router:InitialLevel1Password must be a nonempty 7-bit ASCII password of at most 10 characters.");
+				$"Router:{settingName} must be a nonempty 7-bit ASCII password of at most 10 characters.");
 		}
 
 		try
@@ -122,7 +137,7 @@ internal sealed class RouterSettings
 		catch (ArgumentException exception)
 		{
 			throw new InvalidOperationException(
-				"Router:InitialLevel1Password must be a nonempty 7-bit ASCII password of at most 10 characters.",
+				$"Router:{settingName} must be a nonempty 7-bit ASCII password of at most 10 characters.",
 				exception);
 		}
 	}

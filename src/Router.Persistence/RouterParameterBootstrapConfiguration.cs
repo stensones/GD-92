@@ -11,6 +11,9 @@ public sealed class RouterParameterBootstrapConfiguration
 		CommunicationsAddress networkManagerAddress1,
 		CommunicationsAddress networkManagerAddress2,
 		PasswordValue initialLevel1Password,
+		PasswordValue initialLevel2Password,
+		PasswordValue initialLevel3Password,
+		PasswordValue initialLevel4Password,
 		NoAcknowledgementTimeout noAcknowledgementTimeout,
 		Retries retries,
 		ManualAcknowledgementTimeout manualAcknowledgementTimeout,
@@ -23,6 +26,9 @@ public sealed class RouterParameterBootstrapConfiguration
 		this.NetworkManagerAddress1 = networkManagerAddress1;
 		this.NetworkManagerAddress2 = networkManagerAddress2;
 		this.InitialLevel1Password = initialLevel1Password;
+		this.InitialLevel2Password = initialLevel2Password;
+		this.InitialLevel3Password = initialLevel3Password;
+		this.InitialLevel4Password = initialLevel4Password;
 		this.NoAcknowledgementTimeout = noAcknowledgementTimeout;
 		this.Retries = retries;
 		this.ManualAcknowledgementTimeout = manualAcknowledgementTimeout;
@@ -36,6 +42,9 @@ public sealed class RouterParameterBootstrapConfiguration
 	public CommunicationsAddress NetworkManagerAddress1 { get; }
 	public CommunicationsAddress NetworkManagerAddress2 { get; }
 	public PasswordValue InitialLevel1Password { get; }
+	public PasswordValue InitialLevel2Password { get; }
+	public PasswordValue InitialLevel3Password { get; }
+	public PasswordValue InitialLevel4Password { get; }
 	public NoAcknowledgementTimeout NoAcknowledgementTimeout { get; }
 	public Retries Retries { get; }
 	public ManualAcknowledgementTimeout ManualAcknowledgementTimeout { get; }
@@ -49,6 +58,9 @@ public sealed class RouterParameterBootstrapConfiguration
 		CommunicationsAddress networkManagerAddress1,
 		CommunicationsAddress networkManagerAddress2,
 		PasswordValue initialLevel1Password,
+		PasswordValue initialLevel2Password,
+		PasswordValue initialLevel3Password,
+		PasswordValue initialLevel4Password,
 		NoAcknowledgementTimeout noAcknowledgementTimeout,
 		Retries retries,
 		ManualAcknowledgementTimeout manualAcknowledgementTimeout,
@@ -72,6 +84,39 @@ public sealed class RouterParameterBootstrapConfiguration
 			maximumMessageLength,
 			networkManagerAddress1,
 			networkManagerAddress2,
+			initialLevel1Password,
+			initialLevel2Password,
+			initialLevel3Password,
+			initialLevel4Password,
+			noAcknowledgementTimeout,
+			retries,
+			manualAcknowledgementTimeout,
+			timeAndDate,
+			mdtTable);
+	}
+
+	public static RouterParameterBootstrapConfiguration FromValues(
+		CommunicationsAddress localAddress,
+		NodeName nodeName,
+		MaximumMessageLength maximumMessageLength,
+		CommunicationsAddress networkManagerAddress1,
+		CommunicationsAddress networkManagerAddress2,
+		PasswordValue initialLevel1Password,
+		NoAcknowledgementTimeout noAcknowledgementTimeout,
+		Retries retries,
+		ManualAcknowledgementTimeout manualAcknowledgementTimeout,
+		TimeAndDate timeAndDate,
+		MdtTable mdtTable)
+	{
+		return FromValues(
+			localAddress,
+			nodeName,
+			maximumMessageLength,
+			networkManagerAddress1,
+			networkManagerAddress2,
+			initialLevel1Password,
+			initialLevel1Password,
+			initialLevel1Password,
 			initialLevel1Password,
 			noAcknowledgementTimeout,
 			retries,

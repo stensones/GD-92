@@ -38,7 +38,7 @@ internal sealed class RouterParameterRead
 			return ValueTask.FromResult<Envelope?>(null);
 		}
 
-		var parameterValue = number == RouterParameterCatalogue.Level1PasswordNumber
+		var parameterValue = RouterParameterCatalogue.IsPasswordNumber(number)
 			? ParameterValue.FromWireValue(RedactedPassword.ToWireValue())
 			: this.CurrentParameterValue(number);
 

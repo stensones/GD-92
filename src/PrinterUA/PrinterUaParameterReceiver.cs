@@ -12,6 +12,11 @@ public sealed class PrinterUaParameterReceiver(
 {
 	private static readonly ParameterNumber PortNumberParameterNumber = ParameterNumber.FromValue(1);
 	private static readonly ParameterNumber AgentTypeParameterNumber = ParameterNumber.FromValue(2);
+	private static readonly ParameterNumber ControlAddressParameterNumber = ParameterNumber.FromValue(3);
+	private static readonly ParameterNumber DefaultSourceParameterNumber = ParameterNumber.FromValue(21);
+	private static readonly ParameterNumber NotifyPrinterAvailableParameterNumber = ParameterNumber.FromValue(22);
+	private static readonly ParameterNumber AlternativeSourceParameterNumber = ParameterNumber.FromValue(23);
+	private static readonly ParameterNumber ReprintMessageParameterNumber = ParameterNumber.FromValue(24);
 
 	public async Task ReceiveAsync(Envelope envelope, CancellationToken cancellationToken)
 	{
@@ -23,7 +28,12 @@ public sealed class PrinterUaParameterReceiver(
 			envelope.Contents is not ParameterRequest parameterRequest ||
 			parameterRequest.ParameterTable != ParameterTable.Current ||
 			(parameterRequest.ParameterNumber != PortNumberParameterNumber &&
-				parameterRequest.ParameterNumber != AgentTypeParameterNumber))
+				parameterRequest.ParameterNumber != AgentTypeParameterNumber &&
+				parameterRequest.ParameterNumber != ControlAddressParameterNumber &&
+				parameterRequest.ParameterNumber != DefaultSourceParameterNumber &&
+				parameterRequest.ParameterNumber != NotifyPrinterAvailableParameterNumber &&
+				parameterRequest.ParameterNumber != AlternativeSourceParameterNumber &&
+				parameterRequest.ParameterNumber != ReprintMessageParameterNumber))
 		{
 			return;
 		}

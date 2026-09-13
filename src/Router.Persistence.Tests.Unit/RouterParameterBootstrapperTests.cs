@@ -34,6 +34,54 @@ public sealed class RouterParameterBootstrapperTests
 	}
 
 	[Fact]
+	public async Task Seeds_each_password_parameter_with_its_own_initial_password()
+	{
+		var parameterStore = new InMemoryRouterParameterStore();
+		var passwordVerifierStore = new InMemoryRouterPasswordVerifierStore();
+		var initialPasswords = Enumerable.Range(0, 4)
+			.Select(_ => PasswordValue.FromValue(
+				SevenBitAsciiString.FromValue(Guid.NewGuid().ToString("N")[..10])))
+			.ToArray();
+		initialPasswords.Should().OnlyHaveUniqueItems();
+		var configuration = RouterParameterBootstrapConfiguration.FromValues(
+			CreateAddress(26, 100, 0),
+			CreateNodeName(),
+			MaximumMessageLength.FromValue(1_023),
+			CreateAddress(26, 100, 25),
+			CreateAddress(26, 100, 25),
+			initialPasswords[0],
+			initialPasswords[1],
+			initialPasswords[2],
+			initialPasswords[3],
+			NoAcknowledgementTimeout.FromValue(Word8.FromValue(5)),
+			Retries.FromValue(Word8.FromValue(3)),
+			ManualAcknowledgementTimeout.FromValue(60),
+			CreateInstallationTime(),
+			MdtTable.FromEntries());
+
+		var currentParameters = await new RouterParameterBootstrapper(
+			parameterStore,
+			passwordVerifierStore).LoadCurrentParameterProjectionAsync(configuration);
+
+		var currentVerifiers = new[]
+		{
+			currentParameters.Level1PasswordVerifier,
+			currentParameters.Level2PasswordVerifier,
+			currentParameters.Level3PasswordVerifier,
+			currentParameters.Level4PasswordVerifier
+		};
+		foreach (var (number, password, verifier) in RouterParameterCatalogue.PasswordNumbers
+			.Zip(initialPasswords, currentVerifiers))
+		{
+			(await passwordVerifierStore.GetAsync(ParameterTable.Permanent, number))!
+				.Verifies(password).Should().BeTrue();
+			(await passwordVerifierStore.GetAsync(ParameterTable.NonVolatile, number))!
+				.Verifies(password).Should().BeTrue();
+			verifier.Verifies(password).Should().BeTrue();
+		}
+	}
+
+	[Fact]
 	public async Task Seeds_the_initial_typed_Router_Parameters_and_projects_their_non_volatile_values()
 	{
 		var parameterStore = new InMemoryRouterParameterStore();
@@ -125,9 +173,13 @@ public sealed class RouterParameterBootstrapperTests
 			ParameterTable.NonVolatile,
 			RouterParameterCatalogue.Level1PasswordNumber))
 			.Should().BeNull();
-		(await passwordVerifierStore.GetAsync(ParameterTable.Permanent))!
+		(await passwordVerifierStore.GetAsync(
+			ParameterTable.Permanent,
+			RouterParameterCatalogue.Level1PasswordNumber))!
 			.Verifies(initialPassword).Should().BeTrue();
-		(await passwordVerifierStore.GetAsync(ParameterTable.NonVolatile))!
+		(await passwordVerifierStore.GetAsync(
+			ParameterTable.NonVolatile,
+			RouterParameterCatalogue.Level1PasswordNumber))!
 			.Verifies(initialPassword).Should().BeTrue();
 		currentParameters.Level1PasswordVerifier.Verifies(initialPassword).Should().BeTrue();
 	}
@@ -267,6 +319,7 @@ public sealed class RouterParameterBootstrapperTests
 		var initialPassword = PasswordValue.FromValue(SevenBitAsciiString.FromValue("FIRE"));
 		await passwordVerifierStore.StoreAsync(
 			ParameterTable.Permanent,
+			RouterParameterCatalogue.Level1PasswordNumber,
 			PasswordVerifier.Create(initialPassword, PasswordVerifierWorkFactor.Default));
 		var bootstrapper = new RouterParameterBootstrapper(
 			parameterStore,
@@ -277,7 +330,9 @@ public sealed class RouterParameterBootstrapperTests
 
 		await load.Should().ThrowAsync<InvalidOperationException>()
 			.WithMessage("*Non-Volatile Parameter 5 password verifier is missing*");
-		(await passwordVerifierStore.GetAsync(ParameterTable.NonVolatile))
+		(await passwordVerifierStore.GetAsync(
+			ParameterTable.NonVolatile,
+			RouterParameterCatalogue.Level1PasswordNumber))
 			.Should().BeNull();
 	}
 
@@ -340,9 +395,11 @@ public sealed class RouterParameterBootstrapperTests
 			ParameterValue.FromWireValue([7]));
 		await passwordVerifierStore.StoreAsync(
 			ParameterTable.Permanent,
+			RouterParameterCatalogue.Level1PasswordNumber,
 			PasswordVerifier.Create(permanentPassword, PasswordVerifierWorkFactor.Default));
 		await passwordVerifierStore.StoreAsync(
 			ParameterTable.NonVolatile,
+			RouterParameterCatalogue.Level1PasswordNumber,
 			PasswordVerifier.Create(nonVolatilePassword, PasswordVerifierWorkFactor.Default));
 		var bootstrapper = new RouterParameterBootstrapper(parameterStore, passwordVerifierStore);
 
@@ -394,31 +451,33 @@ public sealed class RouterParameterBootstrapperTests
 		}
 	}
 
-	private sealed class InMemoryRouterPasswordVerifierStore : IRouterLevel1PasswordVerifierStore
+	private sealed class InMemoryRouterPasswordVerifierStore : IRouterPasswordVerifierStore
 	{
-		private readonly Dictionary<ParameterTable, PasswordVerifier> values = [];
+		private readonly Dictionary<(ParameterTable Table, ParameterNumber Number), PasswordVerifier> values = [];
 
 		public ValueTask<PasswordVerifier?> GetAsync(
 			ParameterTable parameterTable,
+			ParameterNumber parameterNumber,
 			CancellationToken cancellationToken = default)
 		{
-			this.values.TryGetValue(parameterTable, out var value);
+			this.values.TryGetValue((parameterTable, parameterNumber), out var value);
 
 			return ValueTask.FromResult(value);
 		}
 
 		public ValueTask StoreAsync(
 			ParameterTable parameterTable,
+			ParameterNumber parameterNumber,
 			PasswordVerifier passwordVerifier,
 			CancellationToken cancellationToken = default)
 		{
-			this.values[parameterTable] = passwordVerifier;
+			this.values[(parameterTable, parameterNumber)] = passwordVerifier;
 
 			return ValueTask.CompletedTask;
 		}
 	}
 
-	private sealed class MalformedNonVolatilePasswordVerifierStore : IRouterLevel1PasswordVerifierStore
+	private sealed class MalformedNonVolatilePasswordVerifierStore : IRouterPasswordVerifierStore
 	{
 		private readonly PasswordVerifier permanentVerifier;
 
@@ -429,6 +488,7 @@ public sealed class RouterParameterBootstrapperTests
 
 		public ValueTask<PasswordVerifier?> GetAsync(
 			ParameterTable parameterTable,
+			ParameterNumber parameterNumber,
 			CancellationToken cancellationToken = default)
 		{
 			if (parameterTable == ParameterTable.NonVolatile)
@@ -441,6 +501,7 @@ public sealed class RouterParameterBootstrapperTests
 
 		public ValueTask StoreAsync(
 			ParameterTable parameterTable,
+			ParameterNumber parameterNumber,
 			PasswordVerifier passwordVerifier,
 			CancellationToken cancellationToken = default)
 		{

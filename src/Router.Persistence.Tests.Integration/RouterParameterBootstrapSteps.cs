@@ -96,7 +96,7 @@ public sealed class RouterParameterBootstrapSteps
 	{
 		await using var context = this.CreateContext();
 		IParticipantParameterStore parameterStore = new EfRouterParameterStore(context);
-		IRouterLevel1PasswordVerifierStore passwordVerifierStore =
+		IRouterPasswordVerifierStore passwordVerifierStore =
 			new EfRouterPasswordVerifierStore(context);
 		(await parameterStore.GetAsync(
 			ParameterTable.Permanent,
@@ -106,9 +106,13 @@ public sealed class RouterParameterBootstrapSteps
 			ParameterTable.NonVolatile,
 			RouterParameterCatalogue.Level1PasswordNumber))
 			.Should().BeNull();
-		(await passwordVerifierStore.GetAsync(ParameterTable.Permanent))!
+		(await passwordVerifierStore.GetAsync(
+			ParameterTable.Permanent,
+			RouterParameterCatalogue.Level1PasswordNumber))!
 			.Verifies(InitialLevel1Password).Should().BeTrue();
-		(await passwordVerifierStore.GetAsync(ParameterTable.NonVolatile))!
+		(await passwordVerifierStore.GetAsync(
+			ParameterTable.NonVolatile,
+			RouterParameterCatalogue.Level1PasswordNumber))!
 			.Verifies(InitialLevel1Password).Should().BeTrue();
 	}
 

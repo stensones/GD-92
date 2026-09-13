@@ -1,4 +1,5 @@
 using Stensones.GD92.Fields;
+
 namespace Router.Persistence;
 
 public sealed class RouterCurrentParameterProjection
@@ -9,16 +10,23 @@ public sealed class RouterCurrentParameterProjection
 		PasswordLevel.FromValue(PasswordLevelNumber.Level1);
 	private static readonly Password EmptyPassword = Password.FromValue(
 		PasswordValue.FromValue(SevenBitAsciiString.FromValue(string.Empty)));
+
 	private RouterCurrentParameterProjection(
 		BrigadeOrAgencyIdentifier brigadeOrAgencyIdentifier,
 		PasswordParameter currentPassword,
 		PasswordVerifier level1PasswordVerifier,
+		PasswordVerifier level2PasswordVerifier,
+		PasswordVerifier level3PasswordVerifier,
+		PasswordVerifier level4PasswordVerifier,
 		NoAcknowledgementTimeout noAcknowledgementTimeout,
 		Retries retries)
 	{
 		this.BrigadeOrAgencyIdentifier = brigadeOrAgencyIdentifier;
 		this.CurrentPassword = currentPassword;
 		this.Level1PasswordVerifier = level1PasswordVerifier;
+		this.Level2PasswordVerifier = level2PasswordVerifier;
+		this.Level3PasswordVerifier = level3PasswordVerifier;
+		this.Level4PasswordVerifier = level4PasswordVerifier;
 		this.NoAcknowledgementTimeout = noAcknowledgementTimeout;
 		this.Retries = retries;
 	}
@@ -26,6 +34,9 @@ public sealed class RouterCurrentParameterProjection
 	public BrigadeOrAgencyIdentifier BrigadeOrAgencyIdentifier { get; }
 	public PasswordParameter CurrentPassword { get; }
 	public PasswordVerifier Level1PasswordVerifier { get; }
+	public PasswordVerifier Level2PasswordVerifier { get; }
+	public PasswordVerifier Level3PasswordVerifier { get; }
+	public PasswordVerifier Level4PasswordVerifier { get; }
 	public NoAcknowledgementTimeout NoAcknowledgementTimeout { get; }
 	public Retries Retries { get; }
 
@@ -38,6 +49,9 @@ public sealed class RouterCurrentParameterProjection
 			this.BrigadeOrAgencyIdentifier,
 			PasswordParameter.FromFields(LevelOne, EmptyPassword, communicationsAddress),
 			this.Level1PasswordVerifier,
+			this.Level2PasswordVerifier,
+			this.Level3PasswordVerifier,
+			this.Level4PasswordVerifier,
 			this.NoAcknowledgementTimeout,
 			this.Retries);
 	}
@@ -51,6 +65,9 @@ public sealed class RouterCurrentParameterProjection
 			this.BrigadeOrAgencyIdentifier,
 			PasswordParameter.FromFields(LevelZero, EmptyPassword, localAddress),
 			this.Level1PasswordVerifier,
+			this.Level2PasswordVerifier,
+			this.Level3PasswordVerifier,
+			this.Level4PasswordVerifier,
 			this.NoAcknowledgementTimeout,
 			this.Retries);
 	}
@@ -64,6 +81,9 @@ public sealed class RouterCurrentParameterProjection
 			this.BrigadeOrAgencyIdentifier,
 			this.CurrentPassword,
 			level1PasswordVerifier,
+			this.Level2PasswordVerifier,
+			this.Level3PasswordVerifier,
+			this.Level4PasswordVerifier,
 			this.NoAcknowledgementTimeout,
 			this.Retries);
 	}
@@ -72,11 +92,17 @@ public sealed class RouterCurrentParameterProjection
 		BrigadeOrAgencyIdentifier brigadeOrAgencyIdentifier,
 		PasswordParameter currentPassword,
 		PasswordVerifier level1PasswordVerifier,
+		PasswordVerifier level2PasswordVerifier,
+		PasswordVerifier level3PasswordVerifier,
+		PasswordVerifier level4PasswordVerifier,
 		NoAcknowledgementTimeout noAcknowledgementTimeout,
 		Retries retries)
 	{
 		ArgumentNullException.ThrowIfNull(currentPassword);
 		ArgumentNullException.ThrowIfNull(level1PasswordVerifier);
+		ArgumentNullException.ThrowIfNull(level2PasswordVerifier);
+		ArgumentNullException.ThrowIfNull(level3PasswordVerifier);
+		ArgumentNullException.ThrowIfNull(level4PasswordVerifier);
 		ArgumentNullException.ThrowIfNull(noAcknowledgementTimeout);
 		ArgumentNullException.ThrowIfNull(retries);
 
@@ -84,6 +110,9 @@ public sealed class RouterCurrentParameterProjection
 			brigadeOrAgencyIdentifier,
 			currentPassword,
 			level1PasswordVerifier,
+			level2PasswordVerifier,
+			level3PasswordVerifier,
+			level4PasswordVerifier,
 			noAcknowledgementTimeout,
 			retries);
 	}

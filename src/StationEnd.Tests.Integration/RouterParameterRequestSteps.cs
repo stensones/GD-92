@@ -86,6 +86,48 @@ public sealed class RouterParameterRequestSteps
 			response => response.statusAddress);
 	}
 
+	[When(@"I request every Printer UA Current Parameter")]
+	public async Task WhenIRequestEveryPrinterUaCurrentParameter()
+	{
+		await this.EnsureApplicationStartedAsync();
+
+		var requests = new byte[] { 1, 2, 3, 21, 22, 23, 24 }
+			.Select(async parameterNumber =>
+			{
+				using var response = await this.client!.PostAsync(
+					$"/participants/2/parameters/current/{parameterNumber}",
+					null);
+				response.StatusCode.Should().Be(HttpStatusCode.SeeOther);
+				response.Headers.Location.Should().NotBeNull();
+				return (parameterNumber, statusAddress: response.Headers.Location!);
+			});
+		var responses = await Task.WhenAll(requests);
+		this.participantParameterStatusAddresses = responses.ToDictionary(
+			response => response.parameterNumber,
+			response => response.statusAddress);
+	}
+
+	[When(@"I request every Network Management UA Current Parameter")]
+	public async Task WhenIRequestEveryNetworkManagementUaCurrentParameter()
+	{
+		await this.EnsureApplicationStartedAsync();
+
+		var requests = new byte[] { 1, 2, 3 }
+			.Select(async parameterNumber =>
+			{
+				using var response = await this.client!.PostAsync(
+					$"/participants/25/parameters/current/{parameterNumber}",
+					null);
+				response.StatusCode.Should().Be(HttpStatusCode.SeeOther);
+				response.Headers.Location.Should().NotBeNull();
+				return (parameterNumber, statusAddress: response.Headers.Location!);
+			});
+		var responses = await Task.WhenAll(requests);
+		this.participantParameterStatusAddresses = responses.ToDictionary(
+			response => response.parameterNumber,
+			response => response.statusAddress);
+	}
+
 	[When(@"I open NodeManager")]
 	public async Task WhenIOpenNodeManager()
 	{
@@ -99,7 +141,9 @@ public sealed class RouterParameterRequestSteps
 	[Then(@"NodeManager presents a Node Login form that securely submits password, brigade, node, and port")]
 	public void ThenNodeManagerPresentsANodeLoginForm()
 	{
-		this.pageContent.Should().Contain("""<form id="router-logon" action="/router/parameters/logon" method="post">""");
+		this.pageContent.Should().Contain("id=\"router-logon\"");
+		this.pageContent.Should().Contain("action=\"/router/parameters/logon\"");
+		this.pageContent.Should().Contain("method=\"post\"");
 		this.pageContent.Should().Contain("""type="password" name="password" required""");
 		this.pageContent.Should().Contain("""type="number" name="brigade""");
 		this.pageContent.Should().Contain("""type="number" name="node""");
@@ -117,8 +161,9 @@ public sealed class RouterParameterRequestSteps
 	[Then(@"NodeManager presents an enabled Discover local participants control")]
 	public void ThenNodeManagerPresentsAnEnabledDiscoverLocalParticipantsControl()
 	{
-		this.pageContent.Should().Contain(
-			"""<form id="router-participant-discovery" action="/router/participants/discovery" method="post">""");
+		this.pageContent.Should().Contain("id=\"router-participant-discovery\"");
+		this.pageContent.Should().Contain("action=\"/router/participants/discovery\"");
+		this.pageContent.Should().Contain("method=\"post\"");
 		this.pageContent.Should().Contain("""type="submit">Discover local participants</button>""");
 		this.pageContent.Should().NotContain("""type="submit" disabled>Discover local participants</button>""");
 	}
@@ -140,8 +185,8 @@ public sealed class RouterParameterRequestSteps
 			"""Inventory Scan: ${scan.completedProbeCount} of 63 probes completed.""");
 	}
 
-	[Then(@"NodeManager presents Router Parameter selection and result areas after Inventory Scan completion")]
-	public void ThenNodeManagerPresentsRouterParameterSelectionAndResultAreas()
+	[Then(@"NodeManager presents Parameter selection and result areas for every discovered participant")]
+	public void ThenNodeManagerPresentsParameterSelectionAndResultAreasForEveryDiscoveredParticipant()
 	{
 		this.pageContent.Should().Contain("""<th scope="col">Parameters</th>""");
 		this.pageContent.Should().Contain("""id="router-parameter-list" hidden""");
@@ -247,11 +292,15 @@ public sealed class RouterParameterRequestSteps
 		this.pageContent.Should().NotContain("FIRE1");
 	}
 
-	[Then(@"NodeManager marks Parameter listing as unavailable for other discovered participants")]
-	public void ThenNodeManagerMarksParameterListingAsUnavailableForOtherDiscoveredParticipants()
+	[Then(@"NodeManager presents Current Parameter catalogues for LAN MTA, Printer UA, and Network Management UA")]
+	public void ThenNodeManagerPresentsCurrentParameterCataloguesForAllDiscoveredParticipants()
 	{
+		this.pageContent.Should().Contain("const participantCurrentParameterCatalogues = {");
+		this.pageContent.Should().Contain("LAN MTA (10)");
+		this.pageContent.Should().Contain("Printer (4)");
+		this.pageContent.Should().Contain("Network Management UA (12)");
 		this.pageContent.Should().Contain(
-			"Parameter listing is not available for this participant.");
+			"/participants/${participant.port}/parameters/current/${parameter.number}");
 	}
 
 	[Then(@"the completed Inventory Scan summary shows (.*) discovered participants, (.*) timeouts, no delivery failures, and no negative acknowledgements")]
@@ -426,6 +475,30 @@ public sealed class RouterParameterRequestSteps
 			"The Participant Parameter Request did not return LAN MTA interface status Idle.");
 	}
 
+	[Then(@"the Participant Parameter Request status eventually shows rejected")]
+	public async Task ThenTheParticipantParameterRequestStatusEventuallyShowsRejected()
+	{
+		var statusAddress = this.response!.Headers.Location!;
+
+		for (var attempt = 0; attempt < 30; attempt++)
+		{
+			using var status = await this.client!.GetAsync(statusAddress);
+			if (status.StatusCode == HttpStatusCode.OK)
+			{
+				using var document = JsonDocument.Parse(await status.Content.ReadAsStringAsync());
+				if (document.RootElement.GetProperty("state").GetString() == "rejected")
+				{
+					return;
+				}
+			}
+
+			await Task.Delay(TimeSpan.FromSeconds(1));
+		}
+
+		throw new Xunit.Sdk.XunitException(
+			"The Participant Parameter Request did not return a negative acknowledgement.");
+	}
+
 	[Then(@"the Participant Parameter Request statuses show the LAN MTA Current values")]
 	public async Task ThenTheParticipantParameterRequestStatusesShowTheLanMtaCurrentValues()
 	{
@@ -442,6 +515,50 @@ public sealed class RouterParameterRequestSteps
 			[9] = "3",
 			[10] = "0 destinations",
 			[21] = "station-end-lan"
+		};
+
+		foreach (var (parameterNumber, expectedValue) in expectedValues)
+		{
+			using var status = await this.WaitForRouterParameterStatusAsync(
+				this.participantParameterStatusAddresses![parameterNumber]);
+
+			status.RootElement.GetProperty("parameterNumber").GetByte().Should().Be(parameterNumber);
+			status.RootElement.GetProperty("parameterValue").GetString().Should().Be(expectedValue);
+		}
+	}
+
+	[Then(@"the Participant Parameter Request statuses show the Printer UA Current values")]
+	public async Task ThenTheParticipantParameterRequestStatusesShowThePrinterUaCurrentValues()
+	{
+		var expectedValues = new Dictionary<byte, string>
+		{
+			[1] = "2",
+			[2] = "Printer (4)",
+			[3] = "26.100.25",
+			[21] = "26.100.0-26.100.63",
+			[22] = "true",
+			[23] = "0 entries",
+			[24] = "false"
+		};
+
+		foreach (var (parameterNumber, expectedValue) in expectedValues)
+		{
+			using var status = await this.WaitForRouterParameterStatusAsync(
+				this.participantParameterStatusAddresses![parameterNumber]);
+
+			status.RootElement.GetProperty("parameterNumber").GetByte().Should().Be(parameterNumber);
+			status.RootElement.GetProperty("parameterValue").GetString().Should().Be(expectedValue);
+		}
+	}
+
+	[Then(@"the Participant Parameter Request statuses show the Network Management UA Current values")]
+	public async Task ThenTheParticipantParameterRequestStatusesShowTheNetworkManagementUaCurrentValues()
+	{
+		var expectedValues = new Dictionary<byte, string>
+		{
+			[1] = "25",
+			[2] = "Network Management UA (12)",
+			[3] = "26.100.25"
 		};
 
 		foreach (var (parameterNumber, expectedValue) in expectedValues)
@@ -603,6 +720,9 @@ public sealed class RouterParameterRequestSteps
 						? "--InventoryScan:MaximumConcurrentProbes=12"
 						: "--InventoryScan:MaximumConcurrentProbes=8",
 					"--Parameters:router-level1-password=FIRE1"
+					, "--Parameters:router-level2-password=TESTL2",
+					"--Parameters:router-level3-password=TESTL3",
+					"--Parameters:router-level4-password=TESTL4"
 				]);
 
 		var application = await appHost.BuildAsync();

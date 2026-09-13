@@ -14,6 +14,7 @@ public sealed class NodeManagerParticipantIngressReceiver(
 {
 	private static readonly ParameterNumber PortNumberParameterNumber = ParameterNumber.FromValue(1);
 	private static readonly ParameterNumber AgentTypeParameterNumber = ParameterNumber.FromValue(2);
+	private static readonly ParameterNumber ControlAddressParameterNumber = ParameterNumber.FromValue(3);
 
 	public async Task ReceiveAsync(Envelope envelope, CancellationToken cancellationToken)
 	{
@@ -25,7 +26,8 @@ public sealed class NodeManagerParticipantIngressReceiver(
 			envelope.Contents is not ParameterRequest parameterRequest ||
 			parameterRequest.ParameterTable != ParameterTable.Current ||
 			(parameterRequest.ParameterNumber != PortNumberParameterNumber &&
-				parameterRequest.ParameterNumber != AgentTypeParameterNumber))
+				parameterRequest.ParameterNumber != AgentTypeParameterNumber &&
+				parameterRequest.ParameterNumber != ControlAddressParameterNumber))
 		{
 			await responses.ReceiveAsync(envelope, cancellationToken);
 			return;

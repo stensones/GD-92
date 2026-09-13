@@ -29,11 +29,30 @@ Feature: Router Parameter Request
     Then I am redirected to the pending Participant Parameter Request status
     And the Participant Parameter Request status eventually shows interface status Idle
 
+  Scenario: Rejecting an unknown LAN MTA Current Parameter
+    Given NodeManager is the User Agent at Brigade 26, Node 100, and Port 25
+    And its local Router is at Brigade 26, Node 100, and Port 0
+    When I request LAN MTA Current Parameter 20
+    Then I am redirected to the pending Participant Parameter Request status
+    And the Participant Parameter Request status eventually shows rejected
+
   Scenario: Browsing each LAN MTA Current Parameter
     Given NodeManager is the User Agent at Brigade 26, Node 100, and Port 25
     And its local Router is at Brigade 26, Node 100, and Port 0
     When I request every LAN MTA Current Parameter
     Then the Participant Parameter Request statuses show the LAN MTA Current values
+
+  Scenario: Browsing each Printer UA Current Parameter
+    Given NodeManager is the User Agent at Brigade 26, Node 100, and Port 25
+    And its local Router is at Brigade 26, Node 100, and Port 0
+    When I request every Printer UA Current Parameter
+    Then the Participant Parameter Request statuses show the Printer UA Current values
+
+  Scenario: Browsing each Network Management UA Current Parameter
+    Given NodeManager is the User Agent at Brigade 26, Node 100, and Port 25
+    And its local Router is at Brigade 26, Node 100, and Port 0
+    When I request every Network Management UA Current Parameter
+    Then the Participant Parameter Request statuses show the Network Management UA Current values
 
   Scenario: Presenting a Node Login form
     When I open NodeManager
@@ -67,11 +86,11 @@ Feature: Router Parameter Request
     And I select Discover local participants
     Then I am redirected to a pending Inventory Scan status
     And the completed Inventory Scan lists Router port 0, LAN MTA port 1, Printer User Agent port 2, and Network Management User Agent port 25
-    And NodeManager presents Router Parameter selection and result areas after Inventory Scan completion
+    And NodeManager presents Parameter selection and result areas for every discovered participant
     When I select View parameters for the discovered Router
     Then NodeManager lists the local Router Current Parameters with their received values
     And NodeManager redacts the local Router Password Parameters
-    And NodeManager marks Parameter listing as unavailable for other discovered participants
+    And NodeManager presents Current Parameter catalogues for LAN MTA, Printer UA, and Network Management UA
 
   Scenario: Logging on a User-Agent at the local Router
     Given NodeManager is the User Agent at Brigade 26, Node 100, and Port 25

@@ -19,6 +19,31 @@ public sealed class RouterSettingsTests
 	}
 
 	[Fact]
+	public void Provides_initial_passwords_for_all_four_levels()
+	{
+		var passwords = Enumerable.Range(0, 4)
+			.Select(_ => Guid.NewGuid().ToString("N")[..10])
+			.ToArray();
+		passwords.Should().OnlyHaveUniqueItems();
+		var configuration = CreateConfiguration(
+			("Router:InitialLevel1Password", passwords[0]),
+			("Router:InitialLevel2Password", passwords[1]),
+			("Router:InitialLevel3Password", passwords[2]),
+			("Router:InitialLevel4Password", passwords[3]));
+
+		var settings = RouterSettings.FromConfiguration(configuration);
+
+		new[]
+		{
+			settings.InitialLevel1Password,
+			settings.InitialLevel2Password,
+			settings.InitialLevel3Password,
+			settings.InitialLevel4Password
+		}.Should().Equal(passwords.Select(password =>
+			PasswordValue.FromValue(SevenBitAsciiString.FromValue(password))));
+	}
+
+	[Fact]
 	public void Provides_typed_initial_no_acknowledgement_timeout_and_retries()
 	{
 		var configuration = CreateConfiguration(
@@ -74,6 +99,9 @@ public sealed class RouterSettingsTests
 			["Router:NetworkManagerAddress2:Node"] = "100",
 			["Router:NetworkManagerAddress2:Port"] = "25",
 			["Router:ProtocolVersion"] = "2",
+			["Router:InitialLevel2Password"] = Guid.NewGuid().ToString("N")[..10],
+			["Router:InitialLevel3Password"] = Guid.NewGuid().ToString("N")[..10],
+			["Router:InitialLevel4Password"] = Guid.NewGuid().ToString("N")[..10],
 			["Router:NoAcknowledgementTimeout"] = "5",
 			["Router:Retries"] = "3",
 			["Router:ManualAcknowledgementTimeout"] = "60"

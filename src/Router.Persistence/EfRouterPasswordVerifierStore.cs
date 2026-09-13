@@ -2,7 +2,7 @@ using Stensones.GD92.Fields;
 
 namespace Router.Persistence;
 
-public sealed class EfRouterPasswordVerifierStore : IRouterLevel1PasswordVerifierStore
+public sealed class EfRouterPasswordVerifierStore : IRouterPasswordVerifierStore
 {
 	private readonly RouterDbContext context;
 
@@ -13,8 +13,11 @@ public sealed class EfRouterPasswordVerifierStore : IRouterLevel1PasswordVerifie
 
 	public async ValueTask<PasswordVerifier?> GetAsync(
 		ParameterTable parameterTable,
+		ParameterNumber parameterNumber,
 		CancellationToken cancellationToken = default)
 	{
+		EnsurePasswordParameterNumber(parameterNumber);
+
 		var parameterSet = await PersistentRouterParameterSets.FindAsync(
 			this.context,
 			parameterTable,
@@ -25,7 +28,7 @@ public sealed class EfRouterPasswordVerifierStore : IRouterLevel1PasswordVerifie
 		}
 
 		var record = await this.context.PasswordVerifiers.FindAsync(
-			[parameterSet.Id, RouterParameterCatalogue.Level1PasswordNumber.Value],
+			[parameterSet.Id, parameterNumber.Value],
 			cancellationToken);
 
 		return record is null ? null : PasswordVerifier.FromStoredData(
@@ -38,9 +41,11 @@ public sealed class EfRouterPasswordVerifierStore : IRouterLevel1PasswordVerifie
 
 	public async ValueTask StoreAsync(
 		ParameterTable parameterTable,
+		ParameterNumber parameterNumber,
 		PasswordVerifier passwordVerifier,
 		CancellationToken cancellationToken = default)
 	{
+		EnsurePasswordParameterNumber(parameterNumber);
 		ArgumentNullException.ThrowIfNull(passwordVerifier);
 
 		var parameterSet = await PersistentRouterParameterSets.FindAsync(
@@ -51,7 +56,7 @@ public sealed class EfRouterPasswordVerifierStore : IRouterLevel1PasswordVerifie
 				"A password verifier requires an existing persistent Router Parameter Set.");
 		var data = passwordVerifier.ToStoredData();
 		var record = await this.context.PasswordVerifiers.FindAsync(
-			[parameterSet.Id, RouterParameterCatalogue.Level1PasswordNumber.Value],
+			[parameterSet.Id, parameterNumber.Value],
 			cancellationToken);
 
 		if (record is null)
@@ -59,7 +64,7 @@ public sealed class EfRouterPasswordVerifierStore : IRouterLevel1PasswordVerifie
 			this.context.PasswordVerifiers.Add(new PasswordVerifierRecord
 			{
 				ParameterSetId = parameterSet.Id,
-				ParameterNumber = RouterParameterCatalogue.Level1PasswordNumber.Value,
+				ParameterNumber = parameterNumber.Value,
 				Version = data.Version.ToDatabaseValue(),
 				WorkFactor = data.WorkFactor.ToDatabaseValue(),
 				Salt = data.Salt.ToDatabaseValue(),
@@ -76,5 +81,15 @@ public sealed class EfRouterPasswordVerifierStore : IRouterLevel1PasswordVerifie
 		parameterSet.Revision++;
 
 		await this.context.SaveChangesAsync(cancellationToken);
+	}
+
+	private static void EnsurePasswordParameterNumber(ParameterNumber parameterNumber)
+	{
+		if (!RouterParameterCatalogue.IsPasswordNumber(parameterNumber))
+		{
+			throw new ArgumentOutOfRangeException(
+				nameof(parameterNumber),
+				"Only Router Password Parameters 5 through 8 have password verifiers.");
+		}
 	}
 }

@@ -47,32 +47,33 @@ public sealed class RouterParameterReadTests
 	}
 
 	[Fact]
-	public async Task Returns_the_Level1_Password_as_a_redacted_Password()
+	public async Task Returns_each_password_parameter_as_a_redacted_Password()
 	{
 		var localAddress = RouterParameterModuleTestSupport.CreateAddress(26, 100, 0);
 		var parameterRead = new RouterParameterRead(
 			localAddress,
 			RouterParameterModuleTestSupport.ProtocolVersion,
 			new RouterCurrentParameterProjectionSource());
-		var request = Envelope.FromValues(
-			RouterParameterModuleTestSupport.CreateAddress(26, 100, 25),
-			Destinations.FromAddresses(localAddress),
-			ProtocolAndPriority.FromValues(
-				MessagePriority.FromValue(MessagePriorityLevel.FromValue(3)),
-				RouterParameterModuleTestSupport.ProtocolVersion),
-			AcknowledgementAndSequence.FromValues(
-				SequenceNumber.FromValue(MessageSequenceIdentifier.FromValue(7)),
-				AcknowledgementRequest.Requested),
-			ParameterRequest.FromFields(
-				ParameterTable.Current,
-				RouterParameterCatalogue.Level1PasswordNumber));
+		foreach (var number in RouterParameterCatalogue.PasswordNumbers)
+		{
+			var request = Envelope.FromValues(
+				RouterParameterModuleTestSupport.CreateAddress(26, 100, 25),
+				Destinations.FromAddresses(localAddress),
+				ProtocolAndPriority.FromValues(
+					MessagePriority.FromValue(MessagePriorityLevel.FromValue(3)),
+					RouterParameterModuleTestSupport.ProtocolVersion),
+				AcknowledgementAndSequence.FromValues(
+					SequenceNumber.FromValue(MessageSequenceIdentifier.FromValue(7)),
+					AcknowledgementRequest.Requested),
+				ParameterRequest.FromFields(ParameterTable.Current, number));
 
-		var response = await parameterRead.HandleAsync(request, CancellationToken.None);
+			var response = await parameterRead.HandleAsync(request, CancellationToken.None);
 
-		var buffer = new EncodedMessageBuffer(
-			response!.Contents.Should().BeOfType<Parameter>().Which.ParameterValue.ToWireValue());
-		var password = Password.FromEncodedMessageBuffer(ref buffer);
-		password.Value.Value.Value.Should().Be("PASSWORD");
+			var buffer = new EncodedMessageBuffer(
+				response!.Contents.Should().BeOfType<Parameter>().Which.ParameterValue.ToWireValue());
+			var password = Password.FromEncodedMessageBuffer(ref buffer);
+			password.Value.Value.Value.Should().Be("PASSWORD");
+		}
 	}
 
 	[Fact]
@@ -281,7 +282,9 @@ public sealed class Level1PasswordModificationTests
 		var response = await handling;
 
 		response!.Contents.Should().BeOfType<Acknowledgement>();
-		store.StoredValues.Should().ContainKey(ParameterTable.NonVolatile);
+		store.StoredValues.Should().ContainKey((
+			ParameterTable.NonVolatile,
+			RouterParameterCatalogue.Level1PasswordNumber));
 	}
 
 	[Fact]
@@ -409,6 +412,10 @@ internal static class RouterParameterModuleTestSupport
 		CommunicationsAddress localAddress,
 		byte? brigade = null)
 	{
+		var level1PasswordVerifier = PasswordVerifier.Create(
+			PasswordValue.FromValue(SevenBitAsciiString.FromValue("FIRE")),
+			PasswordVerifierWorkFactor.Default);
+
 		return RouterCurrentParameterProjection.FromNonVolatileParameters(
 			brigade is null
 				? localAddress.Brigade.Value
@@ -418,9 +425,10 @@ internal static class RouterParameterModuleTestSupport
 				Password.FromValue(
 					PasswordValue.FromValue(SevenBitAsciiString.FromValue(string.Empty))),
 				localAddress),
-			PasswordVerifier.Create(
-				PasswordValue.FromValue(SevenBitAsciiString.FromValue("FIRE")),
-				PasswordVerifierWorkFactor.Default),
+			level1PasswordVerifier,
+			level1PasswordVerifier,
+			level1PasswordVerifier,
+			level1PasswordVerifier,
 			NoAcknowledgementTimeout.FromValue(Word8.FromValue(5)),
 			Retries.FromValue(Word8.FromValue(3)));
 	}
@@ -434,24 +442,26 @@ internal static class RouterParameterModuleTestSupport
 	}
 }
 
-internal class InMemoryPasswordVerifierStore : IRouterLevel1PasswordVerifierStore
+internal class InMemoryPasswordVerifierStore : IRouterPasswordVerifierStore
 {
-	public Dictionary<ParameterTable, PasswordVerifier> StoredValues { get; } = [];
+	public Dictionary<(ParameterTable Table, ParameterNumber Number), PasswordVerifier> StoredValues { get; } = [];
 
 	public ValueTask<PasswordVerifier?> GetAsync(
 		ParameterTable parameterTable,
+		ParameterNumber parameterNumber,
 		CancellationToken cancellationToken = default)
 	{
-		this.StoredValues.TryGetValue(parameterTable, out var passwordVerifier);
+		this.StoredValues.TryGetValue((parameterTable, parameterNumber), out var passwordVerifier);
 		return ValueTask.FromResult(passwordVerifier);
 	}
 
 	public virtual ValueTask StoreAsync(
 		ParameterTable parameterTable,
+		ParameterNumber parameterNumber,
 		PasswordVerifier passwordVerifier,
 		CancellationToken cancellationToken = default)
 	{
-		this.StoredValues[parameterTable] = passwordVerifier;
+		this.StoredValues[(parameterTable, parameterNumber)] = passwordVerifier;
 		return ValueTask.CompletedTask;
 	}
 }
@@ -466,12 +476,13 @@ internal sealed class BlockingPasswordVerifierStore : InMemoryPasswordVerifierSt
 
 	public override async ValueTask StoreAsync(
 		ParameterTable parameterTable,
+		ParameterNumber parameterNumber,
 		PasswordVerifier passwordVerifier,
 		CancellationToken cancellationToken = default)
 	{
 		this.StoreStarted.TrySetResult();
 		await this.storeCompleted.Task.WaitAsync(cancellationToken);
-		await base.StoreAsync(parameterTable, passwordVerifier, cancellationToken);
+		await base.StoreAsync(parameterTable, parameterNumber, passwordVerifier, cancellationToken);
 	}
 
 	public void CompleteStore()

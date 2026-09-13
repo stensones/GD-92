@@ -23,6 +23,18 @@ var routerLevel1Password = builder.AddParameterFromConfiguration(
 	"router-level1-password",
 	"Parameters:router-level1-password",
 	secret: true);
+var routerLevel2Password = builder.AddParameterFromConfiguration(
+	"router-level2-password",
+	"Parameters:router-level2-password",
+	secret: true);
+var routerLevel3Password = builder.AddParameterFromConfiguration(
+	"router-level3-password",
+	"Parameters:router-level3-password",
+	secret: true);
+var routerLevel4Password = builder.AddParameterFromConfiguration(
+	"router-level4-password",
+	"Parameters:router-level4-password",
+	secret: true);
 var includeBusMtaAndIoUa = builder.Configuration.GetValue(
 	"StationEnd:IncludeBusMTAAndIOUA",
 	true);
@@ -41,6 +53,9 @@ if (useExternalPostgres)
 		.WaitFor(rabbitMq)
 		.WithReference(routerDatabase)
 		.WithEnvironment("Router__InitialLevel1Password", routerLevel1Password)
+		.WithEnvironment("Router__InitialLevel2Password", routerLevel2Password)
+		.WithEnvironment("Router__InitialLevel3Password", routerLevel3Password)
+		.WithEnvironment("Router__InitialLevel4Password", routerLevel4Password)
 		.WithHttpEndpoint(name: "http", env: "ASPNETCORE_HTTP_PORTS")
 		.WithHttpHealthCheck("/health");
 
@@ -60,6 +75,7 @@ if (useExternalPostgres)
 		.WaitFor(rabbitMq)
 		.WithReference(nodeManagerDatabase)
 		.WithHttpEndpoint(name: "http", env: "ASPNETCORE_HTTP_PORTS")
+		.WithHttpsEndpoint(name: "https", env: "ASPNETCORE_HTTPS_PORTS")
 		.WithHttpHealthCheck("/health")
 		.WithEnvironment(
 			"RouterParameterRequest__LocalRouter__Port",
@@ -102,6 +118,9 @@ else
 		.WithReference(routerDatabase)
 		.WaitFor(postgres)
 		.WithEnvironment("Router__InitialLevel1Password", routerLevel1Password)
+		.WithEnvironment("Router__InitialLevel2Password", routerLevel2Password)
+		.WithEnvironment("Router__InitialLevel3Password", routerLevel3Password)
+		.WithEnvironment("Router__InitialLevel4Password", routerLevel4Password)
 		.WithHttpEndpoint(name: "http", env: "ASPNETCORE_HTTP_PORTS")
 		.WithHttpHealthCheck("/health");
 
@@ -122,6 +141,7 @@ else
 		.WaitFor(rabbitMq)
 		.WithReference(nodeManagerDatabase)
 		.WithHttpEndpoint(name: "http", env: "ASPNETCORE_HTTP_PORTS")
+		.WithHttpsEndpoint(name: "https", env: "ASPNETCORE_HTTPS_PORTS")
 		.WithHttpHealthCheck("/health")
 		.WithEnvironment(
 			"RouterParameterRequest__LocalRouter__Port",
