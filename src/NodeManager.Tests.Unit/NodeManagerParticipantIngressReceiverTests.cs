@@ -21,7 +21,8 @@ public sealed class NodeManagerParticipantIngressReceiverTests
 		var projectionSource = new NodeManagerCurrentParameterProjectionSource();
 		projectionSource.Publish(NodeManagerCurrentParameterProjection.FromNonVolatileParameters(
 			ParameterValue.FromWireValue([25]),
-			ParameterValue.FromWireValue([12])));
+			ParameterValue.FromWireValue([12]),
+			Address(26, 100, 0)));
 		var submitted = new RecordingRouterIngress();
 		var receiver = new NodeManagerParticipantIngressReceiver(
 			new RouterParameterRequestSettings(nodeManager, Address(26, 100, 0)),
@@ -49,16 +50,23 @@ public sealed class NodeManagerParticipantIngressReceiverTests
 		var projectionSource = new NodeManagerCurrentParameterProjectionSource();
 		projectionSource.Publish(NodeManagerCurrentParameterProjection.FromNonVolatileParameters(
 			ParameterValue.FromWireValue([25]),
-			ParameterValue.FromWireValue([12])));
+			ParameterValue.FromWireValue([12]),
+			Address(26, 100, 0)));
 		var receiver = new NodeManagerParticipantIngressReceiver(
 			new RouterParameterRequestSettings(nodeManager, Address(26, 100, 0)),
 			projectionSource,
 			responses,
 			new RecordingRouterIngress());
-		var envelope = CreateCurrentParameterRequest(
+		var envelope = Envelope.FromValues(
 			Address(26, 100, 24),
-			nodeManager,
-			parameterNumber: 3);
+			Destinations.FromAddresses(nodeManager),
+			ProtocolAndPriority.FromValues(
+				MessagePriority.FromValue(MessagePriorityLevel.FromValue(3)),
+				ProtocolVersion.FromValue(ProtocolVersionNumber.FromValue(2))),
+			AcknowledgementAndSequence.FromValues(
+				SequenceNumber.FromValue(MessageSequenceIdentifier.FromValue(3)),
+				AcknowledgementRequest.NotRequested),
+			Acknowledgement.Create());
 
 		await receiver.ReceiveAsync(envelope, CancellationToken.None);
 
