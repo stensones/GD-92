@@ -1,6 +1,6 @@
+using LANMTA.Persistence;
 using Stensones.GD92.Fields;
 using Stensones.GD92.Messages;
-using LANMTA.Persistence;
 using Stensones.GD92.Transport.RabbitMQ;
 
 namespace LANMTA;
@@ -8,6 +8,7 @@ namespace LANMTA;
 public sealed class LanMtaParameterReceiver(
 	LanMtaSettings settings,
 	LanMtaCurrentParameterProjectionSource currentParameters,
+	ILanMtaRetainedParameterReader retainedParameters,
 	IRouterIngress routerIngress) : ILocalParticipantIngressReceiver
 {
 	public async Task ReceiveAsync(Envelope envelope, CancellationToken cancellationToken)
@@ -22,11 +23,12 @@ public sealed class LanMtaParameterReceiver(
 			return;
 		}
 
-		var projection = currentParameters.GetCurrent();
-		if (parameterRequest.ParameterTable != ParameterTable.Current ||
-			!projection.TryGet(parameterRequest.ParameterNumber, out var parameterValue))
+		var parameterValue = await this.GetParameterValueAsync(parameterRequest, cancellationToken);
+		if (parameterValue is null)
 		{
-			var reasonCode = parameterRequest.ParameterTable != ParameterTable.Current
+			var reasonCode = parameterRequest.ParameterTable != ParameterTable.Current &&
+				parameterRequest.ParameterTable != ParameterTable.NonVolatile &&
+				parameterRequest.ParameterTable != ParameterTable.Permanent
 				? ParameterReasonCode.InvalidTable
 				: ParameterReasonCode.InvalidParameter;
 			var rejection = Envelope.CreateNegativeAcknowledgement(
@@ -48,5 +50,26 @@ public sealed class LanMtaParameterReceiver(
 				parameterValue));
 
 		await routerIngress.SubmitAsync(response, cancellationToken);
+	}
+
+	private async ValueTask<ParameterValue?> GetParameterValueAsync(
+		ParameterRequest parameterRequest,
+		CancellationToken cancellationToken)
+	{
+		if (parameterRequest.ParameterTable == ParameterTable.Current)
+		{
+			var projection = currentParameters.GetCurrent();
+			return projection.TryGet(parameterRequest.ParameterNumber, out var currentValue)
+				? currentValue
+				: null;
+		}
+
+		return parameterRequest.ParameterTable == ParameterTable.NonVolatile ||
+			parameterRequest.ParameterTable == ParameterTable.Permanent
+			? await retainedParameters.GetAsync(
+				parameterRequest.ParameterTable,
+				parameterRequest.ParameterNumber,
+				cancellationToken)
+			: null;
 	}
 }

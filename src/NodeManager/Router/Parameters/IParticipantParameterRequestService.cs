@@ -4,8 +4,9 @@ namespace NodeManager.Router.Parameters;
 
 public interface IParticipantParameterRequestService
 {
-	Task<RouterParameterRequestStatusIdentifier> RequestCurrentParameter(
+	Task<RouterParameterRequestStatusIdentifier> RequestParameter(
 		CommunicationsAddress destination,
+		ParameterTable parameterTable,
 		ParameterNumber parameterNumber,
 		CancellationToken cancellationToken);
 }

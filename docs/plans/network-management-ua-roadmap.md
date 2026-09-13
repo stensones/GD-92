@@ -27,7 +27,9 @@ The Node Manager currently:
 - communicates with its configured local Router through RabbitMQ ingress;
 - discovers ports 1-63 on its local Communications Node by reading Current
   Parameter 2 (`agent_type`);
-- requests modeled scalar Current Parameters from discovered participants;
+- lets an operator select a Parameter Table before requesting a modeled scalar
+  Parameter; LAN MTA supports its Current, Non-Volatile, and Permanent scalar
+  reads through this path;
 - requests Router Parameter values and performs Router logon/logoff;
 - correlates expected `Parameter`, `ACK`, and `NAK` responses with retry and
   timeout status for operator polling;

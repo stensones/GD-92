@@ -32,6 +32,26 @@ public sealed class RouterParametersController(
 			$"/router/parameters/current/{parameterNumber}/status/{statusIdentifier}");
 	}
 
+	[HttpPost("{parameterTable}/{parameterNumber}")]
+	public async Task<IActionResult> RequestParameter(
+		string parameterTable,
+		byte parameterNumber,
+		CancellationToken cancellationToken)
+	{
+		if (!ParameterTableRoute.TryParse(parameterTable, out var table))
+		{
+			return this.BadRequest("Parameter Table must be permanent, non-volatile, or current.");
+		}
+
+		var statusIdentifier = await routerParameterRequests.RequestLocalRouterParameter(
+			table,
+			ParameterNumber.FromValue(parameterNumber),
+			cancellationToken);
+
+		return new SeeOtherRedirectResult(
+			$"/router/parameters/{parameterTable}/{parameterNumber}/status/{statusIdentifier}");
+	}
+
 	[HttpPost("logon")]
 	[RequireHttps]
 	public async Task<IActionResult> LogOn(
@@ -73,6 +93,12 @@ public sealed class RouterParametersController(
 
 	[HttpGet("current/{parameterNumber}/status/{identifier}")]
 	public IActionResult CurrentStatus(byte parameterNumber, string identifier)
+	{
+		return this.Status(identifier, ParameterNumber.FromValue(parameterNumber));
+	}
+
+	[HttpGet("{parameterTable}/{parameterNumber}/status/{identifier}")]
+	public IActionResult ParameterStatus(string parameterTable, byte parameterNumber, string identifier)
 	{
 		return this.Status(identifier, ParameterNumber.FromValue(parameterNumber));
 	}

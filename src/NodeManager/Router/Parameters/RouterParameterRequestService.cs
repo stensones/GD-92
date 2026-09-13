@@ -26,10 +26,23 @@ public sealed class RouterParameterRequestService(
 		ParameterNumber parameterNumber,
 		CancellationToken cancellationToken)
 	{
+		return await this.RequestLocalRouterParameter(
+			ParameterTable.Current,
+			parameterNumber,
+			cancellationToken);
+	}
+
+	public async Task<RouterParameterRequestStatusIdentifier> RequestLocalRouterParameter(
+		ParameterTable parameterTable,
+		ParameterNumber parameterNumber,
+		CancellationToken cancellationToken)
+	{
+		ArgumentNullException.ThrowIfNull(parameterTable);
 		ArgumentNullException.ThrowIfNull(parameterNumber);
 
-		return await participantParameterRequests.RequestCurrentParameter(
+		return await participantParameterRequests.RequestParameter(
 			settings.LocalRouter,
+			parameterTable,
 			parameterNumber,
 			cancellationToken);
 	}

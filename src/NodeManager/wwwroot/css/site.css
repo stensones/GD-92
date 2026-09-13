@@ -321,7 +321,8 @@ label {
     font-weight: 650;
 }
 
-input {
+input,
+select {
     width: 100%;
     min-height: 2.45rem;
     padding: .45rem .6rem;
@@ -330,6 +331,11 @@ input {
     color: var(--text);
     background: white;
     font: inherit;
+}
+
+.parameter-table-selector {
+    width: min(100%, 18rem);
+    margin-top: 1rem;
 }
 
 button {

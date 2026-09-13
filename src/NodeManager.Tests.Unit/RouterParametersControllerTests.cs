@@ -342,6 +342,11 @@ public sealed class RouterParametersControllerTests
 			return Task.FromResult(statusIdentifier);
 		}
 
+		public Task<RouterParameterRequestStatusIdentifier> RequestLocalRouterParameter(
+			ParameterTable parameterTable,
+			ParameterNumber parameterNumber,
+			CancellationToken cancellationToken) => Task.FromResult(statusIdentifier);
+
 		public Task<RouterParameterRequestStatusIdentifier> RequestLocalRouterLogon(
 			CommunicationsAddress communicationsAddress,
 			PasswordValue password,

@@ -54,6 +54,24 @@ Feature: Router Parameter Request
     When I request every Network Management UA Current Parameter
     Then the Participant Parameter Request statuses show the Network Management UA Current values
 
+  Scenario: Browsing a LAN MTA Non-Volatile Parameter
+    Given NodeManager is the User Agent at Brigade 26, Node 100, and Port 25
+    And its local Router is at Brigade 26, Node 100, and Port 0
+    When I open NodeManager
+    Then NodeManager presents a Parameter Table selector
+    When I request LAN MTA Non-Volatile Parameter 1
+    Then I am redirected to the pending Participant Parameter Request status
+    And the Participant Parameter Request status eventually shows retained value 1
+
+  Scenario: Browsing a LAN MTA Permanent Parameter
+    Given NodeManager is the User Agent at Brigade 26, Node 100, and Port 25
+    And its local Router is at Brigade 26, Node 100, and Port 0
+    When I open NodeManager
+    Then NodeManager presents a Parameter Table selector
+    When I request LAN MTA Permanent Parameter 1
+    Then I am redirected to the pending Participant Parameter Request status
+    And the Participant Parameter Request status eventually shows retained value 1
+
   Scenario: Presenting a Node Login form
     When I open NodeManager
     Then NodeManager presents a Node Login form that securely submits password, brigade, node, and port

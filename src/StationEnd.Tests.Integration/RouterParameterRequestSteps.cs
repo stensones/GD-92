@@ -1,7 +1,11 @@
 using Aspire.Hosting;
+using Aspire.Hosting.ApplicationModel;
 using Aspire.Hosting.Testing;
 using AwesomeAssertions;
+using Microsoft.Extensions.DependencyInjection;
 using Npgsql;
+using RabbitMQ.Client;
+using RabbitMQ.Client.Exceptions;
 using Reqnroll;
 using System.Net;
 using System.Text.Json;
@@ -62,6 +66,26 @@ public sealed class RouterParameterRequestSteps
 
 		this.response = await this.client!.PostAsync(
 			$"/participants/1/parameters/current/{parameterNumber}",
+			null);
+	}
+
+	[When(@"I request LAN MTA Non-Volatile Parameter (.*)")]
+	public async Task WhenIRequestLanMtaNonVolatileParameter(byte parameterNumber)
+	{
+		await this.EnsureApplicationStartedAsync();
+
+		this.response = await this.client!.PostAsync(
+			$"/participants/1/parameters/non-volatile/{parameterNumber}",
+			null);
+	}
+
+	[When(@"I request LAN MTA Permanent Parameter (.*)")]
+	public async Task WhenIRequestLanMtaPermanentParameter(byte parameterNumber)
+	{
+		await this.EnsureApplicationStartedAsync();
+
+		this.response = await this.client!.PostAsync(
+			$"/participants/1/parameters/permanent/{parameterNumber}",
 			null);
 	}
 
@@ -303,6 +327,17 @@ public sealed class RouterParameterRequestSteps
 			"/participants/${participant.port}/parameters/current/${parameter.number}");
 	}
 
+	[Then(@"NodeManager presents a Parameter Table selector")]
+	public void ThenNodeManagerPresentsAParameterTableSelector()
+	{
+		this.pageContent.Should().Contain("id=\"participant-parameter-table\"");
+		this.pageContent.Should().Contain("""value="permanent">Permanent</option>""");
+		this.pageContent.Should().Contain("""value="non-volatile">Non-Volatile</option>""");
+		this.pageContent.Should().Contain("""value="current" selected>Current</option>""");
+		this.pageContent.Should().Contain(
+			"/participants/${participant.port}/parameters/${parameterTable}/${parameter.number}");
+	}
+
 	[Then(@"the completed Inventory Scan summary shows (.*) discovered participants, (.*) timeouts, no delivery failures, and no negative acknowledgements")]
 	public async Task ThenTheCompletedInventoryScanSummaryShows(
 		int discoveredParticipants,
@@ -473,6 +508,37 @@ public sealed class RouterParameterRequestSteps
 
 		throw new Xunit.Sdk.XunitException(
 			"The Participant Parameter Request did not return LAN MTA interface status Idle.");
+	}
+
+	[Then(@"the Participant Parameter Request status eventually shows retained value (.*)")]
+	public async Task ThenTheParticipantParameterRequestStatusEventuallyShowsRetainedValue(
+		byte expectedValue)
+	{
+		var statusAddress = this.response!.Headers.Location!;
+		string? lastStatus = null;
+
+		for (var attempt = 0; attempt < 30; attempt++)
+		{
+			using var status = await this.client!.GetAsync(statusAddress);
+			var content = await status.Content.ReadAsStringAsync();
+			lastStatus = $"{status.StatusCode}: {content}";
+			if (status.StatusCode == HttpStatusCode.OK)
+			{
+				using var result = JsonDocument.Parse(content);
+				if (result.RootElement.GetProperty("state").GetString() == "received" &&
+					result.RootElement.GetProperty("parameterValue").GetString() ==
+					expectedValue.ToString())
+				{
+					return;
+				}
+			}
+
+			await Task.Delay(TimeSpan.FromSeconds(1));
+		}
+
+		throw new Xunit.Sdk.XunitException(
+			$"The Participant Parameter Request did not return retained value {expectedValue}. " +
+			$"Last status: {lastStatus}{await this.GetResourceLogAsync("LAN-MTA")}");
 	}
 
 	[Then(@"the Participant Parameter Request status eventually shows rejected")]
@@ -730,7 +796,16 @@ public sealed class RouterParameterRequestSteps
 		await StationEndApplicationStartup.WaitForHealthyAsync(
 			application,
 			"Router",
+			"LAN-MTA",
+			"Printer-UA",
 			"Node-Manager-UA");
+		var rabbitMqConnectionString = await application.GetConnectionStringAsync("RabbitMQ")
+			?? throw new InvalidOperationException(
+				"The test RabbitMQ connection string was not provided.");
+		await WaitForQueueConsumerAsync(
+			rabbitMqConnectionString,
+			"gd92.participant.26.100.1",
+			"LAN MTA local participant ingress");
 		return application;
 	}
 
@@ -788,6 +863,71 @@ public sealed class RouterParameterRequestSteps
 		{
 			BaseAddress = application.GetEndpoint("Node-Manager-UA")
 		};
+	}
+
+	private async Task<string> GetResourceLogAsync(string resourceName)
+	{
+		if (this.application is null)
+		{
+			return string.Empty;
+		}
+
+		var resourceLogger = this.application.Services.GetRequiredService<ResourceLoggerService>();
+		var lines = new List<string>();
+		await foreach (var batch in resourceLogger.GetAllAsync(resourceName))
+		{
+			lines.AddRange(batch.Select(line => line.Content));
+		}
+
+		return lines.Count == 0
+			? string.Empty
+			: $"{Environment.NewLine}{resourceName} log:{Environment.NewLine}" +
+				string.Join(Environment.NewLine, lines.TakeLast(50));
+	}
+
+	private static async Task WaitForQueueConsumerAsync(
+		string rabbitMqConnectionString,
+		string queueName,
+		string ingressName)
+	{
+		using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(30));
+		var factory = new ConnectionFactory
+		{
+			Uri = new Uri(rabbitMqConnectionString)
+		};
+
+		while (!timeout.IsCancellationRequested)
+		{
+			try
+			{
+				await using var connection = await factory.CreateConnectionAsync(timeout.Token);
+				await using var channel = await connection.CreateChannelAsync(
+					cancellationToken: timeout.Token);
+				var queue = await channel.QueueDeclarePassiveAsync(
+					queueName,
+					cancellationToken: timeout.Token);
+				if (queue.ConsumerCount > 0)
+				{
+					return;
+				}
+			}
+			catch (OperationInterruptedException)
+			{
+				// The listener has not declared its queue yet.
+			}
+
+			try
+			{
+				await Task.Delay(TimeSpan.FromMilliseconds(100), timeout.Token);
+			}
+			catch (OperationCanceledException) when (timeout.IsCancellationRequested)
+			{
+				break;
+			}
+		}
+
+		throw new Xunit.Sdk.XunitException(
+			$"{ingressName} did not start a RabbitMQ consumer within 30 seconds.");
 	}
 
 	private enum RouterParameterRequestApplicationProfile

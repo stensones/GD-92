@@ -11,27 +11,34 @@ public sealed class ParticipantParametersController(
 	IParticipantParameterRequestService participantParameterRequests,
 	ManagementTransactions managementTransactions) : Controller
 {
-	[HttpPost("{port}/parameters/current/{parameterNumber}")]
-	public async Task<IActionResult> RequestCurrentParameter(
+	[HttpPost("{port}/parameters/{parameterTable}/{parameterNumber}")]
+	public async Task<IActionResult> RequestParameter(
 		byte port,
+		string parameterTable,
 		byte parameterNumber,
 		CancellationToken cancellationToken)
 	{
+		if (!ParameterTableRoute.TryParse(parameterTable, out var table))
+		{
+			return this.BadRequest("Parameter Table must be permanent, non-volatile, or current.");
+		}
+
 		var destination = CommunicationsAddress.FromValues(
 			settings.MessageOriginator.Brigade,
 			settings.MessageOriginator.Node,
 			Port.FromValue(PortIdentifier.FromValue(port)));
-		var statusIdentifier = await participantParameterRequests.RequestCurrentParameter(
+		var statusIdentifier = await participantParameterRequests.RequestParameter(
 			destination,
+			table,
 			ParameterNumber.FromValue(parameterNumber),
 			cancellationToken);
 
 		return new SeeOtherRedirectResult(
-			$"/participants/{port}/parameters/current/{parameterNumber}/status/{statusIdentifier}");
+			$"/participants/{port}/parameters/{parameterTable}/{parameterNumber}/status/{statusIdentifier}");
 	}
 
-	[HttpGet("{port}/parameters/current/{parameterNumber}/status/{identifier}")]
-	public IActionResult CurrentStatus(byte port, byte parameterNumber, string identifier)
+	[HttpGet("{port}/parameters/{parameterTable}/{parameterNumber}/status/{identifier}")]
+	public IActionResult ParameterStatus(byte port, string parameterTable, byte parameterNumber, string identifier)
 	{
 		if (!RouterParameterRequestStatusIdentifier.TryParse(identifier, out var statusIdentifier))
 		{

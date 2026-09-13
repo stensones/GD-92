@@ -32,6 +32,7 @@ builder.AddNpgsqlDbContext<LanMtaDbContext>("lan-mta-database");
 builder.Services.AddScoped<IParticipantParameterStore, EfLanMtaParameterStore>();
 builder.Services.AddScoped<LanMtaParameterBootstrapper>();
 builder.Services.AddSingleton<LanMtaCurrentParameterProjectionSource>();
+builder.Services.AddSingleton<ILanMtaRetainedParameterReader, LanMtaRetainedParameterReader>();
 builder.Services.AddScoped<IRouterIngress, LanMtaRouterIngress>();
 builder.Services.AddScoped<ILocalParticipantIngressReceiver, LanMtaParameterReceiver>();
 

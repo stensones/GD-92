@@ -7,12 +7,14 @@ public sealed class ParticipantParameterRequestService(
 	RouterParameterRequestSettings settings,
 	IManagementTransactionService managementTransactions) : IParticipantParameterRequestService
 {
-	public async Task<RouterParameterRequestStatusIdentifier> RequestCurrentParameter(
+	public async Task<RouterParameterRequestStatusIdentifier> RequestParameter(
 		CommunicationsAddress destination,
+		ParameterTable parameterTable,
 		ParameterNumber parameterNumber,
 		CancellationToken cancellationToken)
 	{
 		ArgumentNullException.ThrowIfNull(destination);
+		ArgumentNullException.ThrowIfNull(parameterTable);
 		ArgumentNullException.ThrowIfNull(parameterNumber);
 
 		return await managementTransactions.SubmitAsync(
@@ -29,7 +31,7 @@ public sealed class ParticipantParameterRequestService(
 						sequenceNumber,
 						AcknowledgementRequest.Requested),
 					ParameterRequest.FromFields(
-						ParameterTable.Current,
+						parameterTable,
 						parameterNumber)),
 				ManagementTransactionKind.ParameterRequest),
 			cancellationToken);

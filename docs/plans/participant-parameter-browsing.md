@@ -12,9 +12,12 @@ selected Parameter Table. It does not enumerate a participant's catalogue. Node
 Manager therefore owns a static browse catalogue selected from the Agent Type
 obtained during Inventory Scan.
 
-The initial browser table is `Current`, because it is the effective operational
-Parameter Table. The browser will later allow `Permanent` and `Non-Volatile`
-selection because Message 61 permits any Parameter Table.
+The browser defaults to `Current`, because it is the effective operational
+Parameter Table, and lets the operator select `Permanent` or `Non-Volatile`
+because Message 61 permits any Parameter Table. LAN MTA currently supports
+scalar reads from all three tables; other participants advertise the same
+selection UI but must implement each table according to their owned Parameter
+semantics.
 
 Each selected scalar Parameter is requested in an individual Message 61. The
 participant returns Message 62 (`Parameter`) using the original sequence number
@@ -48,8 +51,9 @@ discovered remotely, and it does not create shared database ownership.
    participant's `View parameters` button to the local-participant request path.
 4. Add typed value formatting for scalar Parameters and structured, paged table
    browsing through Message 63.
-5. Add `Permanent` and `Non-Volatile` table selection, then support Parameter
-   modification as a separately authorised capability.
+5. Completed for LAN MTA scalar Parameters: add `Permanent` and
+   `Non-Volatile` table selection and participant-owned retained reads. Support
+   Parameter modification as a separately authorised capability.
 
 ## Acceptance criteria
 
