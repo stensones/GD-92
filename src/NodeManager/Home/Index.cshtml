@@ -5,33 +5,41 @@
 <div class="workspace" id="overview">
     <header class="workspace-header">
         <div>
-            <p class="eyebrow">Operational workspace</p>
-            <h1>Node Manager</h1>
+            <p class="eyebrow">Network Management UA</p>
+            <h1>Operational overview</h1>
             <p class="workspace-introduction">
-                Discover and manage participants on the local GD-92 communications node.
+                Discover local participants, inspect Current Parameters, and manage Router access.
             </p>
         </div>
-        <div class="workspace-context" aria-label="Current workspace context">
-            <span>Local node</span>
+        <div class="workspace-context" aria-label="Current management scope">
+            <span>Management scope</span>
             <strong>26.100</strong>
+            <small>Local Communications Node</small>
         </div>
     </header>
 
     <div class="dashboard-grid">
-        <section class="panel panel-compact" aria-labelledby="router-parameters">
-            <h2 id="router-parameters">Local Router parameters</h2>
-            <p>Request the configured Brigade or Agency number from the local Router.</p>
-
-            <form class="inline-action" id="router-brigade-request"
-                  action="/router/parameters/brigade-or-agency-number"
-                  method="post">
-                <button type="submit">Get Brigade or Agency number</button>
-            </form>
-
-            <p id="router-brigade-status" role="status" hidden></p>
+        <section class="panel panel-compact" aria-labelledby="current-capabilities">
+            <p class="panel-kicker">Current capability</p>
+            <h2 id="current-capabilities">Manage this local node</h2>
+            <dl class="scope-details">
+                <div>
+                    <dt>Node</dt>
+                    <dd>26.100</dd>
+                </div>
+                <div>
+                    <dt>Participant ports</dt>
+                    <dd>1-63</dd>
+                </div>
+            </dl>
+            <p>
+                Start with a Network scan, then select a discovered participant to inspect its
+                Current Parameter Table.
+            </p>
         </section>
 
         <section class="panel panel-compact" id="router-access" aria-labelledby="node-login">
+            <p class="panel-kicker">Administration</p>
             <h2 id="node-login">Node Login</h2>
             <p>Log on a User Agent at the local Router.</p>
 
@@ -58,9 +66,13 @@
             <p id="router-logon-status" role="status" hidden></p>
         </section>
 
-        <section class="panel panel-wide" id="participant-discovery" aria-labelledby="participant-discovery-heading">
-            <h2 id="participant-discovery-heading">Local participants</h2>
-            <p>Discover the Router, Message Transfer Agents, and User Agents at the local Communications Node.</p>
+        <section class="panel panel-wide" id="network" aria-labelledby="participant-discovery-heading">
+            <p class="panel-kicker">Network</p>
+            <h2 id="participant-discovery-heading">Local participant discovery</h2>
+            <p>
+                Scan the 63 participant ports on this Communications Node for the Router,
+                Message Transfer Agents, and User Agents.
+            </p>
 
             <form class="inline-action" id="router-participant-discovery" action="/router/participants/discovery" method="post">
                 <button id="router-participant-discovery-submit" type="submit">Discover local participants</button>
@@ -82,9 +94,13 @@
             <div id="router-participant-discovery-summary" hidden></div>
         </section>
 
-        <section class="panel panel-wide" aria-labelledby="router-parameter-list-heading">
+        <section class="panel panel-wide" id="parameters" aria-labelledby="router-parameter-list-heading">
+            <p class="panel-kicker">Parameters</p>
             <h2 id="router-parameter-list-heading">Participant Parameters</h2>
-            <p class="panel-description">Select <strong>View parameters</strong> on a discovered participant to inspect its Current Parameter Table.</p>
+            <p class="panel-description">
+                Select <strong>View parameters</strong> in Local participant discovery to inspect
+                the participant's Current Parameter Table.
+            </p>
             <p id="router-parameter-list-status" role="status" hidden></p>
             <table id="router-parameter-list" hidden>
                 <caption>Local Router Current Parameters</caption>
@@ -97,6 +113,20 @@
                 </thead>
                 <tbody></tbody>
             </table>
+        </section>
+
+        <section class="panel panel-wide" aria-labelledby="router-parameters">
+            <p class="panel-kicker">Parameters</p>
+            <h2 id="router-parameters">Local Router</h2>
+            <p>Request the configured Brigade or Agency number from the local Router.</p>
+
+            <form class="inline-action" id="router-brigade-request"
+                  action="/router/parameters/brigade-or-agency-number"
+                  method="post">
+                <button type="submit">Get Brigade or Agency number</button>
+            </form>
+
+            <p id="router-brigade-status" role="status" hidden></p>
         </section>
     </div>
 </div>

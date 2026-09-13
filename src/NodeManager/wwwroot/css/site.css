@@ -219,7 +219,8 @@ h2 {
 }
 
 .workspace-context span,
-.workspace-context strong {
+.workspace-context strong,
+.workspace-context small {
     display: block;
 }
 
@@ -227,6 +228,11 @@ h2 {
     color: var(--navy);
     font-family: Consolas, monospace;
     font-size: 1.05rem;
+}
+
+.workspace-context small {
+    margin-top: .1rem;
+    font-size: .7rem;
 }
 
 .dashboard-grid {
@@ -252,8 +258,44 @@ h2 {
     color: var(--text-muted);
 }
 
+.panel-kicker {
+    margin: 0 0 .35rem;
+    color: var(--teal) !important;
+    font-size: .7rem;
+    font-weight: 700;
+    letter-spacing: .1em;
+    text-transform: uppercase;
+}
+
 .panel-wide {
     grid-column: 1 / -1;
+}
+
+.scope-details {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: .75rem;
+    margin: 1rem 0;
+}
+
+.scope-details div {
+    padding: .65rem .75rem;
+    border-left: 3px solid var(--amber);
+    background: var(--surface-muted);
+}
+
+.scope-details dt {
+    color: var(--text-muted);
+    font-size: .72rem;
+    font-weight: 650;
+}
+
+.scope-details dd {
+    margin: .15rem 0 0;
+    color: var(--navy);
+    font-family: Consolas, monospace;
+    font-size: .95rem;
+    font-weight: 700;
 }
 
 form {
@@ -417,6 +459,10 @@ td button {
     .dashboard-grid {
         grid-template-columns: 1fr;
         padding-right: 0;
+    }
+
+    .scope-details {
+        grid-template-columns: 1fr;
     }
 
     .panel-wide {
