@@ -276,10 +276,25 @@ public sealed class RouterParametersController(
 		return parameterNumber?.Value switch
 		{
 			1 or 12 or 19 => FormatSingleOctet(parameterValue),
+			2 => FormatWord16(parameterValue),
 			4 => FormatCurrentPassword(parameterValue),
 			5 => "PASSWORD",
 			_ => null
 		};
+	}
+
+	private static string FormatWord16(ParameterValue parameterValue)
+	{
+		var buffer = new EncodedMessageBuffer(parameterValue.ToWireValue());
+		var value = (ushort)buffer.ReadUnsignedBits(16);
+		if (buffer.RemainingBitCount != 0)
+		{
+			throw new ArgumentException(
+				"Router Parameter 2 must contain exactly one encoded word.",
+				nameof(parameterValue));
+		}
+
+		return value.ToString(CultureInfo.InvariantCulture);
 	}
 
 	private static string? FormatSingleOctet(ParameterValue parameterValue)

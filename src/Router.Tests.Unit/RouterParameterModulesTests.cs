@@ -30,6 +30,25 @@ public sealed class RouterParameterReadTests
 	}
 
 	[Fact]
+	public async Task Returns_the_Current_Node_Number_Parameter_from_the_local_address()
+	{
+		var localAddress = RouterParameterModuleTestSupport.CreateAddress(26, 100, 0);
+		var parameterRead = new RouterParameterRead(
+			localAddress,
+			RouterParameterModuleTestSupport.ProtocolVersion);
+
+		var response = await parameterRead.HandleAsync(
+			RouterParameterModuleTestSupport.CreateParameterRequest(
+				localAddress,
+				ParameterTable.Current,
+				RouterParameterCatalogue.NodeNumber.Number),
+			CancellationToken.None);
+
+		response!.Contents.Should().BeOfType<Parameter>().Which.ParameterValue.ToWireValue()
+			.Should().Equal([0, 100]);
+	}
+
+	[Fact]
 	public async Task Leaves_an_unsupported_Router_Parameter_unhandled()
 	{
 		var localAddress = RouterParameterModuleTestSupport.CreateAddress(26, 100, 0);
@@ -44,6 +63,25 @@ public sealed class RouterParameterReadTests
 			CancellationToken.None);
 
 		response.Should().BeNull();
+	}
+
+	[Fact]
+	public async Task Rejects_an_unsupported_Current_Router_Parameter_with_a_parameter_Invalid_Parameter_NAK()
+	{
+		var localAddress = RouterParameterModuleTestSupport.CreateAddress(26, 100, 0);
+		var parameterRead = new RouterParameterRead(
+			localAddress,
+			RouterParameterModuleTestSupport.ProtocolVersion);
+
+		var response = await parameterRead.HandleAsync(
+			RouterParameterModuleTestSupport.CreateParameterRequest(
+				localAddress,
+				ParameterTable.Current,
+				ParameterNumber.FromValue(99)),
+			CancellationToken.None);
+
+		response!.Contents.Should().BeOfType<NegativeAcknowledgement>().Which
+			.ReasonCode.ParameterReasonCode.Should().Be(ParameterReasonCode.InvalidParameter);
 	}
 
 	[Fact]

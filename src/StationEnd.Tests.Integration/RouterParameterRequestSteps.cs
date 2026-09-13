@@ -117,6 +117,22 @@ public sealed class RouterParameterRequestSteps
 		this.response = await this.client!.PostAsync("/router/parameters/brigade-or-agency-number", null);
 	}
 
+	[When(@"I request local Router Current Parameter 99")]
+	public async Task WhenIRequestLocalRouterCurrentParameterNinetyNine()
+	{
+		await this.EnsureApplicationStartedAsync();
+
+		this.response = await this.client!.PostAsync("/router/parameters/current/99", null);
+	}
+
+	[When(@"I request local Router Current Parameter 2")]
+	public async Task WhenIRequestLocalRouterCurrentParameterTwo()
+	{
+		await this.EnsureApplicationStartedAsync();
+
+		this.response = await this.client!.PostAsync("/router/parameters/current/2", null);
+	}
+
 	[When(@"I request local Router Routing Table entry 1")]
 	public async Task WhenIRequestLocalRouterRoutingTableEntryOne()
 	{
@@ -773,7 +789,21 @@ public sealed class RouterParameterRequestSteps
 	}
 
 	[Then(@"the Parameter Request status shows Parameter \/ Invalid Entry rejection")]
-	public async Task ThenTheParameterRequestStatusShowsParameterInvalidEntryRejection()
+	public Task ThenTheParameterRequestStatusShowsParameterInvalidEntryRejection()
+	{
+		return this.ThenTheParameterRequestStatusShowsParameterRejection(
+			"Parameter / Invalid Entry");
+	}
+
+	[Then(@"the Parameter Request status shows Parameter \/ Invalid Parameter rejection")]
+	public Task ThenTheParameterRequestStatusShowsParameterInvalidParameterRejection()
+	{
+		return this.ThenTheParameterRequestStatusShowsParameterRejection(
+			"Parameter / Invalid Parameter");
+	}
+
+	private async Task ThenTheParameterRequestStatusShowsParameterRejection(
+		string expectedRejectionReason)
 	{
 		var statusAddress = this.response!.Headers.Location!;
 
@@ -785,7 +815,7 @@ public sealed class RouterParameterRequestSteps
 				using var document = JsonDocument.Parse(await status.Content.ReadAsStringAsync());
 				if (document.RootElement.GetProperty("state").GetString() == "rejected" &&
 					document.RootElement.GetProperty("rejectionReason").GetString() ==
-					"Parameter / Invalid Entry")
+					expectedRejectionReason)
 				{
 					return;
 				}
@@ -795,7 +825,39 @@ public sealed class RouterParameterRequestSteps
 		}
 
 		throw new Xunit.Sdk.XunitException(
-			"The Parameter Request status did not show a Parameter / Invalid Entry rejection.");
+			$"The Parameter Request status did not show a {expectedRejectionReason} rejection.");
+	}
+
+	[Then(@"the Parameter Request status shows Router Current Node Number 100")]
+	public async Task ThenTheParameterRequestStatusShowsRouterCurrentNodeNumber()
+	{
+		var statusAddress = this.response!.Headers.Location!;
+
+		for (var attempt = 0; attempt < 30; attempt++)
+		{
+			using var status = await this.client!.GetAsync(statusAddress);
+			if (status.StatusCode == HttpStatusCode.OK)
+			{
+				using var document = JsonDocument.Parse(await status.Content.ReadAsStringAsync());
+				if (document.RootElement.GetProperty("state").GetString() == "received" &&
+					document.RootElement.GetProperty("parameterNumber").GetInt32() == 2 &&
+					document.RootElement.GetProperty("parameterValue").GetString() == "100")
+				{
+					return;
+				}
+			}
+
+			await Task.Delay(TimeSpan.FromSeconds(1));
+		}
+
+		throw new Xunit.Sdk.XunitException(
+			"The Parameter Request status did not show Router Current Node Number 100.");
+	}
+
+	[Then(@"NodeManager lists Node Number in the Router Current Parameter catalogue")]
+	public void ThenNodeManagerListsNodeNumberInTheRouterCurrentParameterCatalogue()
+	{
+		this.pageContent.Should().Contain("""{ number: 2, name: "Node Number" },""");
 	}
 
 	[Then(@"NodeManager renders the Routing Table rejection reason")]

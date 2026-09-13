@@ -30,6 +30,8 @@ The Node Manager currently:
 - lets an operator select a Parameter Table before requesting a modeled scalar
   Parameter; LAN MTA supports its Current, Non-Volatile, and Permanent scalar
   reads through this path;
+- reads and presents Router Current Parameter 2 (`node_number`) as its typed
+  GD-92 `word16` Node Number;
 - supports paged Current Router Routing Table reads through `Param_req_multiple`
   for requested entry ranges, returning decoded entry index, next-node values,
   and `more_values` through an operator-facing Parameters form when the
@@ -60,9 +62,10 @@ changes.
    Extend these semantics to remaining table-shaped Parameters only through
    separately approved workflows.
 3. Router Current Routing Table reads reject a range containing a missing entry
-   with `NAK(parameter / inv_entry)`. Extend parameter `NAK`s to every
-   participant for invalid Parameter Tables, Parameter Numbers, fields, and
-   entries.
+   with `NAK(parameter / inv_entry)`, and Router Current scalar reads reject
+   an undefined Parameter Number with `NAK(parameter / inv_param)`. Extend
+   parameter `NAK`s to every participant for invalid Parameter Tables, fields,
+   and entries.
 4. Add authorised generic `Set_parameter` workflows. Preserve
    participant-owned validation, persistence, and password/access rules.
 5. Add a configurable catalogue/provider model for new Agent Types and

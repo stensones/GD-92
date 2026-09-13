@@ -38,6 +38,15 @@ Manager exposes this as `Parameter / Invalid Entry` and displays it in the
 Routing Table request status. Broader invalid-table, Parameter-number, field,
 and participant validation remains pending.
 
+Router rejects a Current-table scalar request outside its defined Parameter
+Numbers 1-21 with `NAK(parameter / inv_param)`. Node Manager exposes this as
+`Parameter / Invalid Parameter`. Invalid Parameter Tables, fields, and
+equivalent behavior for other participants remain pending.
+
+Router Current Parameter 2 (`node_number`) is decoded as GD-92 `word16` and
+presented as the local Router Node Number. For example, Router address
+`26.100.0` returns `100`.
+
 ## Browse catalogues
 
 | Participant | Current Parameters |

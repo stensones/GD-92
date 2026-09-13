@@ -45,6 +45,16 @@ internal sealed class RouterParameterRead
 
 			if (parameterValue is null)
 			{
+				if (number.Value is < 1 or > 21)
+				{
+					return Envelope.CreateNegativeAcknowledgement(
+						envelope,
+						this.localAddress,
+						this.protocolVersion,
+						envelope.Destinations,
+						ReasonCode.FromParameterReasonCode(ParameterReasonCode.InvalidParameter));
+				}
+
 				return null;
 			}
 
@@ -144,6 +154,8 @@ internal sealed class RouterParameterRead
 		return number == RouterParameterCatalogue.BrigadeOrAgency.Number
 			? RouterParameterCatalogue.BrigadeOrAgency.Encode(
 				currentParameters?.BrigadeOrAgencyIdentifier ?? this.localAddress.Brigade.Value)
+			: number == RouterParameterCatalogue.NodeNumber.Number
+				? RouterParameterCatalogue.NodeNumber.Encode(this.localAddress.Node.Value)
 			: number == RouterParameterCatalogue.CurrentPassword.Number
 				? RouterParameterCatalogue.CurrentPassword.Encode(
 					PasswordParameter.FromFields(
