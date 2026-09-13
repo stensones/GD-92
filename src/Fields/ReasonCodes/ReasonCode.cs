@@ -3,6 +3,7 @@ namespace Stensones.GD92.Fields;
 public sealed record ReasonCode : IGD9Field
 {
 	private const byte GeneralReasonCodeSet = 1;
+	private const byte PrinterReasonCodeSet = 3;
 	private const byte ParameterReasonCodeSet = 4;
 	private const int WordBitCount = 8;
 	private const string UnsupportedReasonCodeSetMessageFormat = "Reason Code Set {0} is not supported.";
@@ -17,8 +18,14 @@ public sealed record ReasonCode : IGD9Field
 		this.ParameterReasonCode = parameterReasonCode;
 	}
 
+	private ReasonCode(PrinterReasonCode printerReasonCode)
+	{
+		this.PrinterReasonCode = printerReasonCode;
+	}
+
 	public GeneralReasonCode? GeneralReasonCode { get; }
 	public ParameterReasonCode? ParameterReasonCode { get; }
+	public PrinterReasonCode? PrinterReasonCode { get; }
 
 	public static ReasonCode FromGeneralReasonCode(GeneralReasonCode generalReasonCode)
 	{
@@ -40,6 +47,16 @@ public sealed record ReasonCode : IGD9Field
 		return new ReasonCode(parameterReasonCode);
 	}
 
+	public static ReasonCode FromPrinterReasonCode(PrinterReasonCode printerReasonCode)
+	{
+		if (!Enum.IsDefined(printerReasonCode))
+		{
+			throw new ArgumentOutOfRangeException(nameof(printerReasonCode));
+		}
+
+		return new ReasonCode(printerReasonCode);
+	}
+
 	public static ReasonCode FromEncodedMessageBuffer(ref EncodedMessageBuffer buffer)
 	{
 		var reasonCodeSet = (byte)buffer.ReadUnsignedBits(WordBitCount);
@@ -48,6 +65,7 @@ public sealed record ReasonCode : IGD9Field
 		return reasonCodeSet switch
 		{
 			GeneralReasonCodeSet => FromGeneralReasonCode((GeneralReasonCode)reasonCodeValue),
+			PrinterReasonCodeSet => FromPrinterReasonCode((PrinterReasonCode)reasonCodeValue),
 			ParameterReasonCodeSet => FromParameterReasonCode((ParameterReasonCode)reasonCodeValue),
 			_ => throw new NotSupportedException(string.Format(UnsupportedReasonCodeSetMessageFormat, reasonCodeSet))
 		};
@@ -58,6 +76,11 @@ public sealed record ReasonCode : IGD9Field
 		if (this.GeneralReasonCode is { } generalReasonCode)
 		{
 			return [GeneralReasonCodeSet, (byte)generalReasonCode];
+		}
+
+		if (this.PrinterReasonCode is { } printerReasonCode)
+		{
+			return [PrinterReasonCodeSet, (byte)printerReasonCode];
 		}
 
 		return [ParameterReasonCodeSet, (byte)this.ParameterReasonCode!.Value];

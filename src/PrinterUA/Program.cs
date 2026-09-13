@@ -35,12 +35,15 @@ builder.Services.AddSingleton(new PrinterUaSettings(
 	localAddress,
 	localRouter,
 	controlAddress,
-	protocolVersion));
+	protocolVersion,
+	builder.Configuration["Printer:HostName"]));
 builder.AddNpgsqlDbContext<PrinterUaDbContext>("printer-ua-database");
 builder.Services.AddScoped<IParticipantParameterStore, EfPrinterUaParameterStore>();
 builder.Services.AddScoped<PrinterUaParameterBootstrapper>();
 builder.Services.AddSingleton<PrinterUaCurrentParameterProjectionSource>();
 builder.Services.AddScoped<IRouterIngress, PrinterUaRouterIngress>();
+builder.Services.AddSingleton<ITextPrinter, WindowsTextPrinter>();
+builder.Services.AddScoped<PrinterUaTextMessageReceiver>();
 builder.Services.AddScoped<ILocalParticipantIngressReceiver, PrinterUaParameterReceiver>();
 
 var host = builder.Build();

@@ -8,6 +8,7 @@ namespace PrinterUA;
 public sealed class PrinterUaParameterReceiver(
 	PrinterUaSettings settings,
 	PrinterUaCurrentParameterProjectionSource currentParameters,
+	PrinterUaTextMessageReceiver textMessages,
 	IRouterIngress routerIngress) : ILocalParticipantIngressReceiver
 {
 	private static readonly ParameterNumber PortNumberParameterNumber = ParameterNumber.FromValue(1);
@@ -22,6 +23,14 @@ public sealed class PrinterUaParameterReceiver(
 	{
 		ArgumentNullException.ThrowIfNull(envelope);
 		cancellationToken.ThrowIfCancellationRequested();
+
+		if (envelope.Destinations.Addresses.Count == 1 &&
+			envelope.Destinations.Addresses[0] == settings.LocalAddress &&
+		envelope.Contents is Stensones.GD92.Messages.Text)
+		{
+			await textMessages.ReceiveAsync(envelope, cancellationToken);
+			return;
+		}
 
 		if (envelope.Destinations.Addresses.Count != 1 ||
 			envelope.Destinations.Addresses[0] != settings.LocalAddress ||

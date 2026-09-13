@@ -9,6 +9,7 @@
 
   <ItemGroup>
     <PackageReference Include="RabbitMQ" />
+    <PackageReference Include="System.Drawing.Common" />
     <PackageReference Include="WolverineFx.RabbitMQ" />
     <PackageReference Include="WolverineFx.RuntimeCompilation" />
   </ItemGroup>

@@ -6,4 +6,5 @@ public sealed record PrinterUaSettings(
 	CommunicationsAddress LocalAddress,
 	CommunicationsAddress LocalRouter,
 	CommunicationsAddress ControlAddress,
-	ProtocolVersion ProtocolVersion);
+	ProtocolVersion ProtocolVersion,
+	string? PrinterHostName = null);

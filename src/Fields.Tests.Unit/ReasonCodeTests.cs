@@ -61,6 +61,21 @@ public sealed class ReasonCodeTests
 	}
 
 	[Fact]
+	public void Serializes_and_decodes_the_printer_offline_reason_code()
+	{
+		var reasonCode = ReasonCode.FromPrinterReasonCode(PrinterReasonCode.OffLine);
+
+		reasonCode.ToWireValue().Should().Equal([0x03, 0x02]);
+
+		var buffer = new EncodedMessageBuffer(reasonCode.ToWireValue());
+		var decodedReasonCode = ReasonCode.FromEncodedMessageBuffer(ref buffer);
+
+		decodedReasonCode.PrinterReasonCode.Should().Be(PrinterReasonCode.OffLine);
+		decodedReasonCode.GeneralReasonCode.Should().BeNull();
+		decodedReasonCode.ParameterReasonCode.Should().BeNull();
+	}
+
+	[Fact]
 	public void Rejects_an_undefined_encoded_parameter_reason_code()
 	{
 		Action decodeReasonCode = () => DecodeReasonCode(0x04, 0x00);

@@ -23,7 +23,9 @@
     <ProjectReference Include="..\Fields\Stensones.GD92.Fields.csproj" />
     <ProjectReference Include="..\Messages\Stensones.GD92.Messages.csproj" />
     <ProjectReference Include="..\ParticipantParameters\ParticipantParameters.csproj" />
+    <ProjectReference Include="..\PrinterUA\PrinterUA.csproj" />
     <ProjectReference Include="..\PrinterUA.Persistence\PrinterUA.Persistence.csproj" />
+    <ProjectReference Include="..\Transport.RabbitMQ\Stensones.GD92.Transport.RabbitMQ.csproj" />
   </ItemGroup>
 
 </Project>
