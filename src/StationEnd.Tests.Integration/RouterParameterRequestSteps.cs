@@ -1071,6 +1071,19 @@ public sealed class RouterParameterRequestSteps
 			]));
 	}
 
+	[When(@"I set local Router Current Parameter 19 to 5")]
+	public async Task WhenISetLocalRouterCurrentRetries()
+	{
+		await this.EnsureApplicationStartedAsync();
+
+		this.response = await this.client!.PostAsync(
+			"/router/parameters/current/19/value",
+			new FormUrlEncodedContent(
+			[
+				new KeyValuePair<string, string>("value", "5")
+			]));
+	}
+
 	[Given(@"the Router persistent Parameter Tables are empty")]
 	public async Task GivenTheRouterPersistentParameterTablesAreEmpty()
 	{

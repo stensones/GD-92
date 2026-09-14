@@ -141,6 +141,14 @@ through its typed Manual Acknowledgement Timeout projection, and Parameter 19
 password and other not-yet-authorized retained Parameters. A missing retained
 value returns `NAK(parameter / inv_param)`.
 
+An operator with an active Level 1 Router Node Login can change Router
+Non-Volatile Parameter 19 (`retries`) through GD-92 Message 60
+(`Set_parameter`). Node Manager submits the typed value, exposes the Router ACK
+as `acknowledged`, and the Router persists the value before refreshing its
+effective Current Retries projection. This is currently the only exposed Router
+Parameter modification; unauthorized and invalid-value outcomes remain the
+next delivery slices.
+
 Selecting **View parameters** for a discovered Router concurrently requests
 every currently supported scalar value in its catalogue. Each resulting status
 must complete independently; Password Parameters 5-8 always present

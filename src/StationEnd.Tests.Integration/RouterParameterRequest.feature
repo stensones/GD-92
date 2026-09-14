@@ -395,6 +395,22 @@ Feature: Router Parameter Request
     Then I am redirected to the pending Parameter Request status
     And the Parameter Request status shows Router Current Retries 5
 
+  Scenario: Changing the local Router Current Retries
+    Given NodeManager is the User Agent at Brigade 26, Node 100, and Port 25
+    And its local Router is at Brigade 26, Node 100, and Port 0
+    And the Router Level 1 password is "FIRE1"
+    When I log on User-Agent address Brigade 26, Node 100, and Port 25 with the Level 1 password
+    Then the Node Login status eventually shows User-Agent address 26.100.25 is logged on
+    When I set local Router Current Parameter 19 to 5
+    Then I am redirected to the pending Parameter Modification status
+    And the Parameter Modification status eventually shows acknowledged
+    When I request local Router Current Parameter 19
+    Then I am redirected to the pending Parameter Request status
+    And the Parameter Request status shows Router Current Retries 5
+    When I request local Router Non-Volatile Parameter 19
+    Then I am redirected to the pending Parameter Request status
+    And the Parameter Request status shows Router Non-Volatile Retries 3
+
   Scenario: Browsing the local Router Current Time and Date
     Given NodeManager is the User Agent at Brigade 26, Node 100, and Port 25
     And its local Router is at Brigade 26, Node 100, and Port 0

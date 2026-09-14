@@ -29,9 +29,7 @@ internal sealed class RouterParameterModification(
 
 		if (table != ParameterTable.Current && table != ParameterTable.NonVolatile)
 		{
-			return this.CreateNegativeAcknowledgement(
-				envelope,
-				ParameterReasonCode.NoModificationAccess);
+			return null;
 		}
 
 		if (!currentParameterSource.HasActiveNodeLoginAtLevelOne())

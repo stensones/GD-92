@@ -48,6 +48,10 @@ The Node Manager currently:
   projection;
 - reads and presents Router Non-Volatile and Permanent Parameter 19
   (`retries`) through its typed retained-value projection;
+- allows an operator with an active Level 1 Router Node Login to change Router
+  Non-Volatile Parameter 19 (`retries`) with `Set_parameter`, reporting the
+  Router ACK as an acknowledged management transaction and refreshing the
+  effective Current value;
 - reads and presents Router Current Parameter 18
   (`manual_acknowledgement_timeout`) as its typed GD-92 manual acknowledgement
   timeout;
