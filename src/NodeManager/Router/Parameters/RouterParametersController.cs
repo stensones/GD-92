@@ -12,6 +12,8 @@ public sealed class RouterParametersController(
 {
 	private static readonly ParameterNumber RoutingTableParameterNumber =
 		ParameterNumber.FromValue(13);
+	private static readonly ParameterNumber PstnTableParameterNumber =
+		ParameterNumber.FromValue(14);
 
 	[HttpPost("brigade-or-agency-number")]
 	public async Task<IActionResult> RequestBrigadeOrAgencyNumber(CancellationToken cancellationToken)
@@ -194,6 +196,9 @@ public sealed class RouterParametersController(
 		var routingTableEntries = status is ReceivedRouterParameterRequestStatus receivedRoutingTable
 			? FormatRoutingTableEntries(parameterNumber, receivedRoutingTable.ParameterValue)
 			: null;
+		var pstnTableEntries = status is ReceivedRouterParameterRequestStatus receivedPstnTable
+			? FormatPstnTableEntries(parameterNumber, receivedPstnTable.ParameterValue)
+			: null;
 		bool? moreValues = status is ReceivedRouterParameterRequestStatus receivedMoreValues
 			? receivedMoreValues.MoreValues.Value == ProtocolBoolean.True
 			: null;
@@ -209,6 +214,7 @@ public sealed class RouterParametersController(
 			parameterNumber?.Value,
 			parameterValue,
 			routingTableEntries,
+			pstnTableEntries,
 			moreValues,
 			rejectionReason);
 	}
@@ -266,6 +272,35 @@ public sealed class RouterParametersController(
 			.Select(entry => new RoutingTableEntryStatusResponse(
 				entry.Index.Value,
 				Format(entry.NextNode)))
+			.ToArray();
+	}
+
+	private static IReadOnlyList<PstnTableEntryStatusResponse>? FormatPstnTableEntries(
+		ParameterNumber? parameterNumber,
+		ParameterValue parameterValue)
+	{
+		if (parameterNumber != PstnTableParameterNumber)
+		{
+			return null;
+		}
+
+		var buffer = new EncodedMessageBuffer(parameterValue.ToWireValue());
+		var pstnTable = PstnTable.FromEncodedMessageBuffer(ref buffer);
+		if (buffer.RemainingBitCount != 0)
+		{
+			throw new ArgumentException(
+				"Router PSTN Table Parameter contains trailing encoded data.",
+				nameof(parameterValue));
+		}
+
+		return pstnTable.Entries
+			.Select(entry => new PstnTableEntryStatusResponse(
+				entry.Index.Value,
+				entry.Used.Value,
+				Format(entry.NextNode),
+				entry.TelephoneNumber.Value.Value,
+				entry.HoldTime.Value,
+				entry.Available.Value))
 			.ToArray();
 	}
 

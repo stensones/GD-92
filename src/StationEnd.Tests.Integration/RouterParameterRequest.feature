@@ -114,6 +114,14 @@ Feature: Router Parameter Request
     And the Parameter Request status shows Parameter / Invalid Entry rejection
     And NodeManager renders the Routing Table rejection reason
 
+  Scenario: Browsing a local Router Current PSTN Table entry
+    Given NodeManager is the User Agent at Brigade 26, Node 100, and Port 25
+    And its local Router is at Brigade 26, Node 100, and Port 0
+    And the local Router has PSTN Table entry 1 to next node 26.101.0, telephone number 12, hold time 30, used, and available
+    When I request local Router Current PSTN Table entries 1 through 1
+    Then I am redirected to the pending Parameter Request status
+    And the Parameter Request status shows PSTN Table entry 1 as used and available with next node 26.101.0, telephone number 12, and hold time 30
+
   Scenario: Rejecting a partially missing local Router Routing Table range
     Given NodeManager is the User Agent at Brigade 26, Node 100, and Port 25
     And its local Router is at Brigade 26, Node 100, and Port 0

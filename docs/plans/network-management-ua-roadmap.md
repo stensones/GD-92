@@ -52,6 +52,8 @@ The Node Manager currently:
   1,023-byte GD-92 Parameter message-content limit truncates a response; **Next
   entries** requests from the last returned index through the original range
   upper bound and is unavailable on the final page;
+- supports selected Current Router PSTN Table entry ranges through
+  `Param_req_multiple`, returning decoded telephone-routing fields;
 - requests Router Parameter values and performs Router logon/logoff;
 - correlates expected `Parameter`, `ACK`, and `NAK` responses with retry and
   timeout status for operator polling;

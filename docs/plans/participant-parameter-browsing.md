@@ -43,6 +43,11 @@ Numbers 1-21 with `NAK(parameter / inv_param)`. Node Manager exposes this as
 `Parameter / Invalid Parameter`. Invalid Parameter Tables, fields, and
 equivalent behavior for other participants remain pending.
 
+Router Current Parameter 14 (`PSTN Table`) supports explicit entry ranges and
+returns decoded index, used state, next-node address, telephone number, hold
+time, and availability. Missing requested entries return
+`NAK(parameter / inv_entry)`.
+
 Router Current Parameter 2 (`node_number`) is decoded as GD-92 `word16` and
 presented as the local Router Node Number. For example, Router address
 `26.100.0` returns `100`.

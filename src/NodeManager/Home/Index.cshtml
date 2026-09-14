@@ -128,6 +128,23 @@
             <ul id="router-routing-table-entry-results" hidden></ul>
             <button id="router-routing-table-next-page" hidden type="button" disabled
                     aria-controls="router-routing-table-entry-results">Next entries</button>
+            <form class="inline-action" id="router-pstn-table-entry-selection"
+                  aria-describedby="router-pstn-table-entry-selection-status">
+                <fieldset>
+                    <legend>Router Current PSTN Table entries</legend>
+                    <label>
+                        First entry
+                        <input name="first-entry" type="number" min="1" value="1" required />
+                    </label>
+                    <label>
+                        Last entry
+                        <input name="last-entry" type="number" min="1" value="1" required />
+                    </label>
+                    <button type="submit">Request entries</button>
+                </fieldset>
+            </form>
+            <p id="router-pstn-table-entry-selection-status" role="status" hidden></p>
+            <ul id="router-pstn-table-entry-results" hidden></ul>
             <p id="router-parameter-list-status" role="status" hidden></p>
             <table id="router-parameter-list" hidden>
                 <caption>Local Router Current Parameters</caption>
@@ -177,6 +194,9 @@
     const routerRoutingTableEntrySelectionStatus = document.getElementById("router-routing-table-entry-selection-status");
     const routerRoutingTableEntryResults = document.getElementById("router-routing-table-entry-results");
     const routerRoutingTableNextPage = document.getElementById("router-routing-table-next-page");
+    const routerPstnTableEntrySelection = document.getElementById("router-pstn-table-entry-selection");
+    const routerPstnTableEntrySelectionStatus = document.getElementById("router-pstn-table-entry-selection-status");
+    const routerPstnTableEntryResults = document.getElementById("router-pstn-table-entry-results");
     let nextRoutingTableEntryRange = null;
     const redactedPasswordMarker = "PASSWORD";
     const participantCurrentParameterCatalogues = {
@@ -474,6 +494,78 @@
         if (nextRoutingTableEntryRange !== null) {
             requestRoutingTableEntries(nextRoutingTableEntryRange.firstEntry, nextRoutingTableEntryRange.lastEntry);
         }
+    });
+
+    const requestPstnTableEntries = async (firstEntry, lastEntry) => {
+        routerPstnTableEntrySelectionStatus.hidden = false;
+        routerPstnTableEntryResults.hidden = true;
+        routerPstnTableEntryResults.replaceChildren();
+        routerPstnTableEntrySelectionStatus.textContent = "Requesting PSTN Table entries...";
+        const response = await fetch(
+            `/router/parameters/current/14/entries/${firstEntry}-${lastEntry}`,
+            { method: "POST" });
+        const statusUrl = response.url;
+        if (!response.ok || !statusUrl) {
+            routerPstnTableEntrySelectionStatus.textContent =
+                "The PSTN Table request could not be submitted.";
+            return;
+        }
+
+        const poll = async () => {
+            const result = await fetch(statusUrl);
+            if (!result.ok) {
+                routerPstnTableEntrySelectionStatus.textContent =
+                    "The PSTN Table request could not be completed.";
+                return;
+            }
+
+            const request = await result.json();
+            if (request.state === "pending") {
+                window.setTimeout(poll, 1000);
+                return;
+            }
+
+            if (request.state !== "received") {
+                routerPstnTableEntrySelectionStatus.textContent =
+                    request.rejectionReason
+                        ? `PSTN Table request ${request.state}: ${request.rejectionReason}.`
+                        : `PSTN Table request ${request.state}.`;
+                return;
+            }
+
+            const entries = request.pstnTableEntries ?? [];
+            for (const entry of entries) {
+                const item = document.createElement("li");
+                item.textContent = `PSTN Table entry ${entry.index}: ${entry.used ? "used" : "unused"}, ` +
+                    `${entry.available ? "available" : "unavailable"}, next node ${entry.nextNode}, ` +
+                    `telephone number ${entry.telephoneNumber}, hold time ${entry.holdTime}`;
+                routerPstnTableEntryResults.append(item);
+            }
+
+            routerPstnTableEntryResults.hidden = false;
+            routerPstnTableEntrySelectionStatus.textContent = entries.length === 0
+                ? "No PSTN Table entries were returned."
+                : "PSTN Table entries received.";
+        };
+
+        poll();
+    };
+
+    routerPstnTableEntrySelection.addEventListener("submit", async event => {
+        event.preventDefault();
+        const formData = new FormData(routerPstnTableEntrySelection);
+        const firstEntry = Number(formData.get("first-entry"));
+        const lastEntry = Number(formData.get("last-entry"));
+
+        if (!Number.isInteger(firstEntry) || !Number.isInteger(lastEntry) ||
+            firstEntry < 1 || lastEntry < firstEntry) {
+            routerPstnTableEntrySelectionStatus.hidden = false;
+            routerPstnTableEntrySelectionStatus.textContent =
+                "Last entry must be greater than or equal to first entry.";
+            return;
+        }
+
+        requestPstnTableEntries(firstEntry, lastEntry);
     });
 
     logonForm.addEventListener("submit", async event => {

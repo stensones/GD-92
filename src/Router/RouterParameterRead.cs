@@ -92,22 +92,22 @@ internal sealed class RouterParameterRead
 				ParameterNumber: var parameterNumber
 			} parameterRequest ||
 			parameterTable != ParameterTable.Current ||
-			parameterNumber != RouterParameterCatalogue.RouterTable.Number ||
+			(parameterNumber != RouterParameterCatalogue.RouterTable.Number &&
+				parameterNumber != RouterParameterCatalogue.PstnTable.Number) ||
 			this.parameterStore is null)
 		{
 			return null;
 		}
 
-		var routingTableParameterValue = await this.parameterStore.GetAsync(
+		var tableParameterValue = await this.parameterStore.GetAsync(
 			ParameterTable.NonVolatile,
-			RouterParameterCatalogue.RouterTable.Number,
+			parameterNumber,
 			cancellationToken);
-		if (routingTableParameterValue is null)
+		if (tableParameterValue is null)
 		{
 			return null;
 		}
 
-		var routingTable = RouterParameterCatalogue.RouterTable.Read(routingTableParameterValue);
 		var selectionBuffer = new EncodedMessageBuffer(parameterRequest.EntrySelection.ToWireValue());
 		var firstEntry = ParameterEntryIndex.FromEncodedMessageBuffer(ref selectionBuffer);
 		var lastEntry = ParameterEntryIndex.FromEncodedMessageBuffer(ref selectionBuffer);
@@ -116,27 +116,56 @@ internal sealed class RouterParameterRead
 			return null;
 		}
 
-		var entries = routingTable.Entries
-			.Where(entry => entry.Index.Value >= firstEntry.Value &&
-				entry.Index.Value <= lastEntry.Value)
-			.OrderBy(entry => entry.Index.Value)
+		return parameterNumber == RouterParameterCatalogue.RouterTable.Number
+			? this.CreateTableResponse(
+				envelope,
+				RouterParameterCatalogue.RouterTable.Read(tableParameterValue).Entries,
+				firstEntry,
+				lastEntry,
+				static entry => entry.Index.Value,
+				static entries => RouterParameterCatalogue.RouterTable.Encode(
+					RoutingTable.FromEntries(entries)),
+				"Routing Table")
+			: this.CreateTableResponse(
+				envelope,
+				RouterParameterCatalogue.PstnTable.Read(tableParameterValue).Entries,
+				firstEntry,
+				lastEntry,
+				static entry => entry.Index.Value,
+				static entries => RouterParameterCatalogue.PstnTable.Encode(
+					PstnTable.FromEntries(entries)),
+				"PSTN Table");
+	}
+
+	private Envelope CreateTableResponse<TEntry>(
+		Envelope request,
+		IReadOnlyList<TEntry> tableEntries,
+		ParameterEntryIndex firstEntry,
+		ParameterEntryIndex lastEntry,
+		Func<TEntry, ushort> index,
+		Func<TEntry[], ParameterValue> encode,
+		string tableName)
+	{
+		var entries = tableEntries
+			.Where(entry => index(entry) >= firstEntry.Value &&
+				index(entry) <= lastEntry.Value)
+			.OrderBy(index)
 			.ToArray();
-		var requestedEntryCount = lastEntry.Value - firstEntry.Value + 1;
+		var requestedEntryCount = (int)lastEntry.Value - firstEntry.Value + 1;
 		if (entries.Length != requestedEntryCount)
 		{
 			return Envelope.CreateNegativeAcknowledgement(
-				envelope,
+				request,
 				this.localAddress,
 				this.protocolVersion,
-				envelope.Destinations,
+				request.Destinations,
 				ReasonCode.FromParameterReasonCode(ParameterReasonCode.InvalidEntry));
 		}
 
-		var responseEntries = new List<RoutingTableEntry>();
+		var responseEntries = new List<TEntry>();
 		foreach (var entry in entries)
 		{
-			var candidateValue = RouterParameterCatalogue.RouterTable.Encode(
-				RoutingTable.FromEntries([.. responseEntries, entry]));
+			var candidateValue = encode([.. responseEntries, entry]);
 			if (Parameter.FromFields(MoreValues.No, candidateValue).ToWireValue().Length >
 				Envelope.MaximumContentsLength)
 			{
@@ -149,7 +178,7 @@ internal sealed class RouterParameterRead
 		if (responseEntries.Count == 0)
 		{
 			throw new InvalidOperationException(
-				"A Routing Table entry cannot fit in a GD-92 Parameter response.");
+				$"A {tableName} entry cannot fit in a GD-92 Parameter response.");
 		}
 
 		var moreValues = responseEntries.Count < entries.Length
@@ -157,13 +186,12 @@ internal sealed class RouterParameterRead
 			: MoreValues.No;
 
 		return Envelope.CreateParameterResponse(
-			envelope,
+			request,
 			this.localAddress,
 			this.protocolVersion,
 			Parameter.FromFields(
 				moreValues,
-				RouterParameterCatalogue.RouterTable.Encode(
-					RoutingTable.FromEntries([.. responseEntries]))));
+				encode([.. responseEntries])));
 	}
 
 	private ParameterValue? CurrentParameterValue(ParameterNumber number)
