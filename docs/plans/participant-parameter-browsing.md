@@ -51,6 +51,11 @@ Router Current Parameter 3 (`node_name`) is decoded using the GD-92 typed
 `NodeName` field and presented from the Router's configured node name. For
 example, `Router:NodeName = Station End` returns `Station End`.
 
+Router Current Parameter 9 (`maximum_message_length`) is decoded using the
+GD-92 typed `MaximumMessageLength` field and presented from the Router's
+configured maximum message length. For example,
+`Router:MaximumMessageLength = 1023` returns `1023`.
+
 ## Browse catalogues
 
 | Participant | Current Parameters |

@@ -280,8 +280,23 @@ public sealed class RouterParametersController(
 			3 => FormatNodeName(parameterValue),
 			4 => FormatCurrentPassword(parameterValue),
 			5 => "PASSWORD",
+			9 => FormatMaximumMessageLength(parameterValue),
 			_ => null
 		};
+	}
+
+	private static string FormatMaximumMessageLength(ParameterValue parameterValue)
+	{
+		var buffer = new EncodedMessageBuffer(parameterValue.ToWireValue());
+		var maximumMessageLength = MaximumMessageLength.FromEncodedMessageBuffer(ref buffer);
+		if (buffer.RemainingBitCount != 0)
+		{
+			throw new ArgumentException(
+				"Router Parameter 9 contains trailing encoded data.",
+				nameof(parameterValue));
+		}
+
+		return maximumMessageLength.Value.ToString(CultureInfo.InvariantCulture);
 	}
 
 	private static string FormatNodeName(ParameterValue parameterValue)

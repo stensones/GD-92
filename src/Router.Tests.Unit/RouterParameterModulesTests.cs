@@ -70,6 +70,28 @@ public sealed class RouterParameterReadTests
 	}
 
 	[Fact]
+	public async Task Returns_the_Current_Maximum_Message_Length_Parameter_from_the_configuration()
+	{
+		var localAddress = RouterParameterModuleTestSupport.CreateAddress(26, 100, 0);
+		var maximumMessageLength = MaximumMessageLength.FromValue(1023);
+		var parameterRead = new RouterParameterRead(
+			localAddress,
+			RouterParameterModuleTestSupport.ProtocolVersion,
+			maximumMessageLength: maximumMessageLength);
+
+		var response = await parameterRead.HandleAsync(
+			RouterParameterModuleTestSupport.CreateParameterRequest(
+				localAddress,
+				ParameterTable.Current,
+				RouterParameterCatalogue.MaximumMessageLength.Number),
+			CancellationToken.None);
+
+		RouterParameterCatalogue.MaximumMessageLength.Read(
+			response!.Contents.Should().BeOfType<Parameter>().Which.ParameterValue).Value
+			.Should().Be(1023);
+	}
+
+	[Fact]
 	public async Task Leaves_an_unsupported_Router_Parameter_unhandled()
 	{
 		var localAddress = RouterParameterModuleTestSupport.CreateAddress(26, 100, 0);

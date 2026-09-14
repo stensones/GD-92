@@ -147,6 +147,15 @@ Feature: Router Parameter Request
     And the Parameter Request status shows Router Current Node Name Station End
     And NodeManager lists Node Name in the Router Current Parameter catalogue
 
+  Scenario: Browsing the local Router Current Maximum Message Length
+    Given NodeManager is the User Agent at Brigade 26, Node 100, and Port 25
+    And its local Router is at Brigade 26, Node 100, and Port 0
+    When I open NodeManager
+    When I request local Router Current Parameter 9
+    Then I am redirected to the pending Parameter Request status
+    And the Parameter Request status shows Router Current Maximum Message Length 1023
+    And NodeManager lists Maximum Message Length in the Router Current Parameter catalogue
+
   Scenario: Presenting a Node Login form
     When I open NodeManager
     Then NodeManager presents a Node Login form that securely submits password, brigade, node, and port

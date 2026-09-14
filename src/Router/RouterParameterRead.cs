@@ -14,19 +14,22 @@ internal sealed class RouterParameterRead
 	private readonly RouterCurrentParameterProjectionSource? currentParameterSource;
 	private readonly IParticipantParameterStore? parameterStore;
 	private readonly NodeName? nodeName;
+	private readonly MaximumMessageLength? maximumMessageLength;
 
 	public RouterParameterRead(
 		CommunicationsAddress localAddress,
 		ProtocolVersion protocolVersion,
 		RouterCurrentParameterProjectionSource? currentParameterSource = null,
 		IParticipantParameterStore? parameterStore = null,
-		NodeName? nodeName = null)
+		NodeName? nodeName = null,
+		MaximumMessageLength? maximumMessageLength = null)
 	{
 		this.localAddress = localAddress ?? throw new ArgumentNullException(nameof(localAddress));
 		this.protocolVersion = protocolVersion ?? throw new ArgumentNullException(nameof(protocolVersion));
 		this.currentParameterSource = currentParameterSource;
 		this.parameterStore = parameterStore;
 		this.nodeName = nodeName;
+		this.maximumMessageLength = maximumMessageLength;
 	}
 
 	public async ValueTask<Envelope?> HandleAsync(
@@ -163,6 +166,10 @@ internal sealed class RouterParameterRead
 				? this.nodeName is null
 					? null
 					: RouterParameterCatalogue.NodeName.Encode(this.nodeName)
+			: number == RouterParameterCatalogue.MaximumMessageLength.Number
+				? this.maximumMessageLength is null
+					? null
+					: RouterParameterCatalogue.MaximumMessageLength.Encode(this.maximumMessageLength)
 			: number == RouterParameterCatalogue.CurrentPassword.Number
 				? RouterParameterCatalogue.CurrentPassword.Encode(
 					PasswordParameter.FromFields(

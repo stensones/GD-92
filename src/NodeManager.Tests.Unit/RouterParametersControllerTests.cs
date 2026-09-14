@@ -265,6 +265,52 @@ public sealed class RouterParametersControllerTests
 	}
 
 	[Fact]
+	public async Task Presents_a_received_Current_Maximum_Message_Length()
+	{
+		using var managementTransactions = new TestManagementTransactions();
+		var identifier = await managementTransactions.Transactions.SubmitAsync(
+			new ManagementTransactionRequest(
+				Address(25),
+				Address(0),
+				sequenceNumber => Envelope.FromValues(
+					Address(25),
+					Destinations.FromAddresses(Address(0)),
+					ProtocolAndPriority.FromValues(
+						MessagePriority.FromValue(MessagePriorityLevel.FromValue(3)),
+						ProtocolVersion.FromValue(ProtocolVersionNumber.FromValue(2))),
+					AcknowledgementAndSequence.FromValues(
+						sequenceNumber,
+						AcknowledgementRequest.Requested),
+					ParameterRequest.FromFields(
+						ParameterTable.Current,
+						ParameterNumber.FromValue(9))),
+				ManagementTransactionKind.ParameterRequest),
+			CancellationToken.None);
+		await managementTransactions.Transactions.ReceiveAsync(Envelope.FromValues(
+			Address(0),
+			Destinations.FromAddresses(Address(25)),
+			ProtocolAndPriority.FromValues(
+				MessagePriority.FromValue(MessagePriorityLevel.FromValue(3)),
+				ProtocolVersion.FromValue(ProtocolVersionNumber.FromValue(2))),
+			AcknowledgementAndSequence.FromValues(identifier.USWR.SequenceNumber, AcknowledgementRequest.NotRequested),
+			Parameter.FromFields(
+				MoreValues.No,
+				ParameterValue.FromWireValue(MaximumMessageLength.FromValue(1023).ToWireValue()))),
+			CancellationToken.None);
+		var controller = new RouterParametersController(
+			new ReturningRouterParameterRequestService(identifier),
+			managementTransactions.Transactions);
+
+		var response = controller.CurrentStatus(9, identifier.ToString())
+			.Should().BeOfType<OkObjectResult>().Which.Value
+			.Should().BeOfType<RouterParameterRequestStatusResponse>().Which;
+
+		response.State.Should().Be("received");
+		response.ParameterNumber.Should().Be(9);
+		response.ParameterValue.Should().Be("1023");
+	}
+
+	[Fact]
 	public async Task Presents_a_received_Level1_Password_as_a_redacted_marker()
 	{
 		using var managementTransactions = new TestManagementTransactions();

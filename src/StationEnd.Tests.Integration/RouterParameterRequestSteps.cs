@@ -141,6 +141,14 @@ public sealed class RouterParameterRequestSteps
 		this.response = await this.client!.PostAsync("/router/parameters/current/3", null);
 	}
 
+	[When(@"I request local Router Current Parameter 9")]
+	public async Task WhenIRequestLocalRouterCurrentParameterNine()
+	{
+		await this.EnsureApplicationStartedAsync();
+
+		this.response = await this.client!.PostAsync("/router/parameters/current/9", null);
+	}
+
 	[When(@"I request local Router Routing Table entry 1")]
 	public async Task WhenIRequestLocalRouterRoutingTableEntryOne()
 	{
@@ -898,6 +906,38 @@ public sealed class RouterParameterRequestSteps
 	public void ThenNodeManagerListsNodeNameInTheRouterCurrentParameterCatalogue()
 	{
 		this.pageContent.Should().Contain("""{ number: 3, name: "Node Name" },""");
+	}
+
+	[Then(@"the Parameter Request status shows Router Current Maximum Message Length 1023")]
+	public async Task ThenTheParameterRequestStatusShowsRouterCurrentMaximumMessageLength()
+	{
+		var statusAddress = this.response!.Headers.Location!;
+
+		for (var attempt = 0; attempt < 30; attempt++)
+		{
+			using var status = await this.client!.GetAsync(statusAddress);
+			if (status.StatusCode == HttpStatusCode.OK)
+			{
+				using var document = JsonDocument.Parse(await status.Content.ReadAsStringAsync());
+				if (document.RootElement.GetProperty("state").GetString() == "received" &&
+					document.RootElement.GetProperty("parameterNumber").GetInt32() == 9 &&
+					document.RootElement.GetProperty("parameterValue").GetString() == "1023")
+				{
+					return;
+				}
+			}
+
+			await Task.Delay(TimeSpan.FromSeconds(1));
+		}
+
+		throw new Xunit.Sdk.XunitException(
+			"The Parameter Request status did not show Router Current Maximum Message Length 1023.");
+	}
+
+	[Then(@"NodeManager lists Maximum Message Length in the Router Current Parameter catalogue")]
+	public void ThenNodeManagerListsMaximumMessageLengthInTheRouterCurrentParameterCatalogue()
+	{
+		this.pageContent.Should().Contain("""{ number: 9, name: "Maximum Message Length" },""");
 	}
 
 	[Then(@"NodeManager renders the Routing Table rejection reason")]
