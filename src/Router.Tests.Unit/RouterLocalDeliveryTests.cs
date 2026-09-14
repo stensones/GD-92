@@ -143,6 +143,57 @@ public sealed class RouterLocalDeliveryTests
 	}
 
 	[Fact]
+	public async Task Delivers_a_requested_WAN_Table_entry_from_the_non_volatile_store()
+	{
+		var routerAddress = RouterParameterModuleTestSupport.CreateAddress(26, 100, 0);
+		var nextNode = RouterParameterModuleTestSupport.CreateAddress(26, 101, 0);
+		var wanTable = WanTable.FromEntries(
+			WanTableEntry.FromValues(
+				ParameterEntryIndex.FromValue(1),
+				ProtocolBoolean.True,
+				nextNode,
+				WanAddress.FromValue(SevenBitAsciiString.FromValue("WAN")),
+				ConnectType.FromValue(ConnectTypeValue.SwitchedVirtualCircuit)));
+		var userAgentIngress = new CapturingUserAgentIngress();
+		var localDelivery = CreateLocalDelivery(
+			routerAddress,
+			new RouterCurrentParameterProjectionSource(),
+			userAgentIngress,
+			new CapturingLocalParticipantIngress(),
+			new RetainedParameterStore(
+				RouterParameterCatalogue.WanTable.Encode(wanTable),
+				RouterParameterCatalogue.WanTable.Number));
+		var request = Envelope.FromValues(
+			RouterParameterModuleTestSupport.CreateAddress(26, 100, 25),
+			Destinations.FromAddresses(routerAddress),
+			ProtocolAndPriority.FromValues(
+				MessagePriority.FromValue(MessagePriorityLevel.FromValue(3)),
+				RouterParameterModuleTestSupport.ProtocolVersion),
+			AcknowledgementAndSequence.FromValues(
+				SequenceNumber.FromValue(MessageSequenceIdentifier.FromValue(7)),
+				AcknowledgementRequest.Requested),
+			ParameterRequestMultiple.FromFields(
+				ParameterTable.Current,
+				RouterParameterCatalogue.WanTable.Number,
+				ParameterEntrySelection.Range(
+					ParameterEntryIndex.FromValue(1),
+					ParameterEntryIndex.FromValue(1))));
+
+		await localDelivery.ReceiveAsync(request, CancellationToken.None);
+
+		var response = userAgentIngress.Envelope!.Contents.Should().BeOfType<Parameter>().Which;
+		response.MoreValues.Should().Be(MoreValues.No);
+		var buffer = new EncodedMessageBuffer(response.ParameterValue.ToWireValue());
+		var returnedEntry = WanTable.FromEncodedMessageBuffer(ref buffer).Entries.Single();
+		returnedEntry.Index.Value.Should().Be(1);
+		returnedEntry.Used.Should().Be(ProtocolBoolean.True);
+		returnedEntry.NextNode.Should().Be(nextNode);
+		returnedEntry.WanAddress.Value.Value.Should().Be("WAN");
+		returnedEntry.ConnectType.Value.Should().Be(ConnectTypeValue.SwitchedVirtualCircuit);
+		buffer.RemainingBitCount.Should().Be(0);
+	}
+
+	[Fact]
 	public async Task Does_not_indicate_more_values_when_all_requested_Routing_Table_entries_fit()
 	{
 		var routerAddress = RouterParameterModuleTestSupport.CreateAddress(26, 100, 0);

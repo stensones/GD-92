@@ -10,7 +10,10 @@ public sealed record RouterParameterRequestStatusResponse(
 	IReadOnlyList<RoutingTableEntryStatusResponse>? RoutingTableEntries,
 	IReadOnlyList<PstnTableEntryStatusResponse>? PstnTableEntries,
 	bool? MoreValues,
-	string? RejectionReason);
+	string? RejectionReason)
+{
+	public IReadOnlyList<WanTableEntryStatusResponse>? WanTableEntries { get; init; }
+}
 
 public sealed record RoutingTableEntryStatusResponse(
 	ushort Index,
@@ -23,3 +26,10 @@ public sealed record PstnTableEntryStatusResponse(
 	string TelephoneNumber,
 	byte HoldTime,
 	bool Available);
+
+public sealed record WanTableEntryStatusResponse(
+	ushort Index,
+	bool Used,
+	string NextNode,
+	string WanAddress,
+	string ConnectType);

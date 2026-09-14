@@ -140,6 +140,26 @@ public sealed class RouterParameterRequestSteps
 			RouterParameterCatalogue.PstnTable.Encode(PstnTable.FromEntries(entry)));
 	}
 
+	[Given(@"the local Router has WAN Table entry 1 to next node 26.101.0, WAN address WAN, used, and switched virtual circuit")]
+	public async Task GivenTheLocalRouterHasWanTableEntryOne()
+	{
+		this.applicationProfile = RouterParameterRequestApplicationProfile.RouterWithRoutingTableEntry;
+		await this.EnsureApplicationStartedAsync();
+		var connectionString = await this.application!.GetConnectionStringAsync("router-database")
+			?? throw new InvalidOperationException("The test Router database connection string was not provided.");
+		var options = new DbContextOptionsBuilder<RouterDbContext>().UseNpgsql(connectionString).Options;
+		await using var database = new RouterDbContext(options);
+		var entry = WanTableEntry.FromValues(
+			ParameterEntryIndex.FromValue(1), ProtocolBoolean.True,
+			CommunicationsAddress.FromValues(Brigade.FromValue(BrigadeOrAgencyIdentifier.FromValue(26)),
+				Node.FromValue(NodeIdentifier.FromValue(101)), Port.FromValue(PortIdentifier.FromValue(0))),
+			WanAddress.FromValue(SevenBitAsciiString.FromValue("WAN")),
+			ConnectType.FromValue(ConnectTypeValue.SwitchedVirtualCircuit));
+		var store = new EfRouterParameterStore(database);
+		await store.StoreAsync(ParameterTable.NonVolatile, RouterParameterCatalogue.WanTable.Number,
+			RouterParameterCatalogue.WanTable.Encode(WanTable.FromEntries(entry)));
+	}
+
 	[When(@"I request the local Router brigade or agency number")]
 	public async Task WhenIRequestTheLocalRouterBrigadeOrAgencyNumber()
 	{
@@ -220,6 +240,13 @@ public sealed class RouterParameterRequestSteps
 		this.response = await this.client!.PostAsync(
 			"/router/parameters/current/14/entries/1-1",
 			null);
+	}
+
+	[When(@"I request local Router Current WAN Table entries 1 through 1")]
+	public async Task WhenIRequestLocalRouterCurrentWanTableEntries()
+	{
+		await this.EnsureApplicationStartedAsync();
+		this.response = await this.client!.PostAsync("/router/parameters/current/15/entries/1-1", null);
 	}
 
 	[When(@"I request local Router Routing Table entry 1")]
@@ -1196,6 +1223,35 @@ public sealed class RouterParameterRequestSteps
 
 		throw new Xunit.Sdk.XunitException(
 			"The Parameter Request status did not show the expected PSTN Table entry.");
+	}
+
+	[Then(@"the Parameter Request status shows WAN Table entry 1 as used with next node 26.101.0, WAN address WAN, and switched virtual circuit")]
+	public async Task ThenTheParameterRequestStatusShowsWanTableEntryOne()
+	{
+		var statusAddress = this.response!.Headers.Location!;
+		for (var attempt = 0; attempt < 30; attempt++)
+		{
+			using var status = await this.client!.GetAsync(statusAddress);
+			if (status.StatusCode == HttpStatusCode.OK)
+			{
+				using var document = JsonDocument.Parse(await status.Content.ReadAsStringAsync());
+				if (document.RootElement.GetProperty("state").GetString() == "received" &&
+					document.RootElement.TryGetProperty("wanTableEntries", out var entries) &&
+					entries.GetArrayLength() == 1)
+				{
+					var entry = entries[0];
+					if (entry.GetProperty("index").GetInt32() == 1 && entry.GetProperty("used").GetBoolean() &&
+						entry.GetProperty("nextNode").GetString() == "26.101.0" &&
+						entry.GetProperty("wanAddress").GetString() == "WAN" &&
+						entry.GetProperty("connectType").GetString() == "Switched Virtual Circuit")
+					{
+						return;
+					}
+				}
+			}
+			await Task.Delay(TimeSpan.FromSeconds(1));
+		}
+		throw new Xunit.Sdk.XunitException("The Parameter Request status did not show the expected WAN Table entry.");
 	}
 
 	[Then(@"the Parameter Request status eventually shows timed-out")]

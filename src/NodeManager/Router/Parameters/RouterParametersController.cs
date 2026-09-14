@@ -14,6 +14,8 @@ public sealed class RouterParametersController(
 		ParameterNumber.FromValue(13);
 	private static readonly ParameterNumber PstnTableParameterNumber =
 		ParameterNumber.FromValue(14);
+	private static readonly ParameterNumber WanTableParameterNumber =
+		ParameterNumber.FromValue(15);
 
 	[HttpPost("brigade-or-agency-number")]
 	public async Task<IActionResult> RequestBrigadeOrAgencyNumber(CancellationToken cancellationToken)
@@ -199,6 +201,9 @@ public sealed class RouterParametersController(
 		var pstnTableEntries = status is ReceivedRouterParameterRequestStatus receivedPstnTable
 			? FormatPstnTableEntries(parameterNumber, receivedPstnTable.ParameterValue)
 			: null;
+		var wanTableEntries = status is ReceivedRouterParameterRequestStatus receivedWanTable
+			? FormatWanTableEntries(parameterNumber, receivedWanTable.ParameterValue)
+			: null;
 		bool? moreValues = status is ReceivedRouterParameterRequestStatus receivedMoreValues
 			? receivedMoreValues.MoreValues.Value == ProtocolBoolean.True
 			: null;
@@ -216,7 +221,10 @@ public sealed class RouterParametersController(
 			routingTableEntries,
 			pstnTableEntries,
 			moreValues,
-			rejectionReason);
+			rejectionReason)
+		{
+			WanTableEntries = wanTableEntries
+		};
 	}
 
 	private static string FormatRejectionReason(ReasonCode reasonCode)
@@ -301,6 +309,34 @@ public sealed class RouterParametersController(
 				entry.TelephoneNumber.Value.Value,
 				entry.HoldTime.Value,
 				entry.Available.Value))
+			.ToArray();
+	}
+
+	private static IReadOnlyList<WanTableEntryStatusResponse>? FormatWanTableEntries(
+		ParameterNumber? parameterNumber,
+		ParameterValue parameterValue)
+	{
+		if (parameterNumber != WanTableParameterNumber)
+		{
+			return null;
+		}
+
+		var buffer = new EncodedMessageBuffer(parameterValue.ToWireValue());
+		var wanTable = WanTable.FromEncodedMessageBuffer(ref buffer);
+		if (buffer.RemainingBitCount != 0)
+		{
+			throw new ArgumentException(
+				"Router WAN Table Parameter contains trailing encoded data.",
+				nameof(parameterValue));
+		}
+
+		return wanTable.Entries
+			.Select(entry => new WanTableEntryStatusResponse(
+				entry.Index.Value,
+				entry.Used.Value,
+				Format(entry.NextNode),
+				entry.WanAddress.Value.Value,
+				FormatReasonCode(entry.ConnectType.Value)))
 			.ToArray();
 	}
 

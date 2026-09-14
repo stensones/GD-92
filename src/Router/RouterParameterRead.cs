@@ -93,7 +93,8 @@ internal sealed class RouterParameterRead
 			} parameterRequest ||
 			parameterTable != ParameterTable.Current ||
 			(parameterNumber != RouterParameterCatalogue.RouterTable.Number &&
-				parameterNumber != RouterParameterCatalogue.PstnTable.Number) ||
+				parameterNumber != RouterParameterCatalogue.PstnTable.Number &&
+				parameterNumber != RouterParameterCatalogue.WanTable.Number) ||
 			this.parameterStore is null)
 		{
 			return null;
@@ -116,8 +117,9 @@ internal sealed class RouterParameterRead
 			return null;
 		}
 
-		return parameterNumber == RouterParameterCatalogue.RouterTable.Number
-			? this.CreateTableResponse(
+		if (parameterNumber == RouterParameterCatalogue.RouterTable.Number)
+		{
+			return this.CreateTableResponse(
 				envelope,
 				RouterParameterCatalogue.RouterTable.Read(tableParameterValue).Entries,
 				firstEntry,
@@ -125,8 +127,12 @@ internal sealed class RouterParameterRead
 				static entry => entry.Index.Value,
 				static entries => RouterParameterCatalogue.RouterTable.Encode(
 					RoutingTable.FromEntries(entries)),
-				"Routing Table")
-			: this.CreateTableResponse(
+				"Routing Table");
+		}
+
+		if (parameterNumber == RouterParameterCatalogue.PstnTable.Number)
+		{
+			return this.CreateTableResponse(
 				envelope,
 				RouterParameterCatalogue.PstnTable.Read(tableParameterValue).Entries,
 				firstEntry,
@@ -135,6 +141,17 @@ internal sealed class RouterParameterRead
 				static entries => RouterParameterCatalogue.PstnTable.Encode(
 					PstnTable.FromEntries(entries)),
 				"PSTN Table");
+		}
+
+		return this.CreateTableResponse(
+			envelope,
+			RouterParameterCatalogue.WanTable.Read(tableParameterValue).Entries,
+			firstEntry,
+			lastEntry,
+			static entry => entry.Index.Value,
+			static entries => RouterParameterCatalogue.WanTable.Encode(
+				WanTable.FromEntries(entries)),
+			"WAN Table");
 	}
 
 	private Envelope CreateTableResponse<TEntry>(
