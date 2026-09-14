@@ -281,8 +281,23 @@ public sealed class RouterParametersController(
 			4 => FormatCurrentPassword(parameterValue),
 			5 => "PASSWORD",
 			9 => FormatMaximumMessageLength(parameterValue),
+			10 => FormatNetworkManagerAddress1(parameterValue),
 			_ => null
 		};
+	}
+
+	private static string FormatNetworkManagerAddress1(ParameterValue parameterValue)
+	{
+		var buffer = new EncodedMessageBuffer(parameterValue.ToWireValue());
+		var communicationsAddress = CommunicationsAddress.FromEncodedMessageBuffer(ref buffer);
+		if (buffer.RemainingBitCount != 0)
+		{
+			throw new ArgumentException(
+				"Router Parameter 10 contains trailing encoded data.",
+				nameof(parameterValue));
+		}
+
+		return Format(communicationsAddress);
 	}
 
 	private static string FormatMaximumMessageLength(ParameterValue parameterValue)

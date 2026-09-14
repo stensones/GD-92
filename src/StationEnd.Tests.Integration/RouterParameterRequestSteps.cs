@@ -149,6 +149,14 @@ public sealed class RouterParameterRequestSteps
 		this.response = await this.client!.PostAsync("/router/parameters/current/9", null);
 	}
 
+	[When(@"I request local Router Current Parameter 10")]
+	public async Task WhenIRequestLocalRouterCurrentParameterTen()
+	{
+		await this.EnsureApplicationStartedAsync();
+
+		this.response = await this.client!.PostAsync("/router/parameters/current/10", null);
+	}
+
 	[When(@"I request local Router Routing Table entry 1")]
 	public async Task WhenIRequestLocalRouterRoutingTableEntryOne()
 	{
@@ -938,6 +946,38 @@ public sealed class RouterParameterRequestSteps
 	public void ThenNodeManagerListsMaximumMessageLengthInTheRouterCurrentParameterCatalogue()
 	{
 		this.pageContent.Should().Contain("""{ number: 9, name: "Maximum Message Length" },""");
+	}
+
+	[Then(@"the Parameter Request status shows Router Current Network Manager Address 1 26.100.25")]
+	public async Task ThenTheParameterRequestStatusShowsRouterCurrentNetworkManagerAddressOne()
+	{
+		var statusAddress = this.response!.Headers.Location!;
+
+		for (var attempt = 0; attempt < 30; attempt++)
+		{
+			using var status = await this.client!.GetAsync(statusAddress);
+			if (status.StatusCode == HttpStatusCode.OK)
+			{
+				using var document = JsonDocument.Parse(await status.Content.ReadAsStringAsync());
+				if (document.RootElement.GetProperty("state").GetString() == "received" &&
+					document.RootElement.GetProperty("parameterNumber").GetInt32() == 10 &&
+					document.RootElement.GetProperty("parameterValue").GetString() == "26.100.25")
+				{
+					return;
+				}
+			}
+
+			await Task.Delay(TimeSpan.FromSeconds(1));
+		}
+
+		throw new Xunit.Sdk.XunitException(
+			"The Parameter Request status did not show Router Current Network Manager Address 1 26.100.25.");
+	}
+
+	[Then(@"NodeManager lists Network Manager Address 1 in the Router Current Parameter catalogue")]
+	public void ThenNodeManagerListsNetworkManagerAddressOneInTheRouterCurrentParameterCatalogue()
+	{
+		this.pageContent.Should().Contain("""{ number: 10, name: "Network Manager Address 1" },""");
 	}
 
 	[Then(@"NodeManager renders the Routing Table rejection reason")]

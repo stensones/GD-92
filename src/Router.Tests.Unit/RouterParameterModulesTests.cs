@@ -92,6 +92,28 @@ public sealed class RouterParameterReadTests
 	}
 
 	[Fact]
+	public async Task Returns_the_Current_Network_Manager_Address_1_Parameter_from_the_configuration()
+	{
+		var localAddress = RouterParameterModuleTestSupport.CreateAddress(26, 100, 0);
+		var networkManagerAddress1 = RouterParameterModuleTestSupport.CreateAddress(26, 100, 25);
+		var parameterRead = new RouterParameterRead(
+			localAddress,
+			RouterParameterModuleTestSupport.ProtocolVersion,
+			networkManagerAddress1: networkManagerAddress1);
+
+		var response = await parameterRead.HandleAsync(
+			RouterParameterModuleTestSupport.CreateParameterRequest(
+				localAddress,
+				ParameterTable.Current,
+				RouterParameterCatalogue.NetworkManagerAddress1.Number),
+			CancellationToken.None);
+
+		RouterParameterCatalogue.NetworkManagerAddress1.Read(
+			response!.Contents.Should().BeOfType<Parameter>().Which.ParameterValue)
+			.Should().Be(networkManagerAddress1);
+	}
+
+	[Fact]
 	public async Task Leaves_an_unsupported_Router_Parameter_unhandled()
 	{
 		var localAddress = RouterParameterModuleTestSupport.CreateAddress(26, 100, 0);

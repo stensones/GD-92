@@ -33,7 +33,8 @@ builder.Services.AddScoped(serviceProvider =>
 		serviceProvider.GetRequiredService<RouterCurrentParameterProjectionSource>(),
 		serviceProvider.GetRequiredService<IParticipantParameterStore>(),
 		routerSettings.NodeName,
-		routerSettings.MaximumMessageLength));
+		routerSettings.MaximumMessageLength,
+		routerSettings.NetworkManagerAddress1));
 builder.Services.AddScoped(serviceProvider =>
 	new NodeLogin(
 		routerSettings.LocalAddress,

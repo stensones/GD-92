@@ -34,6 +34,8 @@ The Node Manager currently:
   (`node_name`) as typed GD-92 Node Number and Node Name values;
 - reads and presents Router Current Parameter 9 (`maximum_message_length`) as
   its typed GD-92 Maximum Message Length value;
+- reads and presents Router Current Parameter 10 (`network_manager_address_1`)
+  as its typed GD-92 primary Network Manager address;
 - supports paged Current Router Routing Table reads through `Param_req_multiple`
   for requested entry ranges, returning decoded entry index, next-node values,
   and `more_values` through an operator-facing Parameters form when the

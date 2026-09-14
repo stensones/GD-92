@@ -56,6 +56,11 @@ GD-92 typed `MaximumMessageLength` field and presented from the Router's
 configured maximum message length. For example,
 `Router:MaximumMessageLength = 1023` returns `1023`.
 
+Router Current Parameter 10 (`network_manager_address_1`) is decoded using the
+GD-92 typed `CommunicationsAddress` field and presented from the Router's first
+configured Network Manager address. For example,
+`Router:NetworkManagerAddress1 = 26.100.25` returns `26.100.25`.
+
 ## Browse catalogues
 
 | Participant | Current Parameters |
