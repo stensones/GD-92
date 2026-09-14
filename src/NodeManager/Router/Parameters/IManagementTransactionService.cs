@@ -24,6 +24,7 @@ public sealed record ManagementTransactionRequest(
 public enum ManagementTransactionKind
 {
 	ParameterRequest,
+	ParameterModification,
 	NodeLogin,
 	NodeLogoff
 }

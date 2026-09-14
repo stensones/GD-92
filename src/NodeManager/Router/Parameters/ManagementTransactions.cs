@@ -113,6 +113,10 @@ public sealed class ManagementTransactions(
 				request.Source,
 				request.Destination,
 				static identifier => new PendingRouterParameterRequestStatus(identifier)),
+			ManagementTransactionKind.ParameterModification => this.ReserveTransaction(
+				request.Source,
+				request.Destination,
+				static identifier => new PendingParameterModificationStatus(identifier)),
 			ManagementTransactionKind.NodeLogin when request.NodeLoginUserAgentAddress is not null =>
 				this.ReserveTransaction(
 					request.Source,
@@ -235,7 +239,8 @@ public sealed class ManagementTransactions(
 		{
 			return this.statuses.TryGetValue(statusIdentifier.USWR, out var status) &&
 				status is PendingRouterParameterRequestStatus or DeferredRouterParameterRequestStatus or
-					PendingNodeLoginStatus or PendingNodeLogoffStatus;
+					PendingNodeLoginStatus or PendingNodeLogoffStatus or
+					PendingParameterModificationStatus;
 		}
 	}
 
@@ -302,6 +307,10 @@ public sealed class ManagementTransactions(
 					this.statuses[uswr] = new LoggedOffNodeLoginStatus(
 						new RouterParameterRequestStatusIdentifier(uswr));
 					break;
+				case PendingParameterModificationStatus:
+					this.statuses[uswr] = new AcknowledgedParameterModificationStatus(
+						new RouterParameterRequestStatusIdentifier(uswr));
+					break;
 				default:
 					return false;
 			}
@@ -347,6 +356,7 @@ public sealed class ManagementTransactions(
 								pendingNodeLogin.UserAgentAddress);
 					break;
 				case PendingRouterParameterRequestStatus:
+				case PendingParameterModificationStatus:
 					this.statuses[uswr] =
 						negativeAcknowledgement.ReasonCode.GeneralReasonCode ==
 						GeneralReasonCode.WaitForAcknowledgement
@@ -377,7 +387,7 @@ public sealed class ManagementTransactions(
 			if (!this.statuses.TryGetValue(statusIdentifier.USWR, out var status) ||
 				status is not (PendingRouterParameterRequestStatus or
 					DeferredRouterParameterRequestStatus or PendingNodeLoginStatus or
-					PendingNodeLogoffStatus))
+					PendingNodeLogoffStatus or PendingParameterModificationStatus))
 			{
 				return false;
 			}
@@ -401,7 +411,8 @@ public sealed class ManagementTransactions(
 		{
 			if (!this.statuses.TryGetValue(statusIdentifier.USWR, out var status) ||
 				status is not (PendingRouterParameterRequestStatus or
-					PendingNodeLoginStatus or PendingNodeLogoffStatus))
+					PendingNodeLoginStatus or PendingNodeLogoffStatus or
+					PendingParameterModificationStatus))
 			{
 				return false;
 			}

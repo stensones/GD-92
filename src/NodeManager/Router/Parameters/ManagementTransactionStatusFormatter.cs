@@ -9,7 +9,9 @@ internal static class ManagementTransactionStatusFormatter
 		return status switch
 		{
 			PendingRouterParameterRequestStatus pending => pending.State,
+			PendingParameterModificationStatus pending => pending.State,
 			ReceivedRouterParameterRequestStatus received => received.State,
+			AcknowledgedParameterModificationStatus acknowledged => acknowledged.State,
 			TimedOutRouterParameterRequestStatus timedOut => timedOut.State,
 			DeliveryFailedRouterParameterRequestStatus deliveryFailed => deliveryFailed.State,
 			RejectedRouterParameterRequestStatus rejected => rejected.State,

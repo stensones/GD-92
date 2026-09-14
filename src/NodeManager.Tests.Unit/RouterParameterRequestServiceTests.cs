@@ -22,6 +22,26 @@ public sealed class RouterParameterRequestServiceTests
 	}
 
 	[Fact]
+	public async Task Submits_a_NonVolatile_Retries_change_as_a_Parameter_Modification()
+	{
+		var transactions = new RecordingManagementTransactions();
+		var service = new RouterParameterRequestService(Settings(), transactions);
+
+		await service.ModifyLocalRouterParameter(
+			ParameterTable.NonVolatile,
+			ParameterNumber.FromValue(19),
+			ParameterValue.FromWireValue([5]),
+			CancellationToken.None);
+
+		transactions.Request!.Kind.Should().Be(ManagementTransactionKind.ParameterModification);
+		var setParameter = transactions.Envelope!.Contents.Should().BeOfType<SetParameter>().Which;
+		setParameter.ParameterTable.Should().Be(ParameterTable.NonVolatile);
+		setParameter.ParameterNumber.Value.Should().Be(19);
+		setParameter.ParameterValue.ToWireValue().Should().Equal([5]);
+		transactions.Envelope.AcknowledgementAndSequence.AcknowledgementRequest.IsRequested.Should().BeTrue();
+	}
+
+	[Fact]
 	public async Task Submits_a_Node_Login_with_the_supplied_User_Agent_address()
 	{
 		var transactions = new RecordingManagementTransactions();

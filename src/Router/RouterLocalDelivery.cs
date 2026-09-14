@@ -12,6 +12,7 @@ internal sealed class RouterLocalDelivery
 	private readonly RouterParameterRead routerParameterRead;
 	private readonly NodeLogin nodeLogin;
 	private readonly Level1PasswordModification level1PasswordModification;
+	private readonly RouterParameterModification routerParameterModification;
 	private readonly IUserAgentIngress userAgentIngress;
 	private readonly ILocalParticipantIngress localParticipantIngress;
 	private readonly ILogger<RouterLocalDelivery> logger;
@@ -21,6 +22,7 @@ internal sealed class RouterLocalDelivery
 		RouterParameterRead routerParameterRead,
 		NodeLogin nodeLogin,
 		Level1PasswordModification level1PasswordModification,
+		RouterParameterModification routerParameterModification,
 		IUserAgentIngress userAgentIngress,
 		ILocalParticipantIngress localParticipantIngress,
 		ILogger<RouterLocalDelivery> logger)
@@ -31,6 +33,8 @@ internal sealed class RouterLocalDelivery
 		this.nodeLogin = nodeLogin ?? throw new ArgumentNullException(nameof(nodeLogin));
 		this.level1PasswordModification = level1PasswordModification ??
 			throw new ArgumentNullException(nameof(level1PasswordModification));
+		this.routerParameterModification = routerParameterModification ??
+			throw new ArgumentNullException(nameof(routerParameterModification));
 		this.userAgentIngress = userAgentIngress ??
 			throw new ArgumentNullException(nameof(userAgentIngress));
 		this.localParticipantIngress = localParticipantIngress ??
@@ -107,6 +111,7 @@ internal sealed class RouterLocalDelivery
 				ParameterNumber: var number
 			} when number == RouterParameterCatalogue.Level1PasswordNumber =>
 				this.level1PasswordModification.HandleAsync(envelope, cancellationToken),
+			SetParameter => this.routerParameterModification.HandleAsync(envelope, cancellationToken),
 			_ => ValueTask.FromResult<Envelope?>(null)
 		};
 	}

@@ -55,6 +55,25 @@ public sealed class RouterParametersControllerTests
 	}
 
 	[Fact]
+	public async Task Redirects_a_Router_parameter_change_to_its_transaction_status()
+	{
+		var identifier = Identifier();
+		using var managementTransactions = new TestManagementTransactions();
+		var controller = new RouterParametersController(
+			new ReturningRouterParameterRequestService(identifier),
+			managementTransactions.Transactions);
+
+		var result = await controller.ModifyParameter(
+			"non-volatile",
+			19,
+			5,
+			CancellationToken.None);
+
+		result.Should().BeOfType<SeeOtherRedirectResult>().Which.Location
+			.Should().Be($"/router/parameters/status/{identifier}");
+	}
+
+	[Fact]
 	public async Task Redirects_logon_and_logoff_to_compatible_status_routes()
 	{
 		var identifier = Identifier();
@@ -978,6 +997,12 @@ public sealed class RouterParametersControllerTests
 			ParameterTable parameterTable,
 			ParameterNumber parameterNumber,
 			ParameterEntrySelection entrySelection,
+			CancellationToken cancellationToken) => Task.FromResult(statusIdentifier);
+
+		public Task<RouterParameterRequestStatusIdentifier> ModifyLocalRouterParameter(
+			ParameterTable parameterTable,
+			ParameterNumber parameterNumber,
+			ParameterValue parameterValue,
 			CancellationToken cancellationToken) => Task.FromResult(statusIdentifier);
 
 		public Task<RouterParameterRequestStatusIdentifier> RequestLocalRouterLogon(

@@ -32,6 +32,14 @@ public sealed class RouterIngressReceiverTests
 					RouterParameterModuleTestSupport.ProtocolVersion,
 					currentParameters,
 					new InMemoryPasswordVerifierStore()),
+				new RouterParameterModification(
+					routerAddress,
+					RouterParameterModuleTestSupport.ProtocolVersion,
+					currentParameters,
+					new SingleParameterStore(
+						Stensones.GD92.Fields.ParameterTable.NonVolatile,
+						RouterParameterCatalogue.Retries.Number,
+						ParameterValue.FromWireValue([]))),
 				userAgentIngress,
 				new NoOpLocalParticipantIngress(),
 				NullLogger<RouterLocalDelivery>.Instance),

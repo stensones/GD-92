@@ -652,6 +652,53 @@ public sealed class RouterLocalDeliveryTests
 	}
 
 	[Fact]
+	public async Task Delivers_an_acknowledgement_for_an_authorized_NonVolatile_Retries_change()
+	{
+		var routerAddress = RouterParameterModuleTestSupport.CreateAddress(26, 100, 0);
+		var userAgentAddress = RouterParameterModuleTestSupport.CreateAddress(26, 100, 25);
+		var currentParameters = new RouterCurrentParameterProjectionSource();
+		currentParameters.Publish(
+			RouterParameterModuleTestSupport.CreateCurrentParameters(routerAddress));
+		currentParameters.TryLogOnAtLevelOne(
+			RouterParameterModuleTestSupport.CreatePasswordParameter(
+				PasswordLevelNumber.Level1,
+				"FIRE",
+				userAgentAddress)).Should().BeTrue();
+		var parameterStore = new RecordingParameterStore();
+		var userAgentIngress = new CapturingUserAgentIngress();
+		var localDelivery = CreateLocalDelivery(
+			routerAddress,
+			currentParameters,
+			userAgentIngress,
+			new CapturingLocalParticipantIngress(),
+			parameterStore);
+
+		await localDelivery.ReceiveAsync(
+			Envelope.FromValues(
+				userAgentAddress,
+				Destinations.FromAddresses(routerAddress),
+				ProtocolAndPriority.FromValues(
+					MessagePriority.FromValue(MessagePriorityLevel.FromValue(3)),
+					RouterParameterModuleTestSupport.ProtocolVersion),
+				AcknowledgementAndSequence.FromValues(
+					SequenceNumber.FromValue(MessageSequenceIdentifier.FromValue(7)),
+					AcknowledgementRequest.Requested),
+				SetParameter.FromFields(
+					ParameterTable.NonVolatile,
+					RouterParameterCatalogue.Retries.Number,
+					RouterParameterCatalogue.Retries.Encode(
+						Retries.FromValue(Word8.FromValue(5))))),
+			CancellationToken.None);
+
+		userAgentIngress.Envelope!.Contents.Should().BeOfType<Acknowledgement>();
+		RouterParameterCatalogue.Retries.Read(
+			(await parameterStore.GetAsync(
+				ParameterTable.NonVolatile,
+				RouterParameterCatalogue.Retries.Number))!).Value.Value.Should().Be(5);
+		currentParameters.GetCurrent().Retries.Value.Value.Should().Be(5);
+	}
+
+	[Fact]
 	public async Task Does_not_deliver_an_unsupported_Router_Message()
 	{
 		var routerAddress = RouterParameterModuleTestSupport.CreateAddress(26, 100, 0);
@@ -856,6 +903,11 @@ public sealed class RouterLocalDeliveryTests
 				RouterParameterModuleTestSupport.ProtocolVersion,
 				currentParameters,
 				new InMemoryPasswordVerifierStore()),
+			new RouterParameterModification(
+				routerAddress,
+				RouterParameterModuleTestSupport.ProtocolVersion,
+				currentParameters,
+				parameterStore ?? new RetainedParameterStore(ParameterValue.FromWireValue([]))),
 			userAgentIngress,
 			localParticipantIngress,
 			NullLogger<RouterLocalDelivery>.Instance);
@@ -889,6 +941,34 @@ public sealed class RouterLocalDeliveryTests
 			Func<CancellationToken, ValueTask<T>> initialize,
 			CancellationToken cancellationToken = default) =>
 			throw new NotSupportedException();
+	}
+
+	private sealed class RecordingParameterStore : IParticipantParameterStore
+	{
+		private readonly Dictionary<(ParameterTable Table, ParameterNumber Number), ParameterValue>
+			values = [];
+
+		public ValueTask<ParameterValue?> GetAsync(
+			ParameterTable parameterTable,
+			ParameterNumber parameterNumber,
+			CancellationToken cancellationToken = default) =>
+			ValueTask.FromResult<ParameterValue?>(
+				this.values.GetValueOrDefault((parameterTable, parameterNumber)));
+
+		public ValueTask StoreAsync(
+			ParameterTable parameterTable,
+			ParameterNumber parameterNumber,
+			ParameterValue parameterValue,
+			CancellationToken cancellationToken = default)
+		{
+			this.values[(parameterTable, parameterNumber)] = parameterValue;
+			return ValueTask.CompletedTask;
+		}
+
+		public ValueTask<T> ExecuteInitializationAsync<T>(
+			Func<CancellationToken, ValueTask<T>> initialize,
+			CancellationToken cancellationToken = default) =>
+			initialize(cancellationToken);
 	}
 
 	private sealed class CapturingUserAgentIngress : IUserAgentIngress

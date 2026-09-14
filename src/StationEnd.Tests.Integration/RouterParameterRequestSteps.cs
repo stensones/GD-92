@@ -364,6 +364,14 @@ public sealed class RouterParameterRequestSteps
 		this.response = await this.client!.PostAsync("/router/parameters/current/18", null);
 	}
 
+	[When(@"I request local Router Current Parameter 19")]
+	public async Task WhenIRequestLocalRouterCurrentParameterNineteen()
+	{
+		await this.EnsureApplicationStartedAsync();
+
+		this.response = await this.client!.PostAsync("/router/parameters/current/19", null);
+	}
+
 	[When(@"I request local Router Current Parameter 20")]
 	public async Task WhenIRequestLocalRouterCurrentParameterTwenty()
 	{
@@ -1050,6 +1058,19 @@ public sealed class RouterParameterRequestSteps
 		this.response = await this.client!.PostAsync("/router/parameters/logoff", null);
 	}
 
+	[When(@"I set local Router Non-Volatile Parameter 19 to 5")]
+	public async Task WhenISetLocalRouterNonVolatileRetries()
+	{
+		await this.EnsureApplicationStartedAsync();
+
+		this.response = await this.client!.PostAsync(
+			"/router/parameters/non-volatile/19/value",
+			new FormUrlEncodedContent(
+			[
+				new KeyValuePair<string, string>("value", "5")
+			]));
+	}
+
 	[Given(@"the Router persistent Parameter Tables are empty")]
 	public async Task GivenTheRouterPersistentParameterTablesAreEmpty()
 	{
@@ -1079,6 +1100,12 @@ public sealed class RouterParameterRequestSteps
 
 	[Then(@"I am redirected to the pending Participant Parameter Request status")]
 	public Task ThenIAmRedirectedToThePendingParticipantParameterRequestStatus()
+	{
+		return this.ThenIAmRedirectedToThePendingParameterRequestStatus();
+	}
+
+	[Then(@"I am redirected to the pending Parameter Modification status")]
+	public Task ThenIAmRedirectedToThePendingParameterModificationStatus()
 	{
 		return this.ThenIAmRedirectedToThePendingParameterRequestStatus();
 	}
@@ -1558,6 +1585,31 @@ public sealed class RouterParameterRequestSteps
 		}
 		throw new Xunit.Sdk.XunitException(
 			"The Parameter Request status did not show Router Non-Volatile Brigade or Agency.");
+	}
+
+	[Then(@"the Parameter Request status shows Router Current Retries 5")]
+	public async Task ThenTheParameterRequestStatusShowsRouterCurrentRetries()
+	{
+		var statusAddress = this.response!.Headers.Location!;
+		for (var attempt = 0; attempt < 30; attempt++)
+		{
+			using var status = await this.client!.GetAsync(statusAddress);
+			if (status.StatusCode == HttpStatusCode.OK)
+			{
+				using var document = JsonDocument.Parse(await status.Content.ReadAsStringAsync());
+				if (document.RootElement.GetProperty("state").GetString() == "received" &&
+					document.RootElement.GetProperty("parameterNumber").GetInt32() == 19 &&
+					document.RootElement.GetProperty("parameterValue").GetString() == "5")
+				{
+					return;
+				}
+			}
+
+			await Task.Delay(TimeSpan.FromSeconds(1));
+		}
+
+		throw new Xunit.Sdk.XunitException(
+			"The Parameter Request status did not show Router Current Retries 5.");
 	}
 
 	[Then(@"the Parameter Request status shows Router Current Maximum Message Length 1023")]
@@ -2115,6 +2167,30 @@ public sealed class RouterParameterRequestSteps
 
 		throw new Xunit.Sdk.XunitException(
 			"The Node Login status did not show an invalid password rejection.");
+	}
+
+	[Then(@"the Parameter Modification status eventually shows acknowledged")]
+	public async Task ThenTheParameterModificationStatusEventuallyShowsAcknowledged()
+	{
+		var statusAddress = this.response!.Headers.Location!;
+
+		for (var attempt = 0; attempt < 30; attempt++)
+		{
+			using var status = await this.client!.GetAsync(statusAddress);
+			if (status.StatusCode == HttpStatusCode.OK)
+			{
+				using var document = JsonDocument.Parse(await status.Content.ReadAsStringAsync());
+				if (document.RootElement.GetProperty("state").GetString() == "acknowledged")
+				{
+					return;
+				}
+			}
+
+			await Task.Delay(TimeSpan.FromSeconds(1));
+		}
+
+		throw new Xunit.Sdk.XunitException(
+			"The Parameter Modification status did not show acknowledged.");
 	}
 
 	[Then(@"the Node Login status eventually shows the Router is logged off")]

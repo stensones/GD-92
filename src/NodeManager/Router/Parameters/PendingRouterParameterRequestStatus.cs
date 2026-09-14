@@ -13,6 +13,20 @@ public sealed record PendingRouterParameterRequestStatus(
 	public string State { get; } = "pending";
 }
 
+public sealed record PendingParameterModificationStatus(
+	RouterParameterRequestStatusIdentifier Identifier) :
+	RouterParameterRequestStatus(Identifier)
+{
+	public string State { get; } = "pending";
+}
+
+public sealed record AcknowledgedParameterModificationStatus(
+	RouterParameterRequestStatusIdentifier Identifier) :
+	RouterParameterRequestStatus(Identifier)
+{
+	public string State { get; } = "acknowledged";
+}
+
 public sealed record DeferredRouterParameterRequestStatus(
 	RouterParameterRequestStatusIdentifier Identifier) :
 	RouterParameterRequestStatus(Identifier)

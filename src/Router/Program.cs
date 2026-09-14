@@ -50,11 +50,18 @@ builder.Services.AddScoped(serviceProvider =>
 		serviceProvider.GetRequiredService<RouterCurrentParameterProjectionSource>(),
 		serviceProvider.GetRequiredService<IRouterPasswordVerifierStore>()));
 builder.Services.AddScoped(serviceProvider =>
+	new RouterParameterModification(
+		routerSettings.LocalAddress,
+		routerSettings.ProtocolVersion,
+		serviceProvider.GetRequiredService<RouterCurrentParameterProjectionSource>(),
+		serviceProvider.GetRequiredService<IParticipantParameterStore>()));
+builder.Services.AddScoped(serviceProvider =>
 	new RouterLocalDelivery(
 		routerSettings.LocalAddress,
 		serviceProvider.GetRequiredService<RouterParameterRead>(),
 		serviceProvider.GetRequiredService<NodeLogin>(),
 		serviceProvider.GetRequiredService<Level1PasswordModification>(),
+		serviceProvider.GetRequiredService<RouterParameterModification>(),
 		serviceProvider.GetRequiredService<IUserAgentIngress>(),
 		serviceProvider.GetRequiredService<ILocalParticipantIngress>(),
 		serviceProvider.GetRequiredService<ILogger<RouterLocalDelivery>>()));

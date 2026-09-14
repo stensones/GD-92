@@ -96,4 +96,26 @@ public sealed class RouterCurrentParameterProjectionSource
 			}
 		}
 	}
+
+	public bool TryChangeRetries(Retries retries)
+	{
+		ArgumentNullException.ThrowIfNull(retries);
+
+		while (true)
+		{
+			var current = this.GetCurrent();
+			if (current.CurrentPassword.Level != LevelOne)
+			{
+				return false;
+			}
+
+			var changed = current.WithRetries(retries);
+			if (ReferenceEquals(
+				Interlocked.CompareExchange(ref this.currentParameters, changed, current),
+				current))
+			{
+				return true;
+			}
+		}
+	}
 }

@@ -23,6 +23,12 @@ public interface IRouterParameterRequestService
 		ParameterEntrySelection entrySelection,
 		CancellationToken cancellationToken);
 
+	Task<RouterParameterRequestStatusIdentifier> ModifyLocalRouterParameter(
+		ParameterTable parameterTable,
+		ParameterNumber parameterNumber,
+		ParameterValue parameterValue,
+		CancellationToken cancellationToken);
+
 	Task<RouterParameterRequestStatusIdentifier> RequestLocalRouterLogon(
 		CommunicationsAddress communicationsAddress,
 		PasswordValue password,
