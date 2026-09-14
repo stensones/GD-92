@@ -486,7 +486,7 @@
         routerRoutingTableEntryResults.replaceChildren();
         routerRoutingTableEntrySelectionStatus.textContent = "Requesting Routing Table entries...";
         const response = await fetch(
-            `/router/parameters/current/13/entries/${firstEntry}-${lastEntry}`,
+            `/router/parameters/${participantParameterTable.value}/13/entries/${firstEntry}-${lastEntry}`,
             { method: "POST" });
         const statusUrl = response.url;
         if (!response.ok || !statusUrl) {
@@ -569,7 +569,7 @@
         routerPstnTableEntryResults.replaceChildren();
         routerPstnTableEntrySelectionStatus.textContent = "Requesting PSTN Table entries...";
         const response = await fetch(
-            `/router/parameters/current/14/entries/${firstEntry}-${lastEntry}`,
+            `/router/parameters/${participantParameterTable.value}/14/entries/${firstEntry}-${lastEntry}`,
             { method: "POST" });
         const statusUrl = response.url;
         if (!response.ok || !statusUrl) {
@@ -641,7 +641,7 @@
         routerWanTableEntryResults.replaceChildren();
         routerWanTableEntrySelectionStatus.textContent = "Requesting WAN Table entries...";
         const response = await fetch(
-            `/router/parameters/current/15/entries/${firstEntry}-${lastEntry}`,
+            `/router/parameters/${participantParameterTable.value}/15/entries/${firstEntry}-${lastEntry}`,
             { method: "POST" });
         const statusUrl = response.url;
         if (!response.ok || !statusUrl) {
@@ -713,7 +713,7 @@
         routerLanTableEntryResults.replaceChildren();
         routerLanTableEntrySelectionStatus.textContent = "Requesting LAN Table entries...";
         const response = await fetch(
-            `/router/parameters/current/16/entries/${firstEntry}-${lastEntry}`,
+            `/router/parameters/${participantParameterTable.value}/16/entries/${firstEntry}-${lastEntry}`,
             { method: "POST" });
         const statusUrl = response.url;
         if (!response.ok || !statusUrl) {
@@ -796,7 +796,7 @@
         routerIsdnTableEntryResults.replaceChildren();
         routerIsdnTableEntrySelectionStatus.textContent = "Requesting ISDN Table entries...";
         const response = await fetch(
-            `/router/parameters/current/17/entries/${firstEntry}-${lastEntry}`,
+            `/router/parameters/${participantParameterTable.value}/17/entries/${firstEntry}-${lastEntry}`,
             { method: "POST" });
         if (!response.ok || !response.url) {
             routerIsdnTableEntrySelectionStatus.textContent =
@@ -850,7 +850,7 @@
         routerMdtTableEntrySelectionStatus.hidden = false;
         routerMdtTableEntryResults.hidden = true;
         routerMdtTableEntryResults.replaceChildren();
-        const response = await fetch(`/router/parameters/current/21/entries/${firstEntry}-${lastEntry}`, { method: "POST" });
+        const response = await fetch(`/router/parameters/${participantParameterTable.value}/21/entries/${firstEntry}-${lastEntry}`, { method: "POST" });
         if (!response.ok || !response.url) {
             routerMdtTableEntrySelectionStatus.textContent = "The MDT Table request could not be submitted.";
             return;

@@ -25,13 +25,14 @@ and priority, with `ack_req` cleared. Invalid Parameter Numbers and Parameter
 Tables require a parameter `NAK`; they must not be silently ignored.
 
 Table-shaped Parameters use Message 63 (`Param_req_multiple`) and page through
-the selected entries. Router Current Parameter 13 (`Routing Table`) currently
-supports a requested entry range and returns decoded entry index and next-node
-values through Node Manager's status API. The Router returns `more_values` only
-when all requested entries cannot fit in the 1,023-byte GD-92 Parameter message
-content limit. The browser then enables **Next entries**, requesting from the
-index after the last returned entry through the original upper bound; it hides
-and disables the control on the final page.
+the selected entries in the operator-selected Parameter Table. Router Current
+Parameter 13 (`Routing Table`) supports a requested entry range and returns
+decoded entry index and next-node values through Node Manager's status API. The
+Router returns `more_values` only when all requested entries cannot fit in the
+1,023-byte GD-92 Parameter message-content limit. The browser then enables
+**Next entries**, requesting from the index after the last returned entry
+through the original upper bound; it hides and disables the control on the
+final page.
 Requesting a Router Routing Table range that contains any missing entry returns
 `NAK(parameter / inv_entry)`, rather than a partial Parameter response. Node
 Manager exposes this as `Parameter / Invalid Entry` and displays it in the

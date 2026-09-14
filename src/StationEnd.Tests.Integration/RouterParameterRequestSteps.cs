@@ -809,7 +809,7 @@ public sealed class RouterParameterRequestSteps
 			"const routerRoutingTableEntrySelection = document.getElementById(" +
 			"\"router-routing-table-entry-selection\");");
 		this.pageContent.Should().Contain(
-			"/router/parameters/current/13/entries/${firstEntry}-${lastEntry}");
+			"/router/parameters/${participantParameterTable.value}/13/entries/${firstEntry}-${lastEntry}");
 	}
 
 	[Then(@"NodeManager renders returned Routing Table entries")]
