@@ -130,7 +130,8 @@ internal sealed class RouterParameterRead
 				ParameterNumber: var parameterNumber
 			} parameterRequest ||
 			(parameterTable != ParameterTable.Current &&
-				parameterTable != ParameterTable.NonVolatile) ||
+				parameterTable != ParameterTable.NonVolatile &&
+				parameterTable != ParameterTable.Permanent) ||
 			(parameterNumber != RouterParameterCatalogue.RouterTable.Number &&
 				parameterNumber != RouterParameterCatalogue.PstnTable.Number &&
 				parameterNumber != RouterParameterCatalogue.WanTable.Number &&

@@ -90,6 +90,14 @@ Feature: Router Parameter Request
     Then I am redirected to the pending Parameter Request status
     And the Parameter Request status eventually shows Routing Table entry 1 to next node 26.101.0
 
+  Scenario: Browsing a local Router Permanent Routing Table entry
+    Given NodeManager is the User Agent at Brigade 26, Node 100, and Port 25
+    And its local Router is at Brigade 26, Node 100, and Port 0
+    And the local Router has Permanent Routing Table entry 1 to next node 26.101.0
+    When I request local Router Permanent Routing Table entry 1
+    Then I am redirected to the pending Parameter Request status
+    And the Parameter Request status eventually shows Routing Table entry 1 to next node 26.101.0
+
   Scenario: Submitting a local Router Routing Table entry request
     Given NodeManager is the User Agent at Brigade 26, Node 100, and Port 25
     And its local Router is at Brigade 26, Node 100, and Port 0
@@ -138,6 +146,14 @@ Feature: Router Parameter Request
     Then I am redirected to the pending Parameter Request status
     And the Parameter Request status shows PSTN Table entry 1 as used and available with next node 26.101.0, telephone number 12, and hold time 30
 
+  Scenario: Browsing a local Router Permanent PSTN Table entry
+    Given NodeManager is the User Agent at Brigade 26, Node 100, and Port 25
+    And its local Router is at Brigade 26, Node 100, and Port 0
+    And the local Router has Permanent PSTN Table entry 1 to next node 26.101.0, telephone number 12, hold time 30, used, and available
+    When I request local Router Permanent PSTN Table entries 1 through 1
+    Then I am redirected to the pending Parameter Request status
+    And the Parameter Request status shows PSTN Table entry 1 as used and available with next node 26.101.0, telephone number 12, and hold time 30
+
   Scenario: Browsing a local Router Current WAN Table entry
     Given NodeManager is the User Agent at Brigade 26, Node 100, and Port 25
     And its local Router is at Brigade 26, Node 100, and Port 0
@@ -151,6 +167,14 @@ Feature: Router Parameter Request
     And its local Router is at Brigade 26, Node 100, and Port 0
     And the local Router has WAN Table entry 1 to next node 26.101.0, WAN address WAN, used, and switched virtual circuit
     When I request local Router Non-Volatile WAN Table entries 1 through 1
+    Then I am redirected to the pending Parameter Request status
+    And the Parameter Request status shows WAN Table entry 1 as used with next node 26.101.0, WAN address WAN, and switched virtual circuit
+
+  Scenario: Browsing a local Router Permanent WAN Table entry
+    Given NodeManager is the User Agent at Brigade 26, Node 100, and Port 25
+    And its local Router is at Brigade 26, Node 100, and Port 0
+    And the local Router has Permanent WAN Table entry 1 to next node 26.101.0, WAN address WAN, used, and switched virtual circuit
+    When I request local Router Permanent WAN Table entries 1 through 1
     Then I am redirected to the pending Parameter Request status
     And the Parameter Request status shows WAN Table entry 1 as used with next node 26.101.0, WAN address WAN, and switched virtual circuit
 
@@ -170,6 +194,14 @@ Feature: Router Parameter Request
     Then I am redirected to the pending Parameter Request status
     And the Parameter Request status shows LAN Table entry 1 as used with next node 26.101.0 and LAN address LAN
 
+  Scenario: Browsing a local Router Permanent LAN Table entry
+    Given NodeManager is the User Agent at Brigade 26, Node 100, and Port 25
+    And its local Router is at Brigade 26, Node 100, and Port 0
+    And the local Router has Permanent LAN Table entry 1 to next node 26.101.0, LAN address LAN, and used
+    When I request local Router Permanent LAN Table entries 1 through 1
+    Then I am redirected to the pending Parameter Request status
+    And the Parameter Request status shows LAN Table entry 1 as used with next node 26.101.0 and LAN address LAN
+
   Scenario: Browsing a local Router Current ISDN Table entry
     Given NodeManager is the User Agent at Brigade 26, Node 100, and Port 25
     And its local Router is at Brigade 26, Node 100, and Port 0
@@ -186,11 +218,35 @@ Feature: Router Parameter Request
     Then I am redirected to the pending Parameter Request status
     And the Parameter Request status shows ISDN Table entry 1 as used and available with next node 26.101.0, telephone number 34, and hold time 20
 
+  Scenario: Browsing a local Router Permanent ISDN Table entry
+    Given NodeManager is the User Agent at Brigade 26, Node 100, and Port 25
+    And its local Router is at Brigade 26, Node 100, and Port 0
+    And the local Router has Permanent ISDN Table entry 1 to next node 26.101.0, telephone number 34, hold time 20, used, and available
+    When I request local Router Permanent ISDN Table entries 1 through 1
+    Then I am redirected to the pending Parameter Request status
+    And the Parameter Request status shows ISDN Table entry 1 as used and available with next node 26.101.0, telephone number 34, and hold time 20
+
   Scenario: Browsing a local Router Current MDT Table entry
     Given NodeManager is the User Agent at Brigade 26, Node 100, and Port 25
     And its local Router is at Brigade 26, Node 100, and Port 0
     And the local Router has MDT Table entry 1 to next node 26.101.0, network user address MDT, hold time 10, used, and available
     When I request local Router Current MDT Table entries 1 through 1
+    Then I am redirected to the pending Parameter Request status
+    And the Parameter Request status shows MDT Table entry 1 as used and available with next node 26.101.0, network user address MDT, and hold time 10
+
+  Scenario: Browsing a local Router Non-Volatile MDT Table entry
+    Given NodeManager is the User Agent at Brigade 26, Node 100, and Port 25
+    And its local Router is at Brigade 26, Node 100, and Port 0
+    And the local Router has MDT Table entry 1 to next node 26.101.0, network user address MDT, hold time 10, used, and available
+    When I request local Router Non-Volatile MDT Table entries 1 through 1
+    Then I am redirected to the pending Parameter Request status
+    And the Parameter Request status shows MDT Table entry 1 as used and available with next node 26.101.0, network user address MDT, and hold time 10
+
+  Scenario: Browsing a local Router Permanent MDT Table entry
+    Given NodeManager is the User Agent at Brigade 26, Node 100, and Port 25
+    And its local Router is at Brigade 26, Node 100, and Port 0
+    And the local Router has Permanent MDT Table entry 1 to next node 26.101.0, network user address MDT, hold time 10, used, and available
+    When I request local Router Permanent MDT Table entries 1 through 1
     Then I am redirected to the pending Parameter Request status
     And the Parameter Request status shows MDT Table entry 1 as used and available with next node 26.101.0, network user address MDT, and hold time 10
 

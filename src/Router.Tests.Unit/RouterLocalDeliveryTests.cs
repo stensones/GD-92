@@ -138,6 +138,58 @@ public sealed class RouterLocalDeliveryTests
 	}
 
 	[Fact]
+	public async Task Delivers_a_Permanent_Routing_Table_entry_to_User_Agent_Ingress()
+	{
+		var routerAddress = RouterParameterModuleTestSupport.CreateAddress(26, 100, 0);
+		var nextNode = RouterParameterModuleTestSupport.CreateAddress(26, 101, 0);
+		var currentParameters = new RouterCurrentParameterProjectionSource();
+		currentParameters.Publish(
+			RouterParameterModuleTestSupport.CreateCurrentParameters(routerAddress));
+		var routingTable = RoutingTable.FromEntries(
+			RoutingTableEntry.FromValues(
+				ParameterEntryIndex.FromValue(1),
+				ProtocolBoolean.True,
+				nextNode,
+				DestinationNodes.FromAddressRanges(),
+				AgentType.FromValue(AgentTypeValue.LanMessageTransferAgent),
+				RoutingPreference.FromValue(0)));
+		var userAgentIngress = new CapturingUserAgentIngress();
+		var localDelivery = CreateLocalDelivery(
+			routerAddress,
+			currentParameters,
+			userAgentIngress,
+			new CapturingLocalParticipantIngress(),
+			new RetainedParameterStore(
+				RouterParameterCatalogue.RouterTable.Encode(routingTable),
+				parameterTable: ParameterTable.Permanent));
+		var request = Envelope.FromValues(
+			RouterParameterModuleTestSupport.CreateAddress(26, 100, 25),
+			Destinations.FromAddresses(routerAddress),
+			ProtocolAndPriority.FromValues(
+				MessagePriority.FromValue(MessagePriorityLevel.FromValue(3)),
+				RouterParameterModuleTestSupport.ProtocolVersion),
+			AcknowledgementAndSequence.FromValues(
+				SequenceNumber.FromValue(MessageSequenceIdentifier.FromValue(7)),
+				AcknowledgementRequest.Requested),
+			ParameterRequestMultiple.FromFields(
+				ParameterTable.Permanent,
+				RouterParameterCatalogue.RouterTable.Number,
+				ParameterEntrySelection.Range(
+					ParameterEntryIndex.FromValue(1),
+					ParameterEntryIndex.FromValue(1))));
+
+		await localDelivery.ReceiveAsync(request, CancellationToken.None);
+
+		var response = userAgentIngress.Envelope!.Contents.Should().BeOfType<Parameter>().Which;
+		response.MoreValues.Should().Be(MoreValues.No);
+		var buffer = new EncodedMessageBuffer(response.ParameterValue.ToWireValue());
+		var returnedEntry = RoutingTable.FromEncodedMessageBuffer(ref buffer).Entries.Single();
+		returnedEntry.Index.Value.Should().Be(1);
+		returnedEntry.NextNode.Should().Be(nextNode);
+		buffer.RemainingBitCount.Should().Be(0);
+	}
+
+	[Fact]
 	public async Task Delivers_a_requested_PSTN_Table_entry_from_the_non_volatile_store()
 	{
 		var routerAddress = RouterParameterModuleTestSupport.CreateAddress(26, 100, 0);
@@ -810,15 +862,18 @@ public sealed class RouterLocalDeliveryTests
 
 	private sealed class RetainedParameterStore(
 		ParameterValue parameterValue,
-		ParameterNumber? retainedParameterNumber = null) :
+		ParameterNumber? retainedParameterNumber = null,
+		ParameterTable? parameterTable = null) :
 		IParticipantParameterStore
 	{
+		private readonly ParameterTable storedTable = parameterTable ?? ParameterTable.NonVolatile;
+
 		public ValueTask<ParameterValue?> GetAsync(
 			ParameterTable parameterTable,
 			ParameterNumber parameterNumber,
 			CancellationToken cancellationToken = default) =>
 			ValueTask.FromResult<ParameterValue?>(
-				parameterTable == ParameterTable.NonVolatile &&
+				parameterTable == this.storedTable &&
 				parameterNumber == (retainedParameterNumber ?? RouterParameterCatalogue.RouterTable.Number)
 					? parameterValue
 					: null);

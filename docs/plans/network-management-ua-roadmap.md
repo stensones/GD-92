@@ -65,22 +65,36 @@ The Node Manager currently:
 - supports the same explicit entry-range behavior for Router Non-Volatile
   Routing Table reads through `Param_req_multiple`; Current remains the
   effective Non-Volatile projection;
+- supports explicit Permanent Router Routing Table reads through
+  `Param_req_multiple`, against the distinct Permanent table value;
 - supports selected Current Router PSTN Table entry ranges through
   `Param_req_multiple`, returning decoded telephone-routing fields;
 - supports selected Non-Volatile Router PSTN Table entry ranges through
+  `Param_req_multiple`, returning the same decoded telephone-routing fields;
+- supports selected Permanent Router PSTN Table entry ranges through
   `Param_req_multiple`, returning the same decoded telephone-routing fields;
 - supports selected Current Router WAN Table entry ranges through
   `Param_req_multiple`, returning decoded WAN-routing fields;
 - supports selected Non-Volatile Router WAN Table entry ranges through
   `Param_req_multiple`, returning the same decoded WAN-routing fields;
+- supports selected Permanent Router WAN Table entry ranges through
+  `Param_req_multiple`, returning the same decoded WAN-routing fields;
 - supports selected Current Router LAN Table entry ranges through
   `Param_req_multiple`, returning decoded LAN-routing fields;
 - supports selected Non-Volatile Router LAN Table entry ranges through
+  `Param_req_multiple`, returning the same decoded LAN-routing fields;
+- supports selected Permanent Router LAN Table entry ranges through
   `Param_req_multiple`, returning the same decoded LAN-routing fields;
 - supports selected Current Router ISDN Table entry ranges through
   `Param_req_multiple`, returning decoded telephone-routing fields;
 - supports selected Non-Volatile Router ISDN Table entry ranges through
   `Param_req_multiple`, returning the same decoded telephone-routing fields;
+- supports selected Permanent Router ISDN Table entry ranges through
+  `Param_req_multiple`, returning the same decoded telephone-routing fields;
+- supports selected Non-Volatile Router MDT Table entry ranges through
+  `Param_req_multiple`, returning decoded mobile-data-terminal routing fields;
+- supports selected Permanent Router MDT Table entry ranges through
+  `Param_req_multiple`, returning decoded mobile-data-terminal routing fields;
 - supports selected Current Router MDT Table entry ranges through
   `Param_req_multiple`, returning decoded mobile-data-terminal routing fields;
 - requests Router Parameter values and performs Router logon/logoff;

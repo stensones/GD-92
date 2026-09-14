@@ -64,6 +64,14 @@ public sealed class RouterParameterRequestSteps
 		await this.ConfigureLocalRouterRoutingTableAsync(101);
 	}
 
+	[Given(@"the local Router has Permanent Routing Table entry 1 to next node 26.101.0")]
+	public async Task GivenTheLocalRouterHasPermanentRoutingTableEntryOne()
+	{
+		this.applicationProfile = RouterParameterRequestApplicationProfile.RouterWithRoutingTableEntry;
+		await this.EnsureApplicationStartedAsync();
+		await this.ConfigureLocalRouterRoutingTableAsync(ParameterTable.Permanent, 101);
+	}
+
 	[Given(@"the local Router has Routing Table entries 1 and 2")]
 	public async Task GivenTheLocalRouterHasRoutingTableEntriesOneAndTwo()
 	{
@@ -82,6 +90,15 @@ public sealed class RouterParameterRequestSteps
 	}
 
 	private async Task ConfigureLocalRouterRoutingTableAsync(params ushort[] nextNodeNumbers)
+	{
+		await this.ConfigureLocalRouterRoutingTableAsync(
+			ParameterTable.NonVolatile,
+			nextNodeNumbers);
+	}
+
+	private async Task ConfigureLocalRouterRoutingTableAsync(
+		ParameterTable parameterTable,
+		params ushort[] nextNodeNumbers)
 	{
 		var connectionString = await this.application!.GetConnectionStringAsync("router-database")
 			?? throw new InvalidOperationException(
@@ -105,7 +122,7 @@ public sealed class RouterParameterRequestSteps
 					RoutingPreference.FromValue(0)))]);
 
 		await parameterStore.StoreAsync(
-			ParameterTable.NonVolatile,
+			parameterTable,
 			RouterParameterCatalogue.RouterTable.Number,
 			RouterParameterCatalogue.RouterTable.Encode(routingTable));
 	}
@@ -115,7 +132,19 @@ public sealed class RouterParameterRequestSteps
 	{
 		this.applicationProfile = RouterParameterRequestApplicationProfile.RouterWithRoutingTableEntry;
 		await this.EnsureApplicationStartedAsync();
+		await this.ConfigureLocalRouterPstnTableAsync(ParameterTable.NonVolatile);
+	}
 
+	[Given(@"the local Router has Permanent PSTN Table entry 1 to next node 26.101.0, telephone number 12, hold time 30, used, and available")]
+	public async Task GivenTheLocalRouterHasPermanentPstnTableEntryOne()
+	{
+		this.applicationProfile = RouterParameterRequestApplicationProfile.RouterWithRoutingTableEntry;
+		await this.EnsureApplicationStartedAsync();
+		await this.ConfigureLocalRouterPstnTableAsync(ParameterTable.Permanent);
+	}
+
+	private async Task ConfigureLocalRouterPstnTableAsync(ParameterTable parameterTable)
+	{
 		var connectionString = await this.application!.GetConnectionStringAsync("router-database")
 			?? throw new InvalidOperationException(
 				"The test Router database connection string was not provided.");
@@ -135,7 +164,7 @@ public sealed class RouterParameterRequestSteps
 			HoldTime.FromValue(30),
 			ProtocolBoolean.True);
 		await parameterStore.StoreAsync(
-			ParameterTable.NonVolatile,
+			parameterTable,
 			RouterParameterCatalogue.PstnTable.Number,
 			RouterParameterCatalogue.PstnTable.Encode(PstnTable.FromEntries(entry)));
 	}
@@ -145,6 +174,19 @@ public sealed class RouterParameterRequestSteps
 	{
 		this.applicationProfile = RouterParameterRequestApplicationProfile.RouterWithRoutingTableEntry;
 		await this.EnsureApplicationStartedAsync();
+		await this.ConfigureLocalRouterWanTableAsync(ParameterTable.NonVolatile);
+	}
+
+	[Given(@"the local Router has Permanent WAN Table entry 1 to next node 26.101.0, WAN address WAN, used, and switched virtual circuit")]
+	public async Task GivenTheLocalRouterHasPermanentWanTableEntryOne()
+	{
+		this.applicationProfile = RouterParameterRequestApplicationProfile.RouterWithRoutingTableEntry;
+		await this.EnsureApplicationStartedAsync();
+		await this.ConfigureLocalRouterWanTableAsync(ParameterTable.Permanent);
+	}
+
+	private async Task ConfigureLocalRouterWanTableAsync(ParameterTable parameterTable)
+	{
 		var connectionString = await this.application!.GetConnectionStringAsync("router-database")
 			?? throw new InvalidOperationException("The test Router database connection string was not provided.");
 		var options = new DbContextOptionsBuilder<RouterDbContext>().UseNpgsql(connectionString).Options;
@@ -156,7 +198,7 @@ public sealed class RouterParameterRequestSteps
 			WanAddress.FromValue(SevenBitAsciiString.FromValue("WAN")),
 			ConnectType.FromValue(ConnectTypeValue.SwitchedVirtualCircuit));
 		var store = new EfRouterParameterStore(database);
-		await store.StoreAsync(ParameterTable.NonVolatile, RouterParameterCatalogue.WanTable.Number,
+		await store.StoreAsync(parameterTable, RouterParameterCatalogue.WanTable.Number,
 			RouterParameterCatalogue.WanTable.Encode(WanTable.FromEntries(entry)));
 	}
 
@@ -165,6 +207,19 @@ public sealed class RouterParameterRequestSteps
 	{
 		this.applicationProfile = RouterParameterRequestApplicationProfile.RouterWithRoutingTableEntry;
 		await this.EnsureApplicationStartedAsync();
+		await this.ConfigureLocalRouterLanTableAsync(ParameterTable.NonVolatile);
+	}
+
+	[Given(@"the local Router has Permanent LAN Table entry 1 to next node 26.101.0, LAN address LAN, and used")]
+	public async Task GivenTheLocalRouterHasPermanentLanTableEntryOne()
+	{
+		this.applicationProfile = RouterParameterRequestApplicationProfile.RouterWithRoutingTableEntry;
+		await this.EnsureApplicationStartedAsync();
+		await this.ConfigureLocalRouterLanTableAsync(ParameterTable.Permanent);
+	}
+
+	private async Task ConfigureLocalRouterLanTableAsync(ParameterTable parameterTable)
+	{
 		var connectionString = await this.application!.GetConnectionStringAsync("router-database")
 			?? throw new InvalidOperationException("The test Router database connection string was not provided.");
 		var options = new DbContextOptionsBuilder<RouterDbContext>().UseNpgsql(connectionString).Options;
@@ -175,7 +230,7 @@ public sealed class RouterParameterRequestSteps
 				Node.FromValue(NodeIdentifier.FromValue(101)), Port.FromValue(PortIdentifier.FromValue(0))),
 			LanAddress.FromValue(SevenBitAsciiString.FromValue("LAN")));
 		var store = new EfRouterParameterStore(database);
-		await store.StoreAsync(ParameterTable.NonVolatile, RouterParameterCatalogue.LanTable.Number,
+		await store.StoreAsync(parameterTable, RouterParameterCatalogue.LanTable.Number,
 			RouterParameterCatalogue.LanTable.Encode(LanTable.FromEntries(entry)));
 	}
 
@@ -184,6 +239,19 @@ public sealed class RouterParameterRequestSteps
 	{
 		this.applicationProfile = RouterParameterRequestApplicationProfile.RouterWithRoutingTableEntry;
 		await this.EnsureApplicationStartedAsync();
+		await this.ConfigureLocalRouterIsdnTableAsync(ParameterTable.NonVolatile);
+	}
+
+	[Given(@"the local Router has Permanent ISDN Table entry 1 to next node 26.101.0, telephone number 34, hold time 20, used, and available")]
+	public async Task GivenTheLocalRouterHasPermanentIsdnTableEntryOne()
+	{
+		this.applicationProfile = RouterParameterRequestApplicationProfile.RouterWithRoutingTableEntry;
+		await this.EnsureApplicationStartedAsync();
+		await this.ConfigureLocalRouterIsdnTableAsync(ParameterTable.Permanent);
+	}
+
+	private async Task ConfigureLocalRouterIsdnTableAsync(ParameterTable parameterTable)
+	{
 		var connectionString = await this.application!.GetConnectionStringAsync("router-database")
 			?? throw new InvalidOperationException("The test Router database connection string was not provided.");
 		var options = new DbContextOptionsBuilder<RouterDbContext>().UseNpgsql(connectionString).Options;
@@ -195,7 +263,7 @@ public sealed class RouterParameterRequestSteps
 			TelephoneNumber.FromValue(SevenBitAsciiString.FromValue("34")),
 			HoldTime.FromValue(20), ProtocolBoolean.True);
 		var store = new EfRouterParameterStore(database);
-		await store.StoreAsync(ParameterTable.NonVolatile, RouterParameterCatalogue.IsdnTable.Number,
+		await store.StoreAsync(parameterTable, RouterParameterCatalogue.IsdnTable.Number,
 			RouterParameterCatalogue.IsdnTable.Encode(IsdnTable.FromEntries(entry)));
 	}
 
@@ -204,6 +272,19 @@ public sealed class RouterParameterRequestSteps
 	{
 		this.applicationProfile = RouterParameterRequestApplicationProfile.RouterWithRoutingTableEntry;
 		await this.EnsureApplicationStartedAsync();
+		await this.ConfigureLocalRouterMdtTableAsync(ParameterTable.NonVolatile);
+	}
+
+	[Given(@"the local Router has Permanent MDT Table entry 1 to next node 26.101.0, network user address MDT, hold time 10, used, and available")]
+	public async Task GivenTheLocalRouterHasPermanentMdtTableEntryOne()
+	{
+		this.applicationProfile = RouterParameterRequestApplicationProfile.RouterWithRoutingTableEntry;
+		await this.EnsureApplicationStartedAsync();
+		await this.ConfigureLocalRouterMdtTableAsync(ParameterTable.Permanent);
+	}
+
+	private async Task ConfigureLocalRouterMdtTableAsync(ParameterTable parameterTable)
+	{
 		var connectionString = await this.application!.GetConnectionStringAsync("router-database")
 			?? throw new InvalidOperationException("The test Router database connection string was not provided.");
 		var options = new DbContextOptionsBuilder<RouterDbContext>().UseNpgsql(connectionString).Options;
@@ -215,7 +296,7 @@ public sealed class RouterParameterRequestSteps
 			NetworkUserAddress.FromValue(SevenBitAsciiString.FromValue("MDT")),
 			HoldTime.FromValue(10), ProtocolBoolean.True);
 		var store = new EfRouterParameterStore(database);
-		await store.StoreAsync(ParameterTable.NonVolatile, RouterParameterCatalogue.MdtTable.Number,
+		await store.StoreAsync(parameterTable, RouterParameterCatalogue.MdtTable.Number,
 			RouterParameterCatalogue.MdtTable.Encode(MdtTable.FromEntries(entry)));
 	}
 
@@ -374,6 +455,16 @@ public sealed class RouterParameterRequestSteps
 			null);
 	}
 
+	[When(@"I request local Router Permanent PSTN Table entries 1 through 1")]
+	public async Task WhenIRequestLocalRouterPermanentPstnTableEntries()
+	{
+		await this.EnsureApplicationStartedAsync();
+
+		this.response = await this.client!.PostAsync(
+			"/router/parameters/permanent/14/entries/1-1",
+			null);
+	}
+
 	[When(@"I request local Router Current WAN Table entries 1 through 1")]
 	public async Task WhenIRequestLocalRouterCurrentWanTableEntries()
 	{
@@ -387,6 +478,15 @@ public sealed class RouterParameterRequestSteps
 		await this.EnsureApplicationStartedAsync();
 		this.response = await this.client!.PostAsync(
 			"/router/parameters/non-volatile/15/entries/1-1",
+			null);
+	}
+
+	[When(@"I request local Router Permanent WAN Table entries 1 through 1")]
+	public async Task WhenIRequestLocalRouterPermanentWanTableEntries()
+	{
+		await this.EnsureApplicationStartedAsync();
+		this.response = await this.client!.PostAsync(
+			"/router/parameters/permanent/15/entries/1-1",
 			null);
 	}
 
@@ -406,6 +506,15 @@ public sealed class RouterParameterRequestSteps
 			null);
 	}
 
+	[When(@"I request local Router Permanent LAN Table entries 1 through 1")]
+	public async Task WhenIRequestLocalRouterPermanentLanTableEntries()
+	{
+		await this.EnsureApplicationStartedAsync();
+		this.response = await this.client!.PostAsync(
+			"/router/parameters/permanent/16/entries/1-1",
+			null);
+	}
+
 	[When(@"I request local Router Current ISDN Table entries 1 through 1")]
 	public async Task WhenIRequestLocalRouterCurrentIsdnTableEntries()
 	{
@@ -422,11 +531,38 @@ public sealed class RouterParameterRequestSteps
 			null);
 	}
 
+	[When(@"I request local Router Permanent ISDN Table entries 1 through 1")]
+	public async Task WhenIRequestLocalRouterPermanentIsdnTableEntries()
+	{
+		await this.EnsureApplicationStartedAsync();
+		this.response = await this.client!.PostAsync(
+			"/router/parameters/permanent/17/entries/1-1",
+			null);
+	}
+
 	[When(@"I request local Router Current MDT Table entries 1 through 1")]
 	public async Task WhenIRequestLocalRouterCurrentMdtTableEntries()
 	{
 		await this.EnsureApplicationStartedAsync();
 		this.response = await this.client!.PostAsync("/router/parameters/current/21/entries/1-1", null);
+	}
+
+	[When(@"I request local Router Non-Volatile MDT Table entries 1 through 1")]
+	public async Task WhenIRequestLocalRouterNonVolatileMdtTableEntries()
+	{
+		await this.EnsureApplicationStartedAsync();
+		this.response = await this.client!.PostAsync(
+			"/router/parameters/non-volatile/21/entries/1-1",
+			null);
+	}
+
+	[When(@"I request local Router Permanent MDT Table entries 1 through 1")]
+	public async Task WhenIRequestLocalRouterPermanentMdtTableEntries()
+	{
+		await this.EnsureApplicationStartedAsync();
+		this.response = await this.client!.PostAsync(
+			"/router/parameters/permanent/21/entries/1-1",
+			null);
 	}
 
 	[When(@"I request local Router Routing Table entry 1")]
@@ -446,6 +582,16 @@ public sealed class RouterParameterRequestSteps
 
 		this.response = await this.client!.PostAsync(
 			"/router/parameters/non-volatile/13/entries/1-1",
+			null);
+	}
+
+	[When(@"I request local Router Permanent Routing Table entry 1")]
+	public async Task WhenIRequestLocalRouterPermanentRoutingTableEntryOne()
+	{
+		await this.EnsureApplicationStartedAsync();
+
+		this.response = await this.client!.PostAsync(
+			"/router/parameters/permanent/13/entries/1-1",
 			null);
 	}
 
