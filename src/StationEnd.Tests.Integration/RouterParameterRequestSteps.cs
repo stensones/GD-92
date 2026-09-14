@@ -364,11 +364,30 @@ public sealed class RouterParameterRequestSteps
 			null);
 	}
 
+	[When(@"I request local Router Non-Volatile PSTN Table entries 1 through 1")]
+	public async Task WhenIRequestLocalRouterNonVolatilePstnTableEntries()
+	{
+		await this.EnsureApplicationStartedAsync();
+
+		this.response = await this.client!.PostAsync(
+			"/router/parameters/non-volatile/14/entries/1-1",
+			null);
+	}
+
 	[When(@"I request local Router Current WAN Table entries 1 through 1")]
 	public async Task WhenIRequestLocalRouterCurrentWanTableEntries()
 	{
 		await this.EnsureApplicationStartedAsync();
 		this.response = await this.client!.PostAsync("/router/parameters/current/15/entries/1-1", null);
+	}
+
+	[When(@"I request local Router Non-Volatile WAN Table entries 1 through 1")]
+	public async Task WhenIRequestLocalRouterNonVolatileWanTableEntries()
+	{
+		await this.EnsureApplicationStartedAsync();
+		this.response = await this.client!.PostAsync(
+			"/router/parameters/non-volatile/15/entries/1-1",
+			null);
 	}
 
 	[When(@"I request local Router Current LAN Table entries 1 through 1")]
@@ -378,11 +397,29 @@ public sealed class RouterParameterRequestSteps
 		this.response = await this.client!.PostAsync("/router/parameters/current/16/entries/1-1", null);
 	}
 
+	[When(@"I request local Router Non-Volatile LAN Table entries 1 through 1")]
+	public async Task WhenIRequestLocalRouterNonVolatileLanTableEntries()
+	{
+		await this.EnsureApplicationStartedAsync();
+		this.response = await this.client!.PostAsync(
+			"/router/parameters/non-volatile/16/entries/1-1",
+			null);
+	}
+
 	[When(@"I request local Router Current ISDN Table entries 1 through 1")]
 	public async Task WhenIRequestLocalRouterCurrentIsdnTableEntries()
 	{
 		await this.EnsureApplicationStartedAsync();
 		this.response = await this.client!.PostAsync("/router/parameters/current/17/entries/1-1", null);
+	}
+
+	[When(@"I request local Router Non-Volatile ISDN Table entries 1 through 1")]
+	public async Task WhenIRequestLocalRouterNonVolatileIsdnTableEntries()
+	{
+		await this.EnsureApplicationStartedAsync();
+		this.response = await this.client!.PostAsync(
+			"/router/parameters/non-volatile/17/entries/1-1",
+			null);
 	}
 
 	[When(@"I request local Router Current MDT Table entries 1 through 1")]

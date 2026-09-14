@@ -37,6 +37,9 @@ Requesting a Router Routing Table range that contains any missing entry returns
 Manager exposes this as `Parameter / Invalid Entry` and displays it in the
 Routing Table request status. Broader invalid-table, Parameter-number, field,
 and participant validation remains pending.
+Router Non-Volatile Parameter 13 supports the same explicit entry-range,
+missing-entry, capacity, and typed presentation behavior. Current remains the
+effective Non-Volatile Routing Table projection.
 
 Router rejects a Current-table scalar request outside its defined Parameter
 Numbers 1-21 with `NAK(parameter / inv_param)`. Node Manager exposes this as
@@ -47,19 +50,31 @@ Router Current Parameter 14 (`PSTN Table`) supports explicit entry ranges and
 returns decoded index, used state, next-node address, telephone number, hold
 time, and availability. Missing requested entries return
 `NAK(parameter / inv_entry)`.
+Router Non-Volatile Parameter 14 supports the same explicit entry-range,
+missing-entry, capacity, and typed presentation behavior. Current remains the
+effective Non-Volatile PSTN Table projection.
 
 Router Current Parameter 15 (`WAN Table`) supports explicit entry ranges and
 returns decoded index, used state, next-node address, WAN address, and connect
 type. Missing requested entries return `NAK(parameter / inv_entry)`.
+Router Non-Volatile Parameter 15 supports the same explicit entry-range,
+missing-entry, capacity, and typed presentation behavior. Current remains the
+effective Non-Volatile WAN Table projection.
 
 Router Current Parameter 16 (`LAN Table`) supports explicit entry ranges and
 returns decoded index, used state, next-node address, and LAN address. Missing
 requested entries return `NAK(parameter / inv_entry)`.
+Router Non-Volatile Parameter 16 supports the same explicit entry-range,
+missing-entry, capacity, and typed presentation behavior. Current remains the
+effective Non-Volatile LAN Table projection.
 
 Router Current Parameter 17 (`ISDN Table`) supports explicit entry ranges and
 returns decoded index, used state, next-node address, telephone number, hold
 time, and availability. Missing requested entries return
 `NAK(parameter / inv_entry)`.
+Router Non-Volatile Parameter 17 supports the same explicit entry-range,
+missing-entry, capacity, and typed presentation behavior. Current remains the
+effective Non-Volatile ISDN Table projection.
 
 Router Current Parameter 21 (`MDT Table`) supports explicit entry ranges and
 returns decoded index, used state, next-node address, Network User Address,
