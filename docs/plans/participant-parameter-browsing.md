@@ -93,6 +93,11 @@ Router Current Parameter 20 (`time_and_date`) is generated from the Router's
 live UTC clock when requested, decoded using the typed `TimeAndDate` field,
 and presented in canonical GD-92 `ddMMMyyHHmmss` form.
 
+Router Permanent and Non-Volatile Parameter 3 (`node_name`) are read from the
+Router-owned retained stores and presented through the same typed Node Name
+projection as Current Parameter 3. A missing retained value returns
+`NAK(parameter / inv_param)`.
+
 Selecting **View parameters** for a discovered Router concurrently requests
 every currently supported scalar value in its catalogue. Each resulting status
 must complete independently; Password Parameters 5-8 always present

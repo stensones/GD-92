@@ -86,6 +86,39 @@ internal sealed class RouterParameterRead
 					parameterValue));
 		}
 
+		if (envelope.Contents is ParameterRequest
+			{
+				ParameterTable: var retainedTable,
+				ParameterNumber: var retainedNumber
+			} &&
+			(retainedTable == ParameterTable.NonVolatile ||
+				retainedTable == ParameterTable.Permanent) &&
+			(retainedNumber == RouterParameterCatalogue.NodeName.Number ||
+				retainedNumber == RouterParameterCatalogue.MaximumMessageLength.Number ||
+				retainedNumber == RouterParameterCatalogue.NetworkManagerAddress1.Number) &&
+			this.parameterStore is not null)
+		{
+			var parameterValue = await this.parameterStore.GetAsync(
+				retainedTable,
+				retainedNumber,
+				cancellationToken);
+			if (parameterValue is null)
+			{
+				return Envelope.CreateNegativeAcknowledgement(
+					envelope,
+					this.localAddress,
+					this.protocolVersion,
+					envelope.Destinations,
+					ReasonCode.FromParameterReasonCode(ParameterReasonCode.InvalidParameter));
+			}
+
+			return Envelope.CreateParameterResponse(
+				envelope,
+				this.localAddress,
+				this.protocolVersion,
+				Parameter.FromFields(MoreValues.No, parameterValue));
+		}
+
 		if (envelope.Contents is not ParameterRequestMultiple
 			{
 				ParameterTable: var parameterTable,

@@ -187,6 +187,34 @@ Feature: Router Parameter Request
     And the Parameter Request status shows Router Current Node Name Station End
     And NodeManager lists Node Name in the Router Current Parameter catalogue
 
+  Scenario: Browsing the local Router Non-Volatile Node Name
+    Given NodeManager is the User Agent at Brigade 26, Node 100, and Port 25
+    And its local Router is at Brigade 26, Node 100, and Port 0
+    When I request local Router Non-Volatile Parameter 3
+    Then I am redirected to the pending Parameter Request status
+    And the Parameter Request status shows Router Non-Volatile Node Name Station End
+
+  Scenario: Browsing the local Router Permanent Node Name
+    Given NodeManager is the User Agent at Brigade 26, Node 100, and Port 25
+    And its local Router is at Brigade 26, Node 100, and Port 0
+    When I request local Router Permanent Parameter 3
+    Then I am redirected to the pending Parameter Request status
+    And the Parameter Request status shows Router Permanent Node Name Station End
+
+  Scenario: Browsing the local Router Non-Volatile Maximum Message Length
+    Given NodeManager is the User Agent at Brigade 26, Node 100, and Port 25
+    And its local Router is at Brigade 26, Node 100, and Port 0
+    When I request local Router Non-Volatile Parameter 9
+    Then I am redirected to the pending Parameter Request status
+    And the Parameter Request status shows Router Non-Volatile Maximum Message Length 1023
+
+  Scenario: Browsing the local Router Non-Volatile Network Manager Address 1
+    Given NodeManager is the User Agent at Brigade 26, Node 100, and Port 25
+    And its local Router is at Brigade 26, Node 100, and Port 0
+    When I request local Router Non-Volatile Parameter 10
+    Then I am redirected to the pending Parameter Request status
+    And the Parameter Request status shows Router Non-Volatile Network Manager Address 1 26.100.25
+
   Scenario: Browsing the local Router Current Maximum Message Length
     Given NodeManager is the User Agent at Brigade 26, Node 100, and Port 25
     And its local Router is at Brigade 26, Node 100, and Port 0
