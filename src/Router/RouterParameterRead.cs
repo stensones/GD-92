@@ -93,9 +93,14 @@ internal sealed class RouterParameterRead
 			} &&
 			(retainedTable == ParameterTable.NonVolatile ||
 				retainedTable == ParameterTable.Permanent) &&
-			(retainedNumber == RouterParameterCatalogue.NodeName.Number ||
+			(retainedNumber == RouterParameterCatalogue.BrigadeOrAgency.Number ||
+				retainedNumber == RouterParameterCatalogue.NodeName.Number ||
 				retainedNumber == RouterParameterCatalogue.MaximumMessageLength.Number ||
-				retainedNumber == RouterParameterCatalogue.NetworkManagerAddress1.Number) &&
+				retainedNumber == RouterParameterCatalogue.NetworkManagerAddress1.Number ||
+				retainedNumber == RouterParameterCatalogue.NetworkManagerAddress2.Number ||
+				retainedNumber == RouterParameterCatalogue.NoAcknowledgementTimeout.Number ||
+				retainedNumber == RouterParameterCatalogue.ManualAcknowledgementTimeout.Number ||
+				retainedNumber == RouterParameterCatalogue.Retries.Number) &&
 			this.parameterStore is not null)
 		{
 			var parameterValue = await this.parameterStore.GetAsync(
@@ -124,7 +129,8 @@ internal sealed class RouterParameterRead
 				ParameterTable: var parameterTable,
 				ParameterNumber: var parameterNumber
 			} parameterRequest ||
-			parameterTable != ParameterTable.Current ||
+			(parameterTable != ParameterTable.Current &&
+				parameterTable != ParameterTable.NonVolatile) ||
 			(parameterNumber != RouterParameterCatalogue.RouterTable.Number &&
 				parameterNumber != RouterParameterCatalogue.PstnTable.Number &&
 				parameterNumber != RouterParameterCatalogue.WanTable.Number &&
@@ -136,8 +142,11 @@ internal sealed class RouterParameterRead
 			return null;
 		}
 
+		var sourceTable = parameterTable == ParameterTable.Current
+			? ParameterTable.NonVolatile
+			: parameterTable;
 		var tableParameterValue = await this.parameterStore.GetAsync(
-			ParameterTable.NonVolatile,
+			sourceTable,
 			parameterNumber,
 			cancellationToken);
 		if (tableParameterValue is null)

@@ -312,6 +312,41 @@ public sealed class RouterParameterRequestSteps
 		this.response = await this.client!.PostAsync("/router/parameters/non-volatile/10", null);
 	}
 
+	[When(@"I request local Router Non-Volatile Parameter 11")]
+	public async Task WhenIRequestLocalRouterNonVolatileNetworkManagerAddressTwo()
+	{
+		await this.EnsureApplicationStartedAsync();
+		this.response = await this.client!.PostAsync("/router/parameters/non-volatile/11", null);
+	}
+
+	[When(@"I request local Router Non-Volatile Parameter 12")]
+	public async Task WhenIRequestLocalRouterNonVolatileNoAcknowledgementTimeout()
+	{
+		await this.EnsureApplicationStartedAsync();
+		this.response = await this.client!.PostAsync("/router/parameters/non-volatile/12", null);
+	}
+
+	[When(@"I request local Router Non-Volatile Parameter 18")]
+	public async Task WhenIRequestLocalRouterNonVolatileManualAcknowledgementTimeout()
+	{
+		await this.EnsureApplicationStartedAsync();
+		this.response = await this.client!.PostAsync("/router/parameters/non-volatile/18", null);
+	}
+
+	[When(@"I request local Router Non-Volatile Parameter 19")]
+	public async Task WhenIRequestLocalRouterNonVolatileRetries()
+	{
+		await this.EnsureApplicationStartedAsync();
+		this.response = await this.client!.PostAsync("/router/parameters/non-volatile/19", null);
+	}
+
+	[When(@"I request local Router Non-Volatile Parameter 1")]
+	public async Task WhenIRequestLocalRouterNonVolatileBrigadeOrAgency()
+	{
+		await this.EnsureApplicationStartedAsync();
+		this.response = await this.client!.PostAsync("/router/parameters/non-volatile/1", null);
+	}
+
 	[When(@"I request local Router Permanent Parameter 3")]
 	public async Task WhenIRequestLocalRouterPermanentNodeName()
 	{
@@ -364,6 +399,16 @@ public sealed class RouterParameterRequestSteps
 
 		this.response = await this.client!.PostAsync(
 			"/router/parameters/current/13/entries/1-1",
+			null);
+	}
+
+	[When(@"I request local Router Non-Volatile Routing Table entry 1")]
+	public async Task WhenIRequestLocalRouterNonVolatileRoutingTableEntryOne()
+	{
+		await this.EnsureApplicationStartedAsync();
+
+		this.response = await this.client!.PostAsync(
+			"/router/parameters/non-volatile/13/entries/1-1",
 			null);
 	}
 
@@ -1215,6 +1260,121 @@ public sealed class RouterParameterRequestSteps
 		}
 		throw new Xunit.Sdk.XunitException(
 			"The Parameter Request status did not show Router Non-Volatile Network Manager Address 1.");
+	}
+
+	[Then(@"the Parameter Request status shows Router Non-Volatile Network Manager Address 2 26.100.25")]
+	public async Task ThenTheParameterRequestStatusShowsRouterNonVolatileNetworkManagerAddressTwo()
+	{
+		var statusAddress = this.response!.Headers.Location!;
+		for (var attempt = 0; attempt < 30; attempt++)
+		{
+			using var status = await this.client!.GetAsync(statusAddress);
+			if (status.StatusCode == HttpStatusCode.OK)
+			{
+				using var document = JsonDocument.Parse(await status.Content.ReadAsStringAsync());
+				if (document.RootElement.GetProperty("state").GetString() == "received" &&
+					document.RootElement.GetProperty("parameterNumber").GetInt32() == 11 &&
+					document.RootElement.GetProperty("parameterValue").GetString() == "26.100.25")
+				{
+					return;
+				}
+			}
+			await Task.Delay(TimeSpan.FromSeconds(1));
+		}
+		throw new Xunit.Sdk.XunitException(
+			"The Parameter Request status did not show Router Non-Volatile Network Manager Address 2.");
+	}
+
+	[Then(@"the Parameter Request status shows Router Non-Volatile No Acknowledgement Timeout 5")]
+	public async Task ThenTheParameterRequestStatusShowsRouterNonVolatileNoAcknowledgementTimeout()
+	{
+		var statusAddress = this.response!.Headers.Location!;
+		for (var attempt = 0; attempt < 30; attempt++)
+		{
+			using var status = await this.client!.GetAsync(statusAddress);
+			if (status.StatusCode == HttpStatusCode.OK)
+			{
+				using var document = JsonDocument.Parse(await status.Content.ReadAsStringAsync());
+				if (document.RootElement.GetProperty("state").GetString() == "received" &&
+					document.RootElement.GetProperty("parameterNumber").GetInt32() == 12 &&
+					document.RootElement.GetProperty("parameterValue").GetString() == "5")
+				{
+					return;
+				}
+			}
+			await Task.Delay(TimeSpan.FromSeconds(1));
+		}
+		throw new Xunit.Sdk.XunitException(
+			"The Parameter Request status did not show Router Non-Volatile No Acknowledgement Timeout.");
+	}
+
+	[Then(@"the Parameter Request status shows Router Non-Volatile Manual Acknowledgement Timeout 60")]
+	public async Task ThenTheParameterRequestStatusShowsRouterNonVolatileManualAcknowledgementTimeout()
+	{
+		var statusAddress = this.response!.Headers.Location!;
+		for (var attempt = 0; attempt < 30; attempt++)
+		{
+			using var status = await this.client!.GetAsync(statusAddress);
+			if (status.StatusCode == HttpStatusCode.OK)
+			{
+				using var document = JsonDocument.Parse(await status.Content.ReadAsStringAsync());
+				if (document.RootElement.GetProperty("state").GetString() == "received" &&
+					document.RootElement.GetProperty("parameterNumber").GetInt32() == 18 &&
+					document.RootElement.GetProperty("parameterValue").GetString() == "60")
+				{
+					return;
+				}
+			}
+			await Task.Delay(TimeSpan.FromSeconds(1));
+		}
+		throw new Xunit.Sdk.XunitException(
+			"The Parameter Request status did not show Router Non-Volatile Manual Acknowledgement Timeout.");
+	}
+
+	[Then(@"the Parameter Request status shows Router Non-Volatile Retries 3")]
+	public async Task ThenTheParameterRequestStatusShowsRouterNonVolatileRetries()
+	{
+		var statusAddress = this.response!.Headers.Location!;
+		for (var attempt = 0; attempt < 30; attempt++)
+		{
+			using var status = await this.client!.GetAsync(statusAddress);
+			if (status.StatusCode == HttpStatusCode.OK)
+			{
+				using var document = JsonDocument.Parse(await status.Content.ReadAsStringAsync());
+				if (document.RootElement.GetProperty("state").GetString() == "received" &&
+					document.RootElement.GetProperty("parameterNumber").GetInt32() == 19 &&
+					document.RootElement.GetProperty("parameterValue").GetString() == "3")
+				{
+					return;
+				}
+			}
+			await Task.Delay(TimeSpan.FromSeconds(1));
+		}
+		throw new Xunit.Sdk.XunitException(
+			"The Parameter Request status did not show Router Non-Volatile Retries.");
+	}
+
+	[Then(@"the Parameter Request status shows Router Non-Volatile Brigade or Agency 26")]
+	public async Task ThenTheParameterRequestStatusShowsRouterNonVolatileBrigadeOrAgency()
+	{
+		var statusAddress = this.response!.Headers.Location!;
+		for (var attempt = 0; attempt < 30; attempt++)
+		{
+			using var status = await this.client!.GetAsync(statusAddress);
+			if (status.StatusCode == HttpStatusCode.OK)
+			{
+				using var document = JsonDocument.Parse(await status.Content.ReadAsStringAsync());
+				if (document.RootElement.GetProperty("state").GetString() == "received" &&
+					document.RootElement.GetProperty("parameterNumber").GetInt32() == 1 &&
+					document.RootElement.GetProperty("parameterValue").GetString() == "26")
+				{
+					return;
+				}
+			}
+			await Task.Delay(TimeSpan.FromSeconds(1));
+		}
+		throw new Xunit.Sdk.XunitException(
+			"The Parameter Request status did not show Router Non-Volatile Brigade or Agency.");
 	}
 
 	[Then(@"the Parameter Request status shows Router Current Maximum Message Length 1023")]

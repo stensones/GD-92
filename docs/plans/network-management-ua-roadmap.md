@@ -38,6 +38,16 @@ The Node Manager currently:
   as its typed GD-92 primary Network Manager address;
 - reads and presents Router Current Parameter 11 (`network_manager_address_2`)
   as its typed GD-92 alternative Network Manager address;
+- reads and presents Router Non-Volatile and Permanent Parameters 3
+  (`node_name`), 9 (`maximum_message_length`), 10
+  (`network_manager_address_1`), 11 (`network_manager_address_2`), and 12
+  (`no_acknowledgement_timeout`) through the corresponding typed retained-value
+  projections, along with Parameter 1 (`brigade_or_agency`);
+- reads and presents Router Non-Volatile and Permanent Parameter 18
+  (`manual_acknowledgement_timeout`) through its typed retained-value
+  projection;
+- reads and presents Router Non-Volatile and Permanent Parameter 19
+  (`retries`) through its typed retained-value projection;
 - reads and presents Router Current Parameter 18
   (`manual_acknowledgement_timeout`) as its typed GD-92 manual acknowledgement
   timeout;
@@ -60,6 +70,8 @@ The Node Manager currently:
   `Param_req_multiple`, returning decoded LAN-routing fields;
 - supports selected Current Router ISDN Table entry ranges through
   `Param_req_multiple`, returning decoded telephone-routing fields;
+- supports selected Current Router MDT Table entry ranges through
+  `Param_req_multiple`, returning decoded mobile-data-terminal routing fields;
 - requests Router Parameter values and performs Router logon/logoff;
 - correlates expected `Parameter`, `ACK`, and `NAK` responses with retry and
   timeout status for operator polling;

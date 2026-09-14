@@ -82,6 +82,14 @@ Feature: Router Parameter Request
     Then I am redirected to the pending Parameter Request status
     And the Parameter Request status eventually shows Routing Table entry 1 to next node 26.101.0
 
+  Scenario: Browsing a local Router Non-Volatile Routing Table entry
+    Given NodeManager is the User Agent at Brigade 26, Node 100, and Port 25
+    And its local Router is at Brigade 26, Node 100, and Port 0
+    And the local Router has Routing Table entry 1 to next node 26.101.0
+    When I request local Router Non-Volatile Routing Table entry 1
+    Then I am redirected to the pending Parameter Request status
+    And the Parameter Request status eventually shows Routing Table entry 1 to next node 26.101.0
+
   Scenario: Submitting a local Router Routing Table entry request
     Given NodeManager is the User Agent at Brigade 26, Node 100, and Port 25
     And its local Router is at Brigade 26, Node 100, and Port 0
@@ -214,6 +222,41 @@ Feature: Router Parameter Request
     When I request local Router Non-Volatile Parameter 10
     Then I am redirected to the pending Parameter Request status
     And the Parameter Request status shows Router Non-Volatile Network Manager Address 1 26.100.25
+
+  Scenario: Browsing the local Router Non-Volatile Network Manager Address 2
+    Given NodeManager is the User Agent at Brigade 26, Node 100, and Port 25
+    And its local Router is at Brigade 26, Node 100, and Port 0
+    When I request local Router Non-Volatile Parameter 11
+    Then I am redirected to the pending Parameter Request status
+    And the Parameter Request status shows Router Non-Volatile Network Manager Address 2 26.100.25
+
+  Scenario: Browsing the local Router Non-Volatile No Acknowledgement Timeout
+    Given NodeManager is the User Agent at Brigade 26, Node 100, and Port 25
+    And its local Router is at Brigade 26, Node 100, and Port 0
+    When I request local Router Non-Volatile Parameter 12
+    Then I am redirected to the pending Parameter Request status
+    And the Parameter Request status shows Router Non-Volatile No Acknowledgement Timeout 5
+
+  Scenario: Browsing the local Router Non-Volatile Manual Acknowledgement Timeout
+    Given NodeManager is the User Agent at Brigade 26, Node 100, and Port 25
+    And its local Router is at Brigade 26, Node 100, and Port 0
+    When I request local Router Non-Volatile Parameter 18
+    Then I am redirected to the pending Parameter Request status
+    And the Parameter Request status shows Router Non-Volatile Manual Acknowledgement Timeout 60
+
+  Scenario: Browsing the local Router Non-Volatile Retries
+    Given NodeManager is the User Agent at Brigade 26, Node 100, and Port 25
+    And its local Router is at Brigade 26, Node 100, and Port 0
+    When I request local Router Non-Volatile Parameter 19
+    Then I am redirected to the pending Parameter Request status
+    And the Parameter Request status shows Router Non-Volatile Retries 3
+
+  Scenario: Browsing the local Router Non-Volatile Brigade or Agency
+    Given NodeManager is the User Agent at Brigade 26, Node 100, and Port 25
+    And its local Router is at Brigade 26, Node 100, and Port 0
+    When I request local Router Non-Volatile Parameter 1
+    Then I am redirected to the pending Parameter Request status
+    And the Parameter Request status shows Router Non-Volatile Brigade or Agency 26
 
   Scenario: Browsing the local Router Current Maximum Message Length
     Given NodeManager is the User Agent at Brigade 26, Node 100, and Port 25

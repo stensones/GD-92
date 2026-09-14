@@ -61,6 +61,11 @@ returns decoded index, used state, next-node address, telephone number, hold
 time, and availability. Missing requested entries return
 `NAK(parameter / inv_entry)`.
 
+Router Current Parameter 21 (`MDT Table`) supports explicit entry ranges and
+returns decoded index, used state, next-node address, Network User Address,
+hold time, and availability. Missing requested entries return
+`NAK(parameter / inv_entry)`.
+
 Router Current Parameter 2 (`node_number`) is decoded as GD-92 `word16` and
 presented as the local Router Node Number. For example, Router address
 `26.100.0` returns `100`.
@@ -93,10 +98,17 @@ Router Current Parameter 20 (`time_and_date`) is generated from the Router's
 live UTC clock when requested, decoded using the typed `TimeAndDate` field,
 and presented in canonical GD-92 `ddMMMyyHHmmss` form.
 
-Router Permanent and Non-Volatile Parameter 3 (`node_name`) are read from the
-Router-owned retained stores and presented through the same typed Node Name
-projection as Current Parameter 3. A missing retained value returns
-`NAK(parameter / inv_param)`.
+Router Permanent and Non-Volatile Parameters 1 (`brigade_or_agency`), 3
+(`node_name`), 9 (`maximum_message_length`), 10
+(`network_manager_address_1`), 11 (`network_manager_address_2`), and 12
+(`no_acknowledgement_timeout`) are read from Router-owned retained stores and
+presented through their typed Brigade or Agency, Node Name, Maximum Message
+Length, Communications Address, or No Acknowledgement Timeout projections.
+Parameter 18 (`manual_acknowledgement_timeout`) is likewise read and presented
+through its typed Manual Acknowledgement Timeout projection, and Parameter 19
+(`retries`) through its typed Retries projection. This deliberately excludes
+password and other not-yet-authorized retained Parameters. A missing retained
+value returns `NAK(parameter / inv_param)`.
 
 Selecting **View parameters** for a discovered Router concurrently requests
 every currently supported scalar value in its catalogue. Each resulting status

@@ -1,4 +1,5 @@
 using AwesomeAssertions;
+using ParticipantParameters;
 using Router.Persistence;
 using Stensones.GD92.Fields;
 using Stensones.GD92.Messages;
@@ -182,6 +183,133 @@ public sealed class RouterParameterReadTests
 		RouterParameterCatalogue.NetworkManagerAddress2.Read(
 			response!.Contents.Should().BeOfType<Parameter>().Which.ParameterValue)
 			.Should().Be(networkManagerAddress2);
+	}
+
+	[Fact]
+	public async Task Returns_the_NonVolatile_Network_Manager_Address_2_Parameter_from_the_store()
+	{
+		var localAddress = RouterParameterModuleTestSupport.CreateAddress(26, 100, 0);
+		var networkManagerAddress2 = RouterParameterModuleTestSupport.CreateAddress(26, 100, 25);
+		var parameterRead = new RouterParameterRead(
+			localAddress,
+			RouterParameterModuleTestSupport.ProtocolVersion,
+			parameterStore: new SingleParameterStore(
+				ParameterTable.NonVolatile,
+				RouterParameterCatalogue.NetworkManagerAddress2.Number,
+				RouterParameterCatalogue.NetworkManagerAddress2.Encode(networkManagerAddress2)));
+
+		var response = await parameterRead.HandleAsync(
+			RouterParameterModuleTestSupport.CreateParameterRequest(
+				localAddress,
+				ParameterTable.NonVolatile,
+				RouterParameterCatalogue.NetworkManagerAddress2.Number),
+			CancellationToken.None);
+
+		RouterParameterCatalogue.NetworkManagerAddress2.Read(
+			response!.Contents.Should().BeOfType<Parameter>().Which.ParameterValue)
+			.Should().Be(networkManagerAddress2);
+	}
+
+	[Fact]
+	public async Task Returns_the_NonVolatile_No_Acknowledgement_Timeout_Parameter_from_the_store()
+	{
+		var localAddress = RouterParameterModuleTestSupport.CreateAddress(26, 100, 0);
+		var noAcknowledgementTimeout = NoAcknowledgementTimeout.FromValue(Word8.FromValue(5));
+		var parameterRead = new RouterParameterRead(
+			localAddress,
+			RouterParameterModuleTestSupport.ProtocolVersion,
+			parameterStore: new SingleParameterStore(
+				ParameterTable.NonVolatile,
+				RouterParameterCatalogue.NoAcknowledgementTimeout.Number,
+				RouterParameterCatalogue.NoAcknowledgementTimeout.Encode(
+					noAcknowledgementTimeout)));
+
+		var response = await parameterRead.HandleAsync(
+			RouterParameterModuleTestSupport.CreateParameterRequest(
+				localAddress,
+				ParameterTable.NonVolatile,
+				RouterParameterCatalogue.NoAcknowledgementTimeout.Number),
+			CancellationToken.None);
+
+		RouterParameterCatalogue.NoAcknowledgementTimeout.Read(
+			response!.Contents.Should().BeOfType<Parameter>().Which.ParameterValue)
+			.Should().Be(noAcknowledgementTimeout);
+	}
+
+	[Fact]
+	public async Task Returns_the_NonVolatile_Manual_Acknowledgement_Timeout_Parameter_from_the_store()
+	{
+		var localAddress = RouterParameterModuleTestSupport.CreateAddress(26, 100, 0);
+		var manualAcknowledgementTimeout = ManualAcknowledgementTimeout.FromValue(60);
+		var parameterRead = new RouterParameterRead(
+			localAddress,
+			RouterParameterModuleTestSupport.ProtocolVersion,
+			parameterStore: new SingleParameterStore(
+				ParameterTable.NonVolatile,
+				RouterParameterCatalogue.ManualAcknowledgementTimeout.Number,
+				RouterParameterCatalogue.ManualAcknowledgementTimeout.Encode(
+					manualAcknowledgementTimeout)));
+
+		var response = await parameterRead.HandleAsync(
+			RouterParameterModuleTestSupport.CreateParameterRequest(
+				localAddress,
+				ParameterTable.NonVolatile,
+				RouterParameterCatalogue.ManualAcknowledgementTimeout.Number),
+			CancellationToken.None);
+
+		RouterParameterCatalogue.ManualAcknowledgementTimeout.Read(
+			response!.Contents.Should().BeOfType<Parameter>().Which.ParameterValue)
+			.Should().Be(manualAcknowledgementTimeout);
+	}
+
+	[Fact]
+	public async Task Returns_the_NonVolatile_Retries_Parameter_from_the_store()
+	{
+		var localAddress = RouterParameterModuleTestSupport.CreateAddress(26, 100, 0);
+		var retries = Retries.FromValue(Word8.FromValue(3));
+		var parameterRead = new RouterParameterRead(
+			localAddress,
+			RouterParameterModuleTestSupport.ProtocolVersion,
+			parameterStore: new SingleParameterStore(
+				ParameterTable.NonVolatile,
+				RouterParameterCatalogue.Retries.Number,
+				RouterParameterCatalogue.Retries.Encode(retries)));
+
+		var response = await parameterRead.HandleAsync(
+			RouterParameterModuleTestSupport.CreateParameterRequest(
+				localAddress,
+				ParameterTable.NonVolatile,
+				RouterParameterCatalogue.Retries.Number),
+			CancellationToken.None);
+
+		RouterParameterCatalogue.Retries.Read(
+			response!.Contents.Should().BeOfType<Parameter>().Which.ParameterValue)
+			.Should().Be(retries);
+	}
+
+	[Fact]
+	public async Task Returns_the_NonVolatile_Brigade_or_Agency_Parameter_from_the_store()
+	{
+		var localAddress = RouterParameterModuleTestSupport.CreateAddress(26, 100, 0);
+		var brigadeOrAgency = BrigadeOrAgencyIdentifier.FromValue(26);
+		var parameterRead = new RouterParameterRead(
+			localAddress,
+			RouterParameterModuleTestSupport.ProtocolVersion,
+			parameterStore: new SingleParameterStore(
+				ParameterTable.NonVolatile,
+				RouterParameterCatalogue.BrigadeOrAgency.Number,
+				RouterParameterCatalogue.BrigadeOrAgency.Encode(brigadeOrAgency)));
+
+		var response = await parameterRead.HandleAsync(
+			RouterParameterModuleTestSupport.CreateParameterRequest(
+				localAddress,
+				ParameterTable.NonVolatile,
+				RouterParameterCatalogue.BrigadeOrAgency.Number),
+			CancellationToken.None);
+
+		RouterParameterCatalogue.BrigadeOrAgency.Read(
+			response!.Contents.Should().BeOfType<Parameter>().Which.ParameterValue)
+			.Should().Be(brigadeOrAgency);
 	}
 
 	[Fact]
@@ -663,4 +791,31 @@ internal sealed class BlockingPasswordVerifierStore : InMemoryPasswordVerifierSt
 	{
 		this.storeCompleted.TrySetResult();
 	}
+}
+
+internal sealed class SingleParameterStore(
+	ParameterTable storedTable,
+	ParameterNumber storedNumber,
+	ParameterValue storedValue) : IParticipantParameterStore
+{
+	public ValueTask<ParameterValue?> GetAsync(
+		ParameterTable parameterTable,
+		ParameterNumber parameterNumber,
+		CancellationToken cancellationToken = default) =>
+		ValueTask.FromResult<ParameterValue?>(
+			parameterTable == storedTable && parameterNumber == storedNumber
+				? storedValue
+				: null);
+
+	public ValueTask StoreAsync(
+		ParameterTable parameterTable,
+		ParameterNumber parameterNumber,
+		ParameterValue parameterValue,
+		CancellationToken cancellationToken = default) =>
+		throw new NotSupportedException();
+
+	public ValueTask<T> ExecuteInitializationAsync<T>(
+		Func<CancellationToken, ValueTask<T>> initialize,
+		CancellationToken cancellationToken = default) =>
+		throw new NotSupportedException();
 }
