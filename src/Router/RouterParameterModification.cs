@@ -81,7 +81,8 @@ internal sealed class RouterParameterModification(
 		SetParameter setParameter,
 		CancellationToken cancellationToken)
 	{
-		if (!this.CanModify(setParameter.ParameterTable))
+		if (setParameter.ParameterTable != ParameterTable.NonVolatile ||
+			!this.CanModify(setParameter.ParameterTable))
 		{
 			return this.CreateNegativeAcknowledgement(
 				envelope,
@@ -101,17 +102,13 @@ internal sealed class RouterParameterModification(
 				ParameterReasonCode.InvalidSyntax);
 		}
 
-		if (setParameter.ParameterTable != ParameterTable.Current)
-		{
-			await parameterStore.StoreAsync(
-				setParameter.ParameterTable,
-				RouterParameterCatalogue.NoAcknowledgementTimeout.Number,
-				RouterParameterCatalogue.NoAcknowledgementTimeout.Encode(noAcknowledgementTimeout),
-				cancellationToken);
-		}
+		await parameterStore.StoreAsync(
+			ParameterTable.NonVolatile,
+			RouterParameterCatalogue.NoAcknowledgementTimeout.Number,
+			RouterParameterCatalogue.NoAcknowledgementTimeout.Encode(noAcknowledgementTimeout),
+			cancellationToken);
 
-		if (setParameter.ParameterTable != ParameterTable.Permanent &&
-			!currentParameterSource.TryChangeNoAcknowledgementTimeout(noAcknowledgementTimeout))
+		if (!currentParameterSource.TryChangeNoAcknowledgementTimeout(noAcknowledgementTimeout))
 		{
 			return this.CreateNegativeAcknowledgement(
 				envelope,

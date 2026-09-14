@@ -154,6 +154,8 @@ Level 1 Router Node Login; otherwise the Router returns
 `NAK(parameter / no_mod_access)`. Retries is decoded as its exact typed
 one-octet GD-92 value, so malformed or trailing data returns
 `NAK(parameter / inv_syntax)`.
+The same authorized Non-Volatile-to-Current update behavior is available for
+Parameter 12 (`no_acknowledgement_timeout`) using its typed GD-92 field.
 
 Selecting **View parameters** for a discovered Router concurrently requests
 every currently supported scalar value in its catalogue. Each resulting status

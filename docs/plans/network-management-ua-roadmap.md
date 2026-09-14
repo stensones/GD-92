@@ -55,6 +55,8 @@ The Node Manager currently:
   change leaves retained values unchanged and the Permanent change leaves
   Current unchanged; active Level 1 login is required and malformed typed
   values are rejected with the corresponding GD-92 parameter NAK;
+- allows the same authorized Non-Volatile-to-Current `Set_parameter` behavior
+  for Router Parameter 12 (`no_acknowledgement_timeout`);
 - reads and presents Router Current Parameter 18
   (`manual_acknowledgement_timeout`) as its typed GD-92 manual acknowledgement
   timeout;
