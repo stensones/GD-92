@@ -92,6 +92,28 @@ public sealed class RouterParameterReadTests
 	}
 
 	[Fact]
+	public async Task Returns_the_Current_Manual_Acknowledgement_Timeout_Parameter_from_the_configuration()
+	{
+		var localAddress = RouterParameterModuleTestSupport.CreateAddress(26, 100, 0);
+		var manualAcknowledgementTimeout = ManualAcknowledgementTimeout.FromValue(60);
+		var parameterRead = new RouterParameterRead(
+			localAddress,
+			RouterParameterModuleTestSupport.ProtocolVersion,
+			manualAcknowledgementTimeout: manualAcknowledgementTimeout);
+
+		var response = await parameterRead.HandleAsync(
+			RouterParameterModuleTestSupport.CreateParameterRequest(
+				localAddress,
+				ParameterTable.Current,
+				RouterParameterCatalogue.ManualAcknowledgementTimeout.Number),
+			CancellationToken.None);
+
+		RouterParameterCatalogue.ManualAcknowledgementTimeout.Read(
+			response!.Contents.Should().BeOfType<Parameter>().Which.ParameterValue).Value
+			.Should().Be(60);
+	}
+
+	[Fact]
 	public async Task Returns_the_Current_Network_Manager_Address_1_Parameter_from_the_configuration()
 	{
 		var localAddress = RouterParameterModuleTestSupport.CreateAddress(26, 100, 0);

@@ -165,6 +165,14 @@ public sealed class RouterParameterRequestSteps
 		this.response = await this.client!.PostAsync("/router/parameters/current/11", null);
 	}
 
+	[When(@"I request local Router Current Parameter 18")]
+	public async Task WhenIRequestLocalRouterCurrentParameterEighteen()
+	{
+		await this.EnsureApplicationStartedAsync();
+
+		this.response = await this.client!.PostAsync("/router/parameters/current/18", null);
+	}
+
 	[When(@"I request local Router Routing Table entry 1")]
 	public async Task WhenIRequestLocalRouterRoutingTableEntryOne()
 	{
@@ -1027,6 +1035,38 @@ public sealed class RouterParameterRequestSteps
 	public void ThenNodeManagerListsNetworkManagerAddressTwoInTheRouterCurrentParameterCatalogue()
 	{
 		this.pageContent.Should().Contain("""{ number: 11, name: "Network Manager Address 2" },""");
+	}
+
+	[Then(@"the Parameter Request status shows Router Current Manual Acknowledgement Timeout 60")]
+	public async Task ThenTheParameterRequestStatusShowsRouterCurrentManualAcknowledgementTimeout()
+	{
+		var statusAddress = this.response!.Headers.Location!;
+
+		for (var attempt = 0; attempt < 30; attempt++)
+		{
+			using var status = await this.client!.GetAsync(statusAddress);
+			if (status.StatusCode == HttpStatusCode.OK)
+			{
+				using var document = JsonDocument.Parse(await status.Content.ReadAsStringAsync());
+				if (document.RootElement.GetProperty("state").GetString() == "received" &&
+					document.RootElement.GetProperty("parameterNumber").GetInt32() == 18 &&
+					document.RootElement.GetProperty("parameterValue").GetString() == "60")
+				{
+					return;
+				}
+			}
+
+			await Task.Delay(TimeSpan.FromSeconds(1));
+		}
+
+		throw new Xunit.Sdk.XunitException(
+			"The Parameter Request status did not show Router Current Manual Acknowledgement Timeout 60.");
+	}
+
+	[Then(@"NodeManager lists Manual Acknowledgement Timeout in the Router Current Parameter catalogue")]
+	public void ThenNodeManagerListsManualAcknowledgementTimeoutInTheRouterCurrentParameterCatalogue()
+	{
+		this.pageContent.Should().Contain("""{ number: 18, name: "Manual Acknowledgement Timeout" },""");
 	}
 
 	[Then(@"NodeManager renders the Routing Table rejection reason")]

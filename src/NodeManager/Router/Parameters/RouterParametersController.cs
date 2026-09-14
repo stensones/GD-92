@@ -283,6 +283,7 @@ public sealed class RouterParametersController(
 			9 => FormatMaximumMessageLength(parameterValue),
 			10 => FormatNetworkManagerAddress(parameterValue, 10),
 			11 => FormatNetworkManagerAddress(parameterValue, 11),
+			18 => FormatManualAcknowledgementTimeout(parameterValue),
 			_ => null
 		};
 	}
@@ -315,6 +316,21 @@ public sealed class RouterParametersController(
 		}
 
 		return maximumMessageLength.Value.ToString(CultureInfo.InvariantCulture);
+	}
+
+	private static string FormatManualAcknowledgementTimeout(ParameterValue parameterValue)
+	{
+		var buffer = new EncodedMessageBuffer(parameterValue.ToWireValue());
+		var manualAcknowledgementTimeout =
+			ManualAcknowledgementTimeout.FromEncodedMessageBuffer(ref buffer);
+		if (buffer.RemainingBitCount != 0)
+		{
+			throw new ArgumentException(
+				"Router Parameter 18 contains trailing encoded data.",
+				nameof(parameterValue));
+		}
+
+		return manualAcknowledgementTimeout.Value.ToString(CultureInfo.InvariantCulture);
 	}
 
 	private static string FormatNodeName(ParameterValue parameterValue)

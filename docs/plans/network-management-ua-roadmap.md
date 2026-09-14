@@ -38,6 +38,9 @@ The Node Manager currently:
   as its typed GD-92 primary Network Manager address;
 - reads and presents Router Current Parameter 11 (`network_manager_address_2`)
   as its typed GD-92 alternative Network Manager address;
+- reads and presents Router Current Parameter 18
+  (`manual_acknowledgement_timeout`) as its typed GD-92 manual acknowledgement
+  timeout;
 - completes the discovered Router's supported scalar Current Parameter
   catalogue as concurrent, independently correlated requests; Password
   Parameters 5-8 are redacted consistently as `PASSWORD`;

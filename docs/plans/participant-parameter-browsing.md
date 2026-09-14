@@ -66,6 +66,11 @@ GD-92 typed `CommunicationsAddress` field and presented from the Router's
 second configured Network Manager address. For example,
 `Router:NetworkManagerAddress2 = 26.100.25` returns `26.100.25`.
 
+Router Current Parameter 18 (`manual_acknowledgement_timeout`) is decoded using
+the GD-92 typed `ManualAcknowledgementTimeout` field and presented from the
+Router's configured timeout. For example,
+`Router:ManualAcknowledgementTimeout = 60` returns `60`.
+
 Selecting **View parameters** for a discovered Router concurrently requests
 every currently supported scalar value in its catalogue. Each resulting status
 must complete independently; Password Parameters 5-8 always present
