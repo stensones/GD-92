@@ -70,7 +70,7 @@ public sealed class RouterParametersController(
 	public async Task<IActionResult> ModifyParameter(
 		string parameterTable,
 		byte parameterNumber,
-		[FromForm] byte value,
+		[FromForm] string[] value,
 		CancellationToken cancellationToken)
 	{
 		if (!ParameterTableRoute.TryParse(parameterTable, out var table))
@@ -78,10 +78,19 @@ public sealed class RouterParametersController(
 			return this.BadRequest("Parameter Table must be permanent, non-volatile, or current.");
 		}
 
+		var wireValue = new byte[value.Length];
+		for (var index = 0; index < value.Length; index++)
+		{
+			if (!byte.TryParse(value[index], out wireValue[index]))
+			{
+				return this.BadRequest("Parameter value must contain byte values.");
+			}
+		}
+
 		var statusIdentifier = await routerParameterRequests.ModifyLocalRouterParameter(
 			table,
 			ParameterNumber.FromValue(parameterNumber),
-			ParameterValue.FromWireValue([value]),
+			ParameterValue.FromWireValue(wireValue),
 			cancellationToken);
 
 		return new SeeOtherRedirectResult($"/router/parameters/status/{statusIdentifier}");

@@ -415,6 +415,13 @@ public sealed class RouterParameterRequestSteps
 		this.response = await this.client!.PostAsync("/router/parameters/non-volatile/12", null);
 	}
 
+	[When(@"I request local Router Current Parameter 12")]
+	public async Task WhenIRequestLocalRouterCurrentNoAcknowledgementTimeout()
+	{
+		await this.EnsureApplicationStartedAsync();
+		this.response = await this.client!.PostAsync("/router/parameters/current/12", null);
+	}
+
 	[When(@"I request local Router Non-Volatile Parameter 18")]
 	public async Task WhenIRequestLocalRouterNonVolatileManualAcknowledgementTimeout()
 	{
@@ -1104,6 +1111,33 @@ public sealed class RouterParameterRequestSteps
 			]));
 	}
 
+	[When(@"I set local Router Non-Volatile Parameter 12 to 10")]
+	public async Task WhenISetLocalRouterNonVolatileNoAcknowledgementTimeout()
+	{
+		await this.EnsureApplicationStartedAsync();
+
+		this.response = await this.client!.PostAsync(
+			"/router/parameters/non-volatile/12/value",
+			new FormUrlEncodedContent(
+			[
+				new KeyValuePair<string, string>("value", "10")
+			]));
+	}
+
+	[When(@"I set local Router Non-Volatile Parameter 19 to malformed value 5, 0")]
+	public async Task WhenISetLocalRouterNonVolatileRetriesToMalformedValue()
+	{
+		await this.EnsureApplicationStartedAsync();
+
+		this.response = await this.client!.PostAsync(
+			"/router/parameters/non-volatile/19/value",
+			new FormUrlEncodedContent(
+			[
+				new KeyValuePair<string, string>("value", "5"),
+				new KeyValuePair<string, string>("value", "0")
+			]));
+	}
+
 	[Given(@"the Router persistent Parameter Tables are empty")]
 	public async Task GivenTheRouterPersistentParameterTablesAreEmpty()
 	{
@@ -1685,6 +1719,31 @@ public sealed class RouterParameterRequestSteps
 
 		throw new Xunit.Sdk.XunitException(
 			$"The Parameter Request status did not show Router {parameterTable} Retries {expectedRetries}.");
+	}
+
+	[Then(@"the Parameter Request status shows Router Current No Acknowledgement Timeout 10")]
+	public async Task ThenTheParameterRequestStatusShowsRouterCurrentNoAcknowledgementTimeout()
+	{
+		var statusAddress = this.response!.Headers.Location!;
+		for (var attempt = 0; attempt < 30; attempt++)
+		{
+			using var status = await this.client!.GetAsync(statusAddress);
+			if (status.StatusCode == HttpStatusCode.OK)
+			{
+				using var document = JsonDocument.Parse(await status.Content.ReadAsStringAsync());
+				if (document.RootElement.GetProperty("state").GetString() == "received" &&
+					document.RootElement.GetProperty("parameterNumber").GetInt32() == 12 &&
+					document.RootElement.GetProperty("parameterValue").GetString() == "10")
+				{
+					return;
+				}
+			}
+
+			await Task.Delay(TimeSpan.FromSeconds(1));
+		}
+
+		throw new Xunit.Sdk.XunitException(
+			"The Parameter Request status did not show Router Current No Acknowledgement Timeout 10.");
 	}
 
 	[Then(@"the Parameter Request status shows Router Current Maximum Message Length 1023")]
@@ -2292,6 +2351,32 @@ public sealed class RouterParameterRequestSteps
 
 		throw new Xunit.Sdk.XunitException(
 			"The Parameter Modification status did not show a no-modification-access rejection.");
+	}
+
+	[Then(@"the Parameter Modification status eventually shows Parameter \/ Invalid Syntax rejection")]
+	public async Task ThenTheParameterModificationStatusEventuallyShowsInvalidSyntax()
+	{
+		var statusAddress = this.response!.Headers.Location!;
+
+		for (var attempt = 0; attempt < 30; attempt++)
+		{
+			using var status = await this.client!.GetAsync(statusAddress);
+			if (status.StatusCode == HttpStatusCode.OK)
+			{
+				using var document = JsonDocument.Parse(await status.Content.ReadAsStringAsync());
+				if (document.RootElement.GetProperty("state").GetString() == "rejected" &&
+					document.RootElement.GetProperty("rejectionReason").GetString() ==
+					"Parameter / Invalid Syntax")
+				{
+					return;
+				}
+			}
+
+			await Task.Delay(TimeSpan.FromSeconds(1));
+		}
+
+		throw new Xunit.Sdk.XunitException(
+			"The Parameter Modification status did not show an invalid-syntax rejection.");
 	}
 
 	[Then(@"the Node Login status eventually shows the Router is logged off")]

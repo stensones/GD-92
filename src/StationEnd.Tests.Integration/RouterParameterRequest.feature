@@ -434,6 +434,29 @@ Feature: Router Parameter Request
     Then I am redirected to the pending Parameter Modification status
     And the Parameter Modification status eventually shows Parameter / No Modification Access rejection
 
+  Scenario: Rejecting a malformed local Router Non-Volatile Retries change
+    Given NodeManager is the User Agent at Brigade 26, Node 100, and Port 25
+    And its local Router is at Brigade 26, Node 100, and Port 0
+    And the Router Level 1 password is "FIRE1"
+    When I log on User-Agent address Brigade 26, Node 100, and Port 25 with the Level 1 password
+    Then the Node Login status eventually shows User-Agent address 26.100.25 is logged on
+    When I set local Router Non-Volatile Parameter 19 to malformed value 5, 0
+    Then I am redirected to the pending Parameter Modification status
+    And the Parameter Modification status eventually shows Parameter / Invalid Syntax rejection
+
+  Scenario: Changing the local Router Non-Volatile No Acknowledgement Timeout
+    Given NodeManager is the User Agent at Brigade 26, Node 100, and Port 25
+    And its local Router is at Brigade 26, Node 100, and Port 0
+    And the Router Level 1 password is "FIRE1"
+    When I log on User-Agent address Brigade 26, Node 100, and Port 25 with the Level 1 password
+    Then the Node Login status eventually shows User-Agent address 26.100.25 is logged on
+    When I set local Router Non-Volatile Parameter 12 to 10
+    Then I am redirected to the pending Parameter Modification status
+    And the Parameter Modification status eventually shows acknowledged
+    When I request local Router Current Parameter 12
+    Then I am redirected to the pending Parameter Request status
+    And the Parameter Request status shows Router Current No Acknowledgement Timeout 10
+
   Scenario: Browsing the local Router Current Time and Date
     Given NodeManager is the User Agent at Brigade 26, Node 100, and Port 25
     And its local Router is at Brigade 26, Node 100, and Port 0

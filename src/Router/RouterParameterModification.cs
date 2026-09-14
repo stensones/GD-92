@@ -17,24 +17,27 @@ internal sealed class RouterParameterModification(
 	{
 		ArgumentNullException.ThrowIfNull(envelope);
 
-		if (envelope.Contents is not SetParameter
-			{
-				ParameterTable: var table,
-				ParameterNumber: var number
-			} setParameter ||
-			number != RouterParameterCatalogue.Retries.Number)
+		if (envelope.Contents is not SetParameter setParameter)
 		{
 			return null;
 		}
 
-		if (table != ParameterTable.Current &&
-			table != ParameterTable.NonVolatile &&
-			table != ParameterTable.Permanent)
-		{
-			return null;
-		}
+		return setParameter.ParameterNumber == RouterParameterCatalogue.Retries.Number
+			? await this.ModifyRetriesAsync(envelope, setParameter, cancellationToken)
+			: setParameter.ParameterNumber == RouterParameterCatalogue.NoAcknowledgementTimeout.Number
+				? await this.ModifyNoAcknowledgementTimeoutAsync(
+					envelope,
+					setParameter,
+					cancellationToken)
+				: null;
+	}
 
-		if (!currentParameterSource.HasActiveNodeLoginAtLevelOne())
+	private async ValueTask<Envelope> ModifyRetriesAsync(
+		Envelope envelope,
+		SetParameter setParameter,
+		CancellationToken cancellationToken)
+	{
+		if (!this.CanModify(setParameter.ParameterTable))
 		{
 			return this.CreateNegativeAcknowledgement(
 				envelope,
@@ -53,16 +56,16 @@ internal sealed class RouterParameterModification(
 				ParameterReasonCode.InvalidSyntax);
 		}
 
-		if (table != ParameterTable.Current)
+		if (setParameter.ParameterTable != ParameterTable.Current)
 		{
 			await parameterStore.StoreAsync(
-				table,
+				setParameter.ParameterTable,
 				RouterParameterCatalogue.Retries.Number,
 				RouterParameterCatalogue.Retries.Encode(retries),
 				cancellationToken);
 		}
 
-		if (table != ParameterTable.Permanent &&
+		if (setParameter.ParameterTable != ParameterTable.Permanent &&
 			!currentParameterSource.TryChangeRetries(retries))
 		{
 			return this.CreateNegativeAcknowledgement(
@@ -71,6 +74,59 @@ internal sealed class RouterParameterModification(
 		}
 
 		return Envelope.CreateAcknowledgement(envelope, localAddress, protocolVersion);
+	}
+
+	private async ValueTask<Envelope> ModifyNoAcknowledgementTimeoutAsync(
+		Envelope envelope,
+		SetParameter setParameter,
+		CancellationToken cancellationToken)
+	{
+		if (!this.CanModify(setParameter.ParameterTable))
+		{
+			return this.CreateNegativeAcknowledgement(
+				envelope,
+				ParameterReasonCode.NoModificationAccess);
+		}
+
+		NoAcknowledgementTimeout noAcknowledgementTimeout;
+		try
+		{
+			noAcknowledgementTimeout = RouterParameterCatalogue.NoAcknowledgementTimeout.Read(
+				setParameter.ParameterValue);
+		}
+		catch (ArgumentException)
+		{
+			return this.CreateNegativeAcknowledgement(
+				envelope,
+				ParameterReasonCode.InvalidSyntax);
+		}
+
+		if (setParameter.ParameterTable != ParameterTable.Current)
+		{
+			await parameterStore.StoreAsync(
+				setParameter.ParameterTable,
+				RouterParameterCatalogue.NoAcknowledgementTimeout.Number,
+				RouterParameterCatalogue.NoAcknowledgementTimeout.Encode(noAcknowledgementTimeout),
+				cancellationToken);
+		}
+
+		if (setParameter.ParameterTable != ParameterTable.Permanent &&
+			!currentParameterSource.TryChangeNoAcknowledgementTimeout(noAcknowledgementTimeout))
+		{
+			return this.CreateNegativeAcknowledgement(
+				envelope,
+				ParameterReasonCode.NoModificationAccess);
+		}
+
+		return Envelope.CreateAcknowledgement(envelope, localAddress, protocolVersion);
+	}
+
+	private bool CanModify(ParameterTable table)
+	{
+		return (table == ParameterTable.Current ||
+			table == ParameterTable.NonVolatile ||
+			table == ParameterTable.Permanent) &&
+			currentParameterSource.HasActiveNodeLoginAtLevelOne();
 	}
 
 	private Envelope CreateNegativeAcknowledgement(

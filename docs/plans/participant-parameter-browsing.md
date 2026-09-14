@@ -149,8 +149,11 @@ effective Current Retries projection. The same authorized Message 60 operation
 against Current Parameter 19 updates only the effective Current projection; it
 does not write retained storage. Against Permanent Parameter 19, it writes only
 the selected Permanent value and leaves Current unchanged. These are currently
-the only exposed Router Parameter modifications; unauthorized and invalid-value
-outcomes remain the next delivery slices.
+the only exposed Router Parameter modifications. Every one requires an active
+Level 1 Router Node Login; otherwise the Router returns
+`NAK(parameter / no_mod_access)`. Retries is decoded as its exact typed
+one-octet GD-92 value, so malformed or trailing data returns
+`NAK(parameter / inv_syntax)`.
 
 Selecting **View parameters** for a discovered Router concurrently requests
 every currently supported scalar value in its catalogue. Each resulting status

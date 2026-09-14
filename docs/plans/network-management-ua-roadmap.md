@@ -53,7 +53,8 @@ The Node Manager currently:
   reporting the Router ACK as an acknowledged management transaction; the
   Non-Volatile change refreshes the effective Current value, while the Current
   change leaves retained values unchanged and the Permanent change leaves
-  Current unchanged;
+  Current unchanged; active Level 1 login is required and malformed typed
+  values are rejected with the corresponding GD-92 parameter NAK;
 - reads and presents Router Current Parameter 18
   (`manual_acknowledgement_timeout`) as its typed GD-92 manual acknowledgement
   timeout;

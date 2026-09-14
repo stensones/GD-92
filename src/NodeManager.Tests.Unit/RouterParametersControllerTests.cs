@@ -59,16 +59,18 @@ public sealed class RouterParametersControllerTests
 	{
 		var identifier = Identifier();
 		using var managementTransactions = new TestManagementTransactions();
+		var requests = new ReturningRouterParameterRequestService(identifier);
 		var controller = new RouterParametersController(
-			new ReturningRouterParameterRequestService(identifier),
+			requests,
 			managementTransactions.Transactions);
 
 		var result = await controller.ModifyParameter(
 			"non-volatile",
 			19,
-			5,
+			["5", "0"],
 			CancellationToken.None);
 
+		requests.ModificationValue!.ToWireValue().Should().Equal([5, 0]);
 		result.Should().BeOfType<SeeOtherRedirectResult>().Which.Location
 			.Should().Be($"/router/parameters/status/{identifier}");
 	}
@@ -976,6 +978,7 @@ public sealed class RouterParametersControllerTests
 		RouterParameterRequestStatusIdentifier statusIdentifier) : IRouterParameterRequestService
 	{
 		public ParameterNumber? CurrentParameterNumber { get; private set; }
+		public ParameterValue? ModificationValue { get; private set; }
 
 		public Task<RouterParameterRequestStatusIdentifier> RequestLocalRouterBrigadeOrAgencyNumber(
 			CancellationToken cancellationToken) => Task.FromResult(statusIdentifier);
@@ -1003,7 +1006,11 @@ public sealed class RouterParametersControllerTests
 			ParameterTable parameterTable,
 			ParameterNumber parameterNumber,
 			ParameterValue parameterValue,
-			CancellationToken cancellationToken) => Task.FromResult(statusIdentifier);
+			CancellationToken cancellationToken)
+		{
+			this.ModificationValue = parameterValue;
+			return Task.FromResult(statusIdentifier);
+		}
 
 		public Task<RouterParameterRequestStatusIdentifier> RequestLocalRouterLogon(
 			CommunicationsAddress communicationsAddress,

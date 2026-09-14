@@ -103,6 +103,22 @@ public sealed class RouterCurrentParameterProjection
 			retries);
 	}
 
+	public RouterCurrentParameterProjection WithNoAcknowledgementTimeout(
+		NoAcknowledgementTimeout noAcknowledgementTimeout)
+	{
+		ArgumentNullException.ThrowIfNull(noAcknowledgementTimeout);
+
+		return new RouterCurrentParameterProjection(
+			this.BrigadeOrAgencyIdentifier,
+			this.CurrentPassword,
+			this.Level1PasswordVerifier,
+			this.Level2PasswordVerifier,
+			this.Level3PasswordVerifier,
+			this.Level4PasswordVerifier,
+			noAcknowledgementTimeout,
+			this.Retries);
+	}
+
 	public static RouterCurrentParameterProjection FromNonVolatileParameters(
 		BrigadeOrAgencyIdentifier brigadeOrAgencyIdentifier,
 		PasswordParameter currentPassword,

@@ -118,4 +118,27 @@ public sealed class RouterCurrentParameterProjectionSource
 			}
 		}
 	}
+
+	public bool TryChangeNoAcknowledgementTimeout(
+		NoAcknowledgementTimeout noAcknowledgementTimeout)
+	{
+		ArgumentNullException.ThrowIfNull(noAcknowledgementTimeout);
+
+		while (true)
+		{
+			var current = this.GetCurrent();
+			if (current.CurrentPassword.Level != LevelOne)
+			{
+				return false;
+			}
+
+			var changed = current.WithNoAcknowledgementTimeout(noAcknowledgementTimeout);
+			if (ReferenceEquals(
+				Interlocked.CompareExchange(ref this.currentParameters, changed, current),
+				current))
+			{
+				return true;
+			}
+		}
+	}
 }
