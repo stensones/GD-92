@@ -279,21 +279,24 @@ public sealed class RouterParametersController(
 			2 => FormatWord16(parameterValue),
 			3 => FormatNodeName(parameterValue),
 			4 => FormatCurrentPassword(parameterValue),
-			5 => "PASSWORD",
+			5 or 6 or 7 or 8 => "PASSWORD",
 			9 => FormatMaximumMessageLength(parameterValue),
-			10 => FormatNetworkManagerAddress1(parameterValue),
+			10 => FormatNetworkManagerAddress(parameterValue, 10),
+			11 => FormatNetworkManagerAddress(parameterValue, 11),
 			_ => null
 		};
 	}
 
-	private static string FormatNetworkManagerAddress1(ParameterValue parameterValue)
+	private static string FormatNetworkManagerAddress(
+		ParameterValue parameterValue,
+		byte parameterNumber)
 	{
 		var buffer = new EncodedMessageBuffer(parameterValue.ToWireValue());
 		var communicationsAddress = CommunicationsAddress.FromEncodedMessageBuffer(ref buffer);
 		if (buffer.RemainingBitCount != 0)
 		{
 			throw new ArgumentException(
-				"Router Parameter 10 contains trailing encoded data.",
+				$"Router Parameter {parameterNumber} contains trailing encoded data.",
 				nameof(parameterValue));
 		}
 

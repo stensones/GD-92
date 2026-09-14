@@ -157,6 +157,14 @@ public sealed class RouterParameterRequestSteps
 		this.response = await this.client!.PostAsync("/router/parameters/current/10", null);
 	}
 
+	[When(@"I request local Router Current Parameter 11")]
+	public async Task WhenIRequestLocalRouterCurrentParameterEleven()
+	{
+		await this.EnsureApplicationStartedAsync();
+
+		this.response = await this.client!.PostAsync("/router/parameters/current/11", null);
+	}
+
 	[When(@"I request local Router Routing Table entry 1")]
 	public async Task WhenIRequestLocalRouterRoutingTableEntryOne()
 	{
@@ -446,15 +454,16 @@ public sealed class RouterParameterRequestSteps
 	{
 		await this.EnsureApplicationStartedAsync();
 
-		var requests = new byte[] { 1, 4, 5, 12, 19 }
+		using var browserClient = CreateRedirectFollowingClient(this.application!);
+		var requests = new byte[] { 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 19 }
 			.Select(async parameterNumber =>
 			{
-				using var response = await this.client!.PostAsync(
+				using var response = await browserClient.PostAsync(
 					$"/router/parameters/current/{parameterNumber}",
 					null);
-				response.StatusCode.Should().Be(HttpStatusCode.SeeOther);
-				response.Headers.Location.Should().NotBeNull();
-				return (parameterNumber, statusAddress: response.Headers.Location!);
+				response.StatusCode.Should().Be(HttpStatusCode.OK);
+				response.RequestMessage!.RequestUri.Should().NotBeNull();
+				return (parameterNumber, statusAddress: response.RequestMessage.RequestUri!);
 			});
 		var responses = await Task.WhenAll(requests);
 		this.routerParameterStatusAddresses = responses.ToDictionary(
@@ -508,8 +517,16 @@ public sealed class RouterParameterRequestSteps
 		var expectedValues = new Dictionary<byte, string>
 		{
 			[1] = "26",
+			[2] = "100",
+			[3] = "Station End",
 			[4] = "Level 0, User-Agent 26.100.0, PASSWORD",
 			[5] = "PASSWORD",
+			[6] = "PASSWORD",
+			[7] = "PASSWORD",
+			[8] = "PASSWORD",
+			[9] = "1023",
+			[10] = "26.100.25",
+			[11] = "26.100.25",
 			[12] = "5",
 			[19] = "3"
 		};
@@ -540,7 +557,7 @@ public sealed class RouterParameterRequestSteps
 		this.pageContent.Should().Contain("Printer (4)");
 		this.pageContent.Should().Contain("Network Management UA (12)");
 		this.pageContent.Should().Contain(
-			"/participants/${participant.port}/parameters/current/${parameter.number}");
+			"/participants/${participant.port}/parameters/${parameterTable}/${parameter.number}");
 	}
 
 	[Then(@"NodeManager presents a Parameter Table selector")]
@@ -980,6 +997,38 @@ public sealed class RouterParameterRequestSteps
 		this.pageContent.Should().Contain("""{ number: 10, name: "Network Manager Address 1" },""");
 	}
 
+	[Then(@"the Parameter Request status shows Router Current Network Manager Address 2 26.100.25")]
+	public async Task ThenTheParameterRequestStatusShowsRouterCurrentNetworkManagerAddressTwo()
+	{
+		var statusAddress = this.response!.Headers.Location!;
+
+		for (var attempt = 0; attempt < 30; attempt++)
+		{
+			using var status = await this.client!.GetAsync(statusAddress);
+			if (status.StatusCode == HttpStatusCode.OK)
+			{
+				using var document = JsonDocument.Parse(await status.Content.ReadAsStringAsync());
+				if (document.RootElement.GetProperty("state").GetString() == "received" &&
+					document.RootElement.GetProperty("parameterNumber").GetInt32() == 11 &&
+					document.RootElement.GetProperty("parameterValue").GetString() == "26.100.25")
+				{
+					return;
+				}
+			}
+
+			await Task.Delay(TimeSpan.FromSeconds(1));
+		}
+
+		throw new Xunit.Sdk.XunitException(
+			"The Parameter Request status did not show Router Current Network Manager Address 2 26.100.25.");
+	}
+
+	[Then(@"NodeManager lists Network Manager Address 2 in the Router Current Parameter catalogue")]
+	public void ThenNodeManagerListsNetworkManagerAddressTwoInTheRouterCurrentParameterCatalogue()
+	{
+		this.pageContent.Should().Contain("""{ number: 11, name: "Network Manager Address 2" },""");
+	}
+
 	[Then(@"NodeManager renders the Routing Table rejection reason")]
 	public void ThenNodeManagerRendersTheRoutingTableRejectionReason()
 	{
@@ -1387,6 +1436,17 @@ public sealed class RouterParameterRequestSteps
 		return new HttpClient(new HttpClientHandler
 		{
 			AllowAutoRedirect = false
+		})
+		{
+			BaseAddress = application.GetEndpoint("Node-Manager-UA")
+		};
+	}
+
+	private static HttpClient CreateRedirectFollowingClient(DistributedApplication application)
+	{
+		return new HttpClient(new HttpClientHandler
+		{
+			AllowAutoRedirect = true
 		})
 		{
 			BaseAddress = application.GetEndpoint("Node-Manager-UA")

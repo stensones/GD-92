@@ -61,11 +61,21 @@ GD-92 typed `CommunicationsAddress` field and presented from the Router's first
 configured Network Manager address. For example,
 `Router:NetworkManagerAddress1 = 26.100.25` returns `26.100.25`.
 
+Router Current Parameter 11 (`network_manager_address_2`) is decoded using the
+GD-92 typed `CommunicationsAddress` field and presented from the Router's
+second configured Network Manager address. For example,
+`Router:NetworkManagerAddress2 = 26.100.25` returns `26.100.25`.
+
+Selecting **View parameters** for a discovered Router concurrently requests
+every currently supported scalar value in its catalogue. Each resulting status
+must complete independently; Password Parameters 5-8 always present
+`PASSWORD` and never a cleartext or missing value.
+
 ## Browse catalogues
 
 | Participant | Current Parameters |
 |---|---|
-| Router | 1-21; 5-8 always display `PASSWORD` |
+| Router | 1-12 and 19; Parameter 13 uses separate Routing Table entry browsing; 5-8 always display `PASSWORD` |
 | LAN MTA | 1-10, 21 |
 | Printer UA | 1-3, 21-24 |
 | Network Management UA | 1-3 |

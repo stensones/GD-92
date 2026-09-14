@@ -357,6 +357,52 @@ public sealed class RouterParametersControllerTests
 	}
 
 	[Fact]
+	public async Task Presents_a_received_Current_Network_Manager_Address_2()
+	{
+		using var managementTransactions = new TestManagementTransactions();
+		var identifier = await managementTransactions.Transactions.SubmitAsync(
+			new ManagementTransactionRequest(
+				Address(25),
+				Address(0),
+				sequenceNumber => Envelope.FromValues(
+					Address(25),
+					Destinations.FromAddresses(Address(0)),
+					ProtocolAndPriority.FromValues(
+						MessagePriority.FromValue(MessagePriorityLevel.FromValue(3)),
+						ProtocolVersion.FromValue(ProtocolVersionNumber.FromValue(2))),
+					AcknowledgementAndSequence.FromValues(
+						sequenceNumber,
+						AcknowledgementRequest.Requested),
+					ParameterRequest.FromFields(
+						ParameterTable.Current,
+						ParameterNumber.FromValue(11))),
+				ManagementTransactionKind.ParameterRequest),
+			CancellationToken.None);
+		await managementTransactions.Transactions.ReceiveAsync(Envelope.FromValues(
+			Address(0),
+			Destinations.FromAddresses(Address(25)),
+			ProtocolAndPriority.FromValues(
+				MessagePriority.FromValue(MessagePriorityLevel.FromValue(3)),
+				ProtocolVersion.FromValue(ProtocolVersionNumber.FromValue(2))),
+			AcknowledgementAndSequence.FromValues(identifier.USWR.SequenceNumber, AcknowledgementRequest.NotRequested),
+			Parameter.FromFields(
+				MoreValues.No,
+				ParameterValue.FromWireValue(Address(25).ToWireValue()))),
+			CancellationToken.None);
+		var controller = new RouterParametersController(
+			new ReturningRouterParameterRequestService(identifier),
+			managementTransactions.Transactions);
+
+		var response = controller.CurrentStatus(11, identifier.ToString())
+			.Should().BeOfType<OkObjectResult>().Which.Value
+			.Should().BeOfType<RouterParameterRequestStatusResponse>().Which;
+
+		response.State.Should().Be("received");
+		response.ParameterNumber.Should().Be(11);
+		response.ParameterValue.Should().Be("26.100.25");
+	}
+
+	[Fact]
 	public async Task Presents_a_received_Level1_Password_as_a_redacted_marker()
 	{
 		using var managementTransactions = new TestManagementTransactions();
@@ -401,6 +447,54 @@ public sealed class RouterParametersControllerTests
 
 		response.State.Should().Be("received");
 		response.ParameterNumber.Should().Be(5);
+		response.ParameterValue.Should().Be("PASSWORD");
+	}
+
+	[Fact]
+	public async Task Presents_a_received_Router_Password_Parameter_6_as_a_redacted_marker()
+	{
+		using var managementTransactions = new TestManagementTransactions();
+		var identifier = await managementTransactions.Transactions.SubmitAsync(
+			new ManagementTransactionRequest(
+				Address(25),
+				Address(0),
+				sequenceNumber => Envelope.FromValues(
+					Address(25),
+					Destinations.FromAddresses(Address(0)),
+					ProtocolAndPriority.FromValues(
+						MessagePriority.FromValue(MessagePriorityLevel.FromValue(3)),
+						ProtocolVersion.FromValue(ProtocolVersionNumber.FromValue(2))),
+					AcknowledgementAndSequence.FromValues(
+						sequenceNumber,
+						AcknowledgementRequest.Requested),
+					ParameterRequest.FromFields(
+						ParameterTable.Current,
+						ParameterNumber.FromValue(6))),
+				ManagementTransactionKind.ParameterRequest),
+			CancellationToken.None);
+		await managementTransactions.Transactions.ReceiveAsync(Envelope.FromValues(
+			Address(0),
+			Destinations.FromAddresses(Address(25)),
+			ProtocolAndPriority.FromValues(
+				MessagePriority.FromValue(MessagePriorityLevel.FromValue(3)),
+				ProtocolVersion.FromValue(ProtocolVersionNumber.FromValue(2))),
+			AcknowledgementAndSequence.FromValues(identifier.USWR.SequenceNumber, AcknowledgementRequest.NotRequested),
+			Parameter.FromFields(
+				MoreValues.No,
+				ParameterValue.FromWireValue(
+					Password.FromValue(
+						PasswordValue.FromValue(SevenBitAsciiString.FromValue("PASSWORD"))).ToWireValue()))),
+			CancellationToken.None);
+		var controller = new RouterParametersController(
+			new ReturningRouterParameterRequestService(identifier),
+			managementTransactions.Transactions);
+
+		var response = controller.CurrentStatus(6, identifier.ToString())
+			.Should().BeOfType<OkObjectResult>().Which.Value
+			.Should().BeOfType<RouterParameterRequestStatusResponse>().Which;
+
+		response.State.Should().Be("received");
+		response.ParameterNumber.Should().Be(6);
 		response.ParameterValue.Should().Be("PASSWORD");
 	}
 
