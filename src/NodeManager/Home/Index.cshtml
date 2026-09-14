@@ -162,6 +162,23 @@
             </form>
             <p id="router-wan-table-entry-selection-status" role="status" hidden></p>
             <ul id="router-wan-table-entry-results" hidden></ul>
+            <form class="inline-action" id="router-lan-table-entry-selection"
+                  aria-describedby="router-lan-table-entry-selection-status">
+                <fieldset>
+                    <legend>Router Current LAN Table entries</legend>
+                    <label>
+                        First entry
+                        <input name="first-entry" type="number" min="1" value="1" required />
+                    </label>
+                    <label>
+                        Last entry
+                        <input name="last-entry" type="number" min="1" value="1" required />
+                    </label>
+                    <button type="submit">Request entries</button>
+                </fieldset>
+            </form>
+            <p id="router-lan-table-entry-selection-status" role="status" hidden></p>
+            <ul id="router-lan-table-entry-results" hidden></ul>
             <p id="router-parameter-list-status" role="status" hidden></p>
             <table id="router-parameter-list" hidden>
                 <caption>Local Router Current Parameters</caption>
@@ -217,6 +234,9 @@
     const routerWanTableEntrySelection = document.getElementById("router-wan-table-entry-selection");
     const routerWanTableEntrySelectionStatus = document.getElementById("router-wan-table-entry-selection-status");
     const routerWanTableEntryResults = document.getElementById("router-wan-table-entry-results");
+    const routerLanTableEntrySelection = document.getElementById("router-lan-table-entry-selection");
+    const routerLanTableEntrySelectionStatus = document.getElementById("router-lan-table-entry-selection-status");
+    const routerLanTableEntryResults = document.getElementById("router-lan-table-entry-results");
     let nextRoutingTableEntryRange = null;
     const redactedPasswordMarker = "PASSWORD";
     const participantCurrentParameterCatalogues = {
@@ -658,6 +678,77 @@
         }
 
         requestWanTableEntries(firstEntry, lastEntry);
+    });
+
+    const requestLanTableEntries = async (firstEntry, lastEntry) => {
+        routerLanTableEntrySelectionStatus.hidden = false;
+        routerLanTableEntryResults.hidden = true;
+        routerLanTableEntryResults.replaceChildren();
+        routerLanTableEntrySelectionStatus.textContent = "Requesting LAN Table entries...";
+        const response = await fetch(
+            `/router/parameters/current/16/entries/${firstEntry}-${lastEntry}`,
+            { method: "POST" });
+        const statusUrl = response.url;
+        if (!response.ok || !statusUrl) {
+            routerLanTableEntrySelectionStatus.textContent =
+                "The LAN Table request could not be submitted.";
+            return;
+        }
+
+        const poll = async () => {
+            const result = await fetch(statusUrl);
+            if (!result.ok) {
+                routerLanTableEntrySelectionStatus.textContent =
+                    "The LAN Table request could not be completed.";
+                return;
+            }
+
+            const request = await result.json();
+            if (request.state === "pending") {
+                window.setTimeout(poll, 1000);
+                return;
+            }
+
+            if (request.state !== "received") {
+                routerLanTableEntrySelectionStatus.textContent =
+                    request.rejectionReason
+                        ? `LAN Table request ${request.state}: ${request.rejectionReason}.`
+                        : `LAN Table request ${request.state}.`;
+                return;
+            }
+
+            const entries = request.lanTableEntries ?? [];
+            for (const entry of entries) {
+                const item = document.createElement("li");
+                item.textContent = `LAN Table entry ${entry.index}: ${entry.used ? "used" : "unused"}, ` +
+                    `next node ${entry.nextNode}, LAN address ${entry.lanAddress}`;
+                routerLanTableEntryResults.append(item);
+            }
+
+            routerLanTableEntryResults.hidden = false;
+            routerLanTableEntrySelectionStatus.textContent = entries.length === 0
+                ? "No LAN Table entries were returned."
+                : "LAN Table entries received.";
+        };
+
+        poll();
+    };
+
+    routerLanTableEntrySelection.addEventListener("submit", async event => {
+        event.preventDefault();
+        const formData = new FormData(routerLanTableEntrySelection);
+        const firstEntry = Number(formData.get("first-entry"));
+        const lastEntry = Number(formData.get("last-entry"));
+
+        if (!Number.isInteger(firstEntry) || !Number.isInteger(lastEntry) ||
+            firstEntry < 1 || lastEntry < firstEntry) {
+            routerLanTableEntrySelectionStatus.hidden = false;
+            routerLanTableEntrySelectionStatus.textContent =
+                "Last entry must be greater than or equal to first entry.";
+            return;
+        }
+
+        requestLanTableEntries(firstEntry, lastEntry);
     });
 
     logonForm.addEventListener("submit", async event => {

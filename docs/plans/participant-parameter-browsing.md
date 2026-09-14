@@ -52,6 +52,10 @@ Router Current Parameter 15 (`WAN Table`) supports explicit entry ranges and
 returns decoded index, used state, next-node address, WAN address, and connect
 type. Missing requested entries return `NAK(parameter / inv_entry)`.
 
+Router Current Parameter 16 (`LAN Table`) supports explicit entry ranges and
+returns decoded index, used state, next-node address, and LAN address. Missing
+requested entries return `NAK(parameter / inv_entry)`.
+
 Router Current Parameter 2 (`node_number`) is decoded as GD-92 `word16` and
 presented as the local Router Node Number. For example, Router address
 `26.100.0` returns `100`.
@@ -93,7 +97,7 @@ must complete independently; Password Parameters 5-8 always present
 
 | Participant | Current Parameters |
 |---|---|
-| Router | 1-12 and 18-20; Parameters 13-15 use separate table-entry browsing; 5-8 always display `PASSWORD` |
+| Router | 1-12 and 18-20; Parameters 13-16 use separate table-entry browsing; 5-8 always display `PASSWORD` |
 | LAN MTA | 1-10, 21 |
 | Printer UA | 1-3, 21-24 |
 | Network Management UA | 1-3 |

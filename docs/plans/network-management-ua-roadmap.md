@@ -56,6 +56,8 @@ The Node Manager currently:
   `Param_req_multiple`, returning decoded telephone-routing fields;
 - supports selected Current Router WAN Table entry ranges through
   `Param_req_multiple`, returning decoded WAN-routing fields;
+- supports selected Current Router LAN Table entry ranges through
+  `Param_req_multiple`, returning decoded LAN-routing fields;
 - requests Router Parameter values and performs Router logon/logoff;
 - correlates expected `Parameter`, `ACK`, and `NAK` responses with retry and
   timeout status for operator polling;

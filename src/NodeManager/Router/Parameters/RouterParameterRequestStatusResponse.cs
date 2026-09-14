@@ -13,6 +13,7 @@ public sealed record RouterParameterRequestStatusResponse(
 	string? RejectionReason)
 {
 	public IReadOnlyList<WanTableEntryStatusResponse>? WanTableEntries { get; init; }
+	public IReadOnlyList<LanTableEntryStatusResponse>? LanTableEntries { get; init; }
 }
 
 public sealed record RoutingTableEntryStatusResponse(
@@ -33,3 +34,9 @@ public sealed record WanTableEntryStatusResponse(
 	string NextNode,
 	string WanAddress,
 	string ConnectType);
+
+public sealed record LanTableEntryStatusResponse(
+	ushort Index,
+	bool Used,
+	string NextNode,
+	string LanAddress);

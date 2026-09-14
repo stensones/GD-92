@@ -94,7 +94,8 @@ internal sealed class RouterParameterRead
 			parameterTable != ParameterTable.Current ||
 			(parameterNumber != RouterParameterCatalogue.RouterTable.Number &&
 				parameterNumber != RouterParameterCatalogue.PstnTable.Number &&
-				parameterNumber != RouterParameterCatalogue.WanTable.Number) ||
+				parameterNumber != RouterParameterCatalogue.WanTable.Number &&
+				parameterNumber != RouterParameterCatalogue.LanTable.Number) ||
 			this.parameterStore is null)
 		{
 			return null;
@@ -143,15 +144,28 @@ internal sealed class RouterParameterRead
 				"PSTN Table");
 		}
 
+		if (parameterNumber == RouterParameterCatalogue.WanTable.Number)
+		{
+			return this.CreateTableResponse(
+				envelope,
+				RouterParameterCatalogue.WanTable.Read(tableParameterValue).Entries,
+				firstEntry,
+				lastEntry,
+				static entry => entry.Index.Value,
+				static entries => RouterParameterCatalogue.WanTable.Encode(
+					WanTable.FromEntries(entries)),
+				"WAN Table");
+		}
+
 		return this.CreateTableResponse(
 			envelope,
-			RouterParameterCatalogue.WanTable.Read(tableParameterValue).Entries,
+			RouterParameterCatalogue.LanTable.Read(tableParameterValue).Entries,
 			firstEntry,
 			lastEntry,
 			static entry => entry.Index.Value,
-			static entries => RouterParameterCatalogue.WanTable.Encode(
-				WanTable.FromEntries(entries)),
-			"WAN Table");
+			static entries => RouterParameterCatalogue.LanTable.Encode(
+				LanTable.FromEntries(entries)),
+			"LAN Table");
 	}
 
 	private Envelope CreateTableResponse<TEntry>(

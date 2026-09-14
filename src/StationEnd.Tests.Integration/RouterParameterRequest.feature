@@ -130,6 +130,14 @@ Feature: Router Parameter Request
     Then I am redirected to the pending Parameter Request status
     And the Parameter Request status shows WAN Table entry 1 as used with next node 26.101.0, WAN address WAN, and switched virtual circuit
 
+  Scenario: Browsing a local Router Current LAN Table entry
+    Given NodeManager is the User Agent at Brigade 26, Node 100, and Port 25
+    And its local Router is at Brigade 26, Node 100, and Port 0
+    And the local Router has LAN Table entry 1 to next node 26.101.0, LAN address LAN, and used
+    When I request local Router Current LAN Table entries 1 through 1
+    Then I am redirected to the pending Parameter Request status
+    And the Parameter Request status shows LAN Table entry 1 as used with next node 26.101.0 and LAN address LAN
+
   Scenario: Rejecting a partially missing local Router Routing Table range
     Given NodeManager is the User Agent at Brigade 26, Node 100, and Port 25
     And its local Router is at Brigade 26, Node 100, and Port 0

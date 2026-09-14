@@ -16,6 +16,8 @@ public sealed class RouterParametersController(
 		ParameterNumber.FromValue(14);
 	private static readonly ParameterNumber WanTableParameterNumber =
 		ParameterNumber.FromValue(15);
+	private static readonly ParameterNumber LanTableParameterNumber =
+		ParameterNumber.FromValue(16);
 
 	[HttpPost("brigade-or-agency-number")]
 	public async Task<IActionResult> RequestBrigadeOrAgencyNumber(CancellationToken cancellationToken)
@@ -204,6 +206,9 @@ public sealed class RouterParametersController(
 		var wanTableEntries = status is ReceivedRouterParameterRequestStatus receivedWanTable
 			? FormatWanTableEntries(parameterNumber, receivedWanTable.ParameterValue)
 			: null;
+		var lanTableEntries = status is ReceivedRouterParameterRequestStatus receivedLanTable
+			? FormatLanTableEntries(parameterNumber, receivedLanTable.ParameterValue)
+			: null;
 		bool? moreValues = status is ReceivedRouterParameterRequestStatus receivedMoreValues
 			? receivedMoreValues.MoreValues.Value == ProtocolBoolean.True
 			: null;
@@ -223,7 +228,8 @@ public sealed class RouterParametersController(
 			moreValues,
 			rejectionReason)
 		{
-			WanTableEntries = wanTableEntries
+			WanTableEntries = wanTableEntries,
+			LanTableEntries = lanTableEntries
 		};
 	}
 
@@ -337,6 +343,33 @@ public sealed class RouterParametersController(
 				Format(entry.NextNode),
 				entry.WanAddress.Value.Value,
 				FormatReasonCode(entry.ConnectType.Value)))
+			.ToArray();
+	}
+
+	private static IReadOnlyList<LanTableEntryStatusResponse>? FormatLanTableEntries(
+		ParameterNumber? parameterNumber,
+		ParameterValue parameterValue)
+	{
+		if (parameterNumber != LanTableParameterNumber)
+		{
+			return null;
+		}
+
+		var buffer = new EncodedMessageBuffer(parameterValue.ToWireValue());
+		var lanTable = LanTable.FromEncodedMessageBuffer(ref buffer);
+		if (buffer.RemainingBitCount != 0)
+		{
+			throw new ArgumentException(
+				"Router LAN Table Parameter contains trailing encoded data.",
+				nameof(parameterValue));
+		}
+
+		return lanTable.Entries
+			.Select(entry => new LanTableEntryStatusResponse(
+				entry.Index.Value,
+				entry.Used.Value,
+				Format(entry.NextNode),
+				entry.LanAddress.Value.Value))
 			.ToArray();
 	}
 
