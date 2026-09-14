@@ -47,6 +47,10 @@ Router Current Parameter 2 (`node_number`) is decoded as GD-92 `word16` and
 presented as the local Router Node Number. For example, Router address
 `26.100.0` returns `100`.
 
+Router Current Parameter 3 (`node_name`) is decoded using the GD-92 typed
+`NodeName` field and presented from the Router's configured node name. For
+example, `Router:NodeName = Station End` returns `Station End`.
+
 ## Browse catalogues
 
 | Participant | Current Parameters |

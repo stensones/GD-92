@@ -30,8 +30,8 @@ The Node Manager currently:
 - lets an operator select a Parameter Table before requesting a modeled scalar
   Parameter; LAN MTA supports its Current, Non-Volatile, and Permanent scalar
   reads through this path;
-- reads and presents Router Current Parameter 2 (`node_number`) as its typed
-  GD-92 `word16` Node Number;
+- reads and presents Router Current Parameters 2 (`node_number`) and 3
+  (`node_name`) as typed GD-92 Node Number and Node Name values;
 - supports paged Current Router Routing Table reads through `Param_req_multiple`
   for requested entry ranges, returning decoded entry index, next-node values,
   and `more_values` through an operator-facing Parameters form when the

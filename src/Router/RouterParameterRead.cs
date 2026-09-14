@@ -13,17 +13,20 @@ internal sealed class RouterParameterRead
 	private readonly ProtocolVersion protocolVersion;
 	private readonly RouterCurrentParameterProjectionSource? currentParameterSource;
 	private readonly IParticipantParameterStore? parameterStore;
+	private readonly NodeName? nodeName;
 
 	public RouterParameterRead(
 		CommunicationsAddress localAddress,
 		ProtocolVersion protocolVersion,
 		RouterCurrentParameterProjectionSource? currentParameterSource = null,
-		IParticipantParameterStore? parameterStore = null)
+		IParticipantParameterStore? parameterStore = null,
+		NodeName? nodeName = null)
 	{
 		this.localAddress = localAddress ?? throw new ArgumentNullException(nameof(localAddress));
 		this.protocolVersion = protocolVersion ?? throw new ArgumentNullException(nameof(protocolVersion));
 		this.currentParameterSource = currentParameterSource;
 		this.parameterStore = parameterStore;
+		this.nodeName = nodeName;
 	}
 
 	public async ValueTask<Envelope?> HandleAsync(
@@ -156,6 +159,10 @@ internal sealed class RouterParameterRead
 				currentParameters?.BrigadeOrAgencyIdentifier ?? this.localAddress.Brigade.Value)
 			: number == RouterParameterCatalogue.NodeNumber.Number
 				? RouterParameterCatalogue.NodeNumber.Encode(this.localAddress.Node.Value)
+			: number == RouterParameterCatalogue.NodeName.Number
+				? this.nodeName is null
+					? null
+					: RouterParameterCatalogue.NodeName.Encode(this.nodeName)
 			: number == RouterParameterCatalogue.CurrentPassword.Number
 				? RouterParameterCatalogue.CurrentPassword.Encode(
 					PasswordParameter.FromFields(

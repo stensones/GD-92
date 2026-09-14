@@ -277,10 +277,25 @@ public sealed class RouterParametersController(
 		{
 			1 or 12 or 19 => FormatSingleOctet(parameterValue),
 			2 => FormatWord16(parameterValue),
+			3 => FormatNodeName(parameterValue),
 			4 => FormatCurrentPassword(parameterValue),
 			5 => "PASSWORD",
 			_ => null
 		};
+	}
+
+	private static string FormatNodeName(ParameterValue parameterValue)
+	{
+		var buffer = new EncodedMessageBuffer(parameterValue.ToWireValue());
+		var nodeName = NodeName.FromEncodedMessageBuffer(ref buffer);
+		if (buffer.RemainingBitCount != 0)
+		{
+			throw new ArgumentException(
+				"Router Parameter 3 contains trailing encoded data.",
+				nameof(parameterValue));
+		}
+
+		return nodeName.Value.Value;
 	}
 
 	private static string FormatWord16(ParameterValue parameterValue)

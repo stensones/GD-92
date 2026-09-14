@@ -49,6 +49,27 @@ public sealed class RouterParameterReadTests
 	}
 
 	[Fact]
+	public async Task Returns_the_Current_Node_Name_Parameter_from_the_configured_Node_Name()
+	{
+		var localAddress = RouterParameterModuleTestSupport.CreateAddress(26, 100, 0);
+		var nodeName = NodeName.FromValue(SevenBitAsciiString.FromValue("Station End"));
+		var parameterRead = new RouterParameterRead(
+			localAddress,
+			RouterParameterModuleTestSupport.ProtocolVersion,
+			nodeName: nodeName);
+
+		var response = await parameterRead.HandleAsync(
+			RouterParameterModuleTestSupport.CreateParameterRequest(
+				localAddress,
+				ParameterTable.Current,
+				RouterParameterCatalogue.NodeName.Number),
+			CancellationToken.None);
+
+		response!.Contents.Should().BeOfType<Parameter>().Which.ParameterValue.ToWireValue()
+			.Should().Equal(nodeName.ToWireValue());
+	}
+
+	[Fact]
 	public async Task Leaves_an_unsupported_Router_Parameter_unhandled()
 	{
 		var localAddress = RouterParameterModuleTestSupport.CreateAddress(26, 100, 0);

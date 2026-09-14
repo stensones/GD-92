@@ -133,6 +133,14 @@ public sealed class RouterParameterRequestSteps
 		this.response = await this.client!.PostAsync("/router/parameters/current/2", null);
 	}
 
+	[When(@"I request local Router Current Parameter 3")]
+	public async Task WhenIRequestLocalRouterCurrentParameterThree()
+	{
+		await this.EnsureApplicationStartedAsync();
+
+		this.response = await this.client!.PostAsync("/router/parameters/current/3", null);
+	}
+
 	[When(@"I request local Router Routing Table entry 1")]
 	public async Task WhenIRequestLocalRouterRoutingTableEntryOne()
 	{
@@ -858,6 +866,38 @@ public sealed class RouterParameterRequestSteps
 	public void ThenNodeManagerListsNodeNumberInTheRouterCurrentParameterCatalogue()
 	{
 		this.pageContent.Should().Contain("""{ number: 2, name: "Node Number" },""");
+	}
+
+	[Then(@"the Parameter Request status shows Router Current Node Name Station End")]
+	public async Task ThenTheParameterRequestStatusShowsRouterCurrentNodeName()
+	{
+		var statusAddress = this.response!.Headers.Location!;
+
+		for (var attempt = 0; attempt < 30; attempt++)
+		{
+			using var status = await this.client!.GetAsync(statusAddress);
+			if (status.StatusCode == HttpStatusCode.OK)
+			{
+				using var document = JsonDocument.Parse(await status.Content.ReadAsStringAsync());
+				if (document.RootElement.GetProperty("state").GetString() == "received" &&
+					document.RootElement.GetProperty("parameterNumber").GetInt32() == 3 &&
+					document.RootElement.GetProperty("parameterValue").GetString() == "Station End")
+				{
+					return;
+				}
+			}
+
+			await Task.Delay(TimeSpan.FromSeconds(1));
+		}
+
+		throw new Xunit.Sdk.XunitException(
+			"The Parameter Request status did not show Router Current Node Name Station End.");
+	}
+
+	[Then(@"NodeManager lists Node Name in the Router Current Parameter catalogue")]
+	public void ThenNodeManagerListsNodeNameInTheRouterCurrentParameterCatalogue()
+	{
+		this.pageContent.Should().Contain("""{ number: 3, name: "Node Name" },""");
 	}
 
 	[Then(@"NodeManager renders the Routing Table rejection reason")]
