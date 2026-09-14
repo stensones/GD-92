@@ -11,6 +11,7 @@ using Reqnroll;
 using Router.Persistence;
 using Stensones.GD92.Fields;
 using System.Net;
+using System.Globalization;
 using System.Text.Json;
 
 namespace Stensones.GD92.StationEnd.Tests.Integration;
@@ -171,6 +172,14 @@ public sealed class RouterParameterRequestSteps
 		await this.EnsureApplicationStartedAsync();
 
 		this.response = await this.client!.PostAsync("/router/parameters/current/18", null);
+	}
+
+	[When(@"I request local Router Current Parameter 20")]
+	public async Task WhenIRequestLocalRouterCurrentParameterTwenty()
+	{
+		await this.EnsureApplicationStartedAsync();
+
+		this.response = await this.client!.PostAsync("/router/parameters/current/20", null);
 	}
 
 	[When(@"I request local Router Routing Table entry 1")]
@@ -1067,6 +1076,44 @@ public sealed class RouterParameterRequestSteps
 	public void ThenNodeManagerListsManualAcknowledgementTimeoutInTheRouterCurrentParameterCatalogue()
 	{
 		this.pageContent.Should().Contain("""{ number: 18, name: "Manual Acknowledgement Timeout" },""");
+	}
+
+	[Then(@"the Parameter Request status shows the current Router UTC Time and Date")]
+	public async Task ThenTheParameterRequestStatusShowsTheCurrentRouterUtcTimeAndDate()
+	{
+		var statusAddress = this.response!.Headers.Location!;
+
+		for (var attempt = 0; attempt < 30; attempt++)
+		{
+			using var status = await this.client!.GetAsync(statusAddress);
+			if (status.StatusCode == HttpStatusCode.OK)
+			{
+				using var document = JsonDocument.Parse(await status.Content.ReadAsStringAsync());
+				if (document.RootElement.GetProperty("state").GetString() == "received" &&
+					document.RootElement.GetProperty("parameterNumber").GetInt32() == 20 &&
+					DateTime.TryParseExact(
+						document.RootElement.GetProperty("parameterValue").GetString(),
+						"ddMMMyyHHmmss",
+						CultureInfo.InvariantCulture,
+						DateTimeStyles.AssumeUniversal | DateTimeStyles.AdjustToUniversal,
+						out var returnedUtcTime) &&
+					Math.Abs((DateTime.UtcNow - returnedUtcTime).TotalMinutes) <= 1)
+				{
+					return;
+				}
+			}
+
+			await Task.Delay(TimeSpan.FromSeconds(1));
+		}
+
+		throw new Xunit.Sdk.XunitException(
+			"The Parameter Request status did not show the current Router UTC Time and Date.");
+	}
+
+	[Then(@"NodeManager lists Time and Date in the Router Current Parameter catalogue")]
+	public void ThenNodeManagerListsTimeAndDateInTheRouterCurrentParameterCatalogue()
+	{
+		this.pageContent.Should().Contain("""{ number: 20, name: "Time and Date" },""");
 	}
 
 	[Then(@"NodeManager renders the Routing Table rejection reason")]

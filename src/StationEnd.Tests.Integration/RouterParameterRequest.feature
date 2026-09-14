@@ -183,6 +183,15 @@ Feature: Router Parameter Request
     And the Parameter Request status shows Router Current Manual Acknowledgement Timeout 60
     And NodeManager lists Manual Acknowledgement Timeout in the Router Current Parameter catalogue
 
+  Scenario: Browsing the local Router Current Time and Date
+    Given NodeManager is the User Agent at Brigade 26, Node 100, and Port 25
+    And its local Router is at Brigade 26, Node 100, and Port 0
+    When I open NodeManager
+    When I request local Router Current Parameter 20
+    Then I am redirected to the pending Parameter Request status
+    And the Parameter Request status shows the current Router UTC Time and Date
+    And NodeManager lists Time and Date in the Router Current Parameter catalogue
+
   Scenario: Presenting a Node Login form
     When I open NodeManager
     Then NodeManager presents a Node Login form that securely submits password, brigade, node, and port

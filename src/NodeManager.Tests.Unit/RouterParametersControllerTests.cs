@@ -590,6 +590,54 @@ public sealed class RouterParametersControllerTests
 	}
 
 	[Fact]
+	public async Task Presents_a_received_Current_Time_and_Date_in_canonical_GD92_format()
+	{
+		using var managementTransactions = new TestManagementTransactions();
+		var identifier = await managementTransactions.Transactions.SubmitAsync(
+			new ManagementTransactionRequest(
+				Address(25),
+				Address(0),
+				sequenceNumber => Envelope.FromValues(
+					Address(25),
+					Destinations.FromAddresses(Address(0)),
+					ProtocolAndPriority.FromValues(
+						MessagePriority.FromValue(MessagePriorityLevel.FromValue(3)),
+						ProtocolVersion.FromValue(ProtocolVersionNumber.FromValue(2))),
+					AcknowledgementAndSequence.FromValues(
+						sequenceNumber,
+						AcknowledgementRequest.Requested),
+					ParameterRequest.FromFields(
+						ParameterTable.Current,
+						ParameterNumber.FromValue(20))),
+				ManagementTransactionKind.ParameterRequest),
+			CancellationToken.None);
+		await managementTransactions.Transactions.ReceiveAsync(Envelope.FromValues(
+			Address(0),
+			Destinations.FromAddresses(Address(25)),
+			ProtocolAndPriority.FromValues(
+				MessagePriority.FromValue(MessagePriorityLevel.FromValue(3)),
+				ProtocolVersion.FromValue(ProtocolVersionNumber.FromValue(2))),
+			AcknowledgementAndSequence.FromValues(identifier.USWR.SequenceNumber, AcknowledgementRequest.NotRequested),
+			Parameter.FromFields(
+				MoreValues.No,
+				ParameterValue.FromWireValue(
+					TimeAndDate.FromValue(
+						SevenBitAsciiString.FromValue("14SEP26090020")).ToWireValue()))),
+			CancellationToken.None);
+		var controller = new RouterParametersController(
+			new ReturningRouterParameterRequestService(identifier),
+			managementTransactions.Transactions);
+
+		var response = controller.CurrentStatus(20, identifier.ToString())
+			.Should().BeOfType<OkObjectResult>().Which.Value
+			.Should().BeOfType<RouterParameterRequestStatusResponse>().Which;
+
+		response.State.Should().Be("received");
+		response.ParameterNumber.Should().Be(20);
+		response.ParameterValue.Should().Be("14SEP26090020");
+	}
+
+	[Fact]
 	public async Task Presents_a_received_Current_Retries()
 	{
 		using var managementTransactions = new TestManagementTransactions();

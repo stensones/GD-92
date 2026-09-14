@@ -2,6 +2,7 @@ using Router.Persistence;
 using ParticipantParameters;
 using Stensones.GD92.Fields;
 using Stensones.GD92.Messages;
+using System.Globalization;
 
 namespace Router;
 
@@ -18,6 +19,7 @@ internal sealed class RouterParameterRead
 	private readonly CommunicationsAddress? networkManagerAddress1;
 	private readonly CommunicationsAddress? networkManagerAddress2;
 	private readonly ManualAcknowledgementTimeout? manualAcknowledgementTimeout;
+	private readonly TimeProvider timeProvider;
 
 	public RouterParameterRead(
 		CommunicationsAddress localAddress,
@@ -28,7 +30,8 @@ internal sealed class RouterParameterRead
 		MaximumMessageLength? maximumMessageLength = null,
 		CommunicationsAddress? networkManagerAddress1 = null,
 		CommunicationsAddress? networkManagerAddress2 = null,
-		ManualAcknowledgementTimeout? manualAcknowledgementTimeout = null)
+		ManualAcknowledgementTimeout? manualAcknowledgementTimeout = null,
+		TimeProvider? timeProvider = null)
 	{
 		this.localAddress = localAddress ?? throw new ArgumentNullException(nameof(localAddress));
 		this.protocolVersion = protocolVersion ?? throw new ArgumentNullException(nameof(protocolVersion));
@@ -39,6 +42,7 @@ internal sealed class RouterParameterRead
 		this.networkManagerAddress1 = networkManagerAddress1;
 		this.networkManagerAddress2 = networkManagerAddress2;
 		this.manualAcknowledgementTimeout = manualAcknowledgementTimeout;
+		this.timeProvider = timeProvider ?? TimeProvider.System;
 	}
 
 	public async ValueTask<Envelope?> HandleAsync(
@@ -192,6 +196,11 @@ internal sealed class RouterParameterRead
 					? null
 					: RouterParameterCatalogue.ManualAcknowledgementTimeout.Encode(
 						this.manualAcknowledgementTimeout)
+			: number == RouterParameterCatalogue.TimeAndDate.Number
+				? RouterParameterCatalogue.TimeAndDate.Encode(TimeAndDate.FromValue(
+					SevenBitAsciiString.FromValue(this.timeProvider.GetUtcNow().ToString(
+						"ddMMMyyHHmmss",
+						CultureInfo.InvariantCulture).ToUpperInvariant())))
 			: number == RouterParameterCatalogue.CurrentPassword.Number
 				? RouterParameterCatalogue.CurrentPassword.Encode(
 					PasswordParameter.FromFields(

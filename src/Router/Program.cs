@@ -36,7 +36,8 @@ builder.Services.AddScoped(serviceProvider =>
 		routerSettings.MaximumMessageLength,
 		routerSettings.NetworkManagerAddress1,
 		routerSettings.NetworkManagerAddress2,
-		routerSettings.ManualAcknowledgementTimeout));
+		routerSettings.ManualAcknowledgementTimeout,
+		TimeProvider.System));
 builder.Services.AddScoped(serviceProvider =>
 	new NodeLogin(
 		routerSettings.LocalAddress,

@@ -114,6 +114,33 @@ public sealed class RouterParameterReadTests
 	}
 
 	[Fact]
+	public async Task Returns_the_Current_Time_and_Date_from_the_request_time_in_UTC()
+	{
+		var localAddress = RouterParameterModuleTestSupport.CreateAddress(26, 100, 0);
+		var utcNow = new DateTimeOffset(2026, 9, 14, 9, 0, 20, TimeSpan.Zero);
+		var parameterRead = new RouterParameterRead(
+			localAddress,
+			RouterParameterModuleTestSupport.ProtocolVersion,
+			timeProvider: new FixedTimeProvider(utcNow));
+
+		var response = await parameterRead.HandleAsync(
+			RouterParameterModuleTestSupport.CreateParameterRequest(
+				localAddress,
+				ParameterTable.Current,
+				RouterParameterCatalogue.TimeAndDate.Number),
+			CancellationToken.None);
+
+		RouterParameterCatalogue.TimeAndDate.Read(
+			response!.Contents.Should().BeOfType<Parameter>().Which.ParameterValue).Value.Value
+			.Should().Be("14SEP26090020");
+	}
+
+	private sealed class FixedTimeProvider(DateTimeOffset utcNow) : TimeProvider
+	{
+		public override DateTimeOffset GetUtcNow() => utcNow;
+	}
+
+	[Fact]
 	public async Task Returns_the_Current_Network_Manager_Address_1_Parameter_from_the_configuration()
 	{
 		var localAddress = RouterParameterModuleTestSupport.CreateAddress(26, 100, 0);
