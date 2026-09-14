@@ -41,6 +41,8 @@ The Node Manager currently:
 - reads and presents Router Current Parameter 18
   (`manual_acknowledgement_timeout`) as its typed GD-92 manual acknowledgement
   timeout;
+- reads and presents Router Current Parameter 20 (`time_and_date`) from the
+  Router's live UTC clock;
 - completes the discovered Router's supported scalar Current Parameter
   catalogue as concurrent, independently correlated requests; Password
   Parameters 5-8 are redacted consistently as `PASSWORD`;

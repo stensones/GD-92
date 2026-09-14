@@ -71,6 +71,10 @@ the GD-92 typed `ManualAcknowledgementTimeout` field and presented from the
 Router's configured timeout. For example,
 `Router:ManualAcknowledgementTimeout = 60` returns `60`.
 
+Router Current Parameter 20 (`time_and_date`) is generated from the Router's
+live UTC clock when requested, decoded using the typed `TimeAndDate` field,
+and presented in canonical GD-92 `ddMMMyyHHmmss` form.
+
 Selecting **View parameters** for a discovered Router concurrently requests
 every currently supported scalar value in its catalogue. Each resulting status
 must complete independently; Password Parameters 5-8 always present
