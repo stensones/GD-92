@@ -20,6 +20,8 @@ public sealed class RouterParametersController(
 		ParameterNumber.FromValue(16);
 	private static readonly ParameterNumber IsdnTableParameterNumber =
 		ParameterNumber.FromValue(17);
+	private static readonly ParameterNumber MdtTableParameterNumber =
+		ParameterNumber.FromValue(21);
 
 	[HttpPost("brigade-or-agency-number")]
 	public async Task<IActionResult> RequestBrigadeOrAgencyNumber(CancellationToken cancellationToken)
@@ -214,6 +216,9 @@ public sealed class RouterParametersController(
 		var isdnTableEntries = status is ReceivedRouterParameterRequestStatus receivedIsdnTable
 			? FormatIsdnTableEntries(parameterNumber, receivedIsdnTable.ParameterValue)
 			: null;
+		var mdtTableEntries = status is ReceivedRouterParameterRequestStatus receivedMdtTable
+			? FormatMdtTableEntries(parameterNumber, receivedMdtTable.ParameterValue)
+			: null;
 		bool? moreValues = status is ReceivedRouterParameterRequestStatus receivedMoreValues
 			? receivedMoreValues.MoreValues.Value == ProtocolBoolean.True
 			: null;
@@ -235,7 +240,8 @@ public sealed class RouterParametersController(
 		{
 			WanTableEntries = wanTableEntries,
 			LanTableEntries = lanTableEntries,
-			IsdnTableEntries = isdnTableEntries
+			IsdnTableEntries = isdnTableEntries,
+			MdtTableEntries = mdtTableEntries
 		};
 	}
 
@@ -402,6 +408,28 @@ public sealed class RouterParametersController(
 				entry.Index.Value, entry.Used.Value, Format(entry.NextNode),
 				entry.TelephoneNumber.Value.Value, entry.HoldTime.Value, entry.Available.Value))
 			.ToArray();
+	}
+
+	private static IReadOnlyList<MdtTableEntryStatusResponse>? FormatMdtTableEntries(
+		ParameterNumber? parameterNumber, ParameterValue parameterValue)
+	{
+		if (parameterNumber != MdtTableParameterNumber)
+		{
+			return null;
+		}
+
+		var buffer = new EncodedMessageBuffer(parameterValue.ToWireValue());
+		var mdtTable = MdtTable.FromEncodedMessageBuffer(ref buffer);
+		if (buffer.RemainingBitCount != 0)
+		{
+			throw new ArgumentException(
+				"Router MDT Table Parameter contains trailing encoded data.",
+				nameof(parameterValue));
+		}
+
+		return mdtTable.Entries.Select(entry => new MdtTableEntryStatusResponse(
+			entry.Index.Value, entry.Used.Value, Format(entry.NextNode),
+			entry.NetworkUserAddress.Value.Value, entry.HoldTime.Value, entry.Available.Value)).ToArray();
 	}
 
 	private static string? FormatParameterValue(

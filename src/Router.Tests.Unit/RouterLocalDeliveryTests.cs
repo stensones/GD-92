@@ -296,6 +296,47 @@ public sealed class RouterLocalDeliveryTests
 	}
 
 	[Fact]
+	public async Task Delivers_a_requested_MDT_Table_entry_from_the_non_volatile_store()
+	{
+		var routerAddress = RouterParameterModuleTestSupport.CreateAddress(26, 100, 0);
+		var nextNode = RouterParameterModuleTestSupport.CreateAddress(26, 101, 0);
+		var mdtTable = MdtTable.FromEntries(MobileDataTerminalTableEntry.FromValues(
+			ParameterEntryIndex.FromValue(1), ProtocolBoolean.True, nextNode,
+			NetworkUserAddress.FromValue(SevenBitAsciiString.FromValue("MDT")),
+			HoldTime.FromValue(10), ProtocolBoolean.True));
+		var userAgentIngress = new CapturingUserAgentIngress();
+		var localDelivery = CreateLocalDelivery(
+			routerAddress, new RouterCurrentParameterProjectionSource(), userAgentIngress,
+			new CapturingLocalParticipantIngress(), new RetainedParameterStore(
+				RouterParameterCatalogue.MdtTable.Encode(mdtTable),
+				RouterParameterCatalogue.MdtTable.Number));
+		var request = Envelope.FromValues(
+			RouterParameterModuleTestSupport.CreateAddress(26, 100, 25),
+			Destinations.FromAddresses(routerAddress),
+			ProtocolAndPriority.FromValues(
+				MessagePriority.FromValue(MessagePriorityLevel.FromValue(3)),
+				RouterParameterModuleTestSupport.ProtocolVersion),
+			AcknowledgementAndSequence.FromValues(
+				SequenceNumber.FromValue(MessageSequenceIdentifier.FromValue(7)),
+				AcknowledgementRequest.Requested),
+			ParameterRequestMultiple.FromFields(
+				ParameterTable.Current,
+				RouterParameterCatalogue.MdtTable.Number,
+				ParameterEntrySelection.Range(
+					ParameterEntryIndex.FromValue(1), ParameterEntryIndex.FromValue(1))));
+
+		await localDelivery.ReceiveAsync(request, CancellationToken.None);
+
+		var parameter = userAgentIngress.Envelope!.Contents.Should().BeOfType<Parameter>().Which;
+		var buffer = new EncodedMessageBuffer(parameter.ParameterValue.ToWireValue());
+		var returnedEntry = MdtTable.FromEncodedMessageBuffer(ref buffer).Entries.Single();
+		returnedEntry.Index.Value.Should().Be(1);
+		returnedEntry.NetworkUserAddress.Value.Value.Should().Be("MDT");
+		returnedEntry.HoldTime.Value.Should().Be(10);
+		returnedEntry.Available.Should().Be(ProtocolBoolean.True);
+	}
+
+	[Fact]
 	public async Task Does_not_indicate_more_values_when_all_requested_Routing_Table_entries_fit()
 	{
 		var routerAddress = RouterParameterModuleTestSupport.CreateAddress(26, 100, 0);

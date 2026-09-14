@@ -96,7 +96,8 @@ internal sealed class RouterParameterRead
 				parameterNumber != RouterParameterCatalogue.PstnTable.Number &&
 				parameterNumber != RouterParameterCatalogue.WanTable.Number &&
 				parameterNumber != RouterParameterCatalogue.LanTable.Number &&
-				parameterNumber != RouterParameterCatalogue.IsdnTable.Number) ||
+				parameterNumber != RouterParameterCatalogue.IsdnTable.Number &&
+				parameterNumber != RouterParameterCatalogue.MdtTable.Number) ||
 			this.parameterStore is null)
 		{
 			return null;
@@ -171,15 +172,28 @@ internal sealed class RouterParameterRead
 				"LAN Table");
 		}
 
+		if (parameterNumber == RouterParameterCatalogue.IsdnTable.Number)
+		{
+			return this.CreateTableResponse(
+				envelope,
+				RouterParameterCatalogue.IsdnTable.Read(tableParameterValue).Entries,
+				firstEntry,
+				lastEntry,
+				static entry => entry.Index.Value,
+				static entries => RouterParameterCatalogue.IsdnTable.Encode(
+					IsdnTable.FromEntries(entries)),
+				"ISDN Table");
+		}
+
 		return this.CreateTableResponse(
 			envelope,
-			RouterParameterCatalogue.IsdnTable.Read(tableParameterValue).Entries,
+			RouterParameterCatalogue.MdtTable.Read(tableParameterValue).Entries,
 			firstEntry,
 			lastEntry,
 			static entry => entry.Index.Value,
-			static entries => RouterParameterCatalogue.IsdnTable.Encode(
-				IsdnTable.FromEntries(entries)),
-			"ISDN Table");
+			static entries => RouterParameterCatalogue.MdtTable.Encode(
+				MdtTable.FromEntries(entries)),
+			"MDT Table");
 	}
 
 	private Envelope CreateTableResponse<TEntry>(

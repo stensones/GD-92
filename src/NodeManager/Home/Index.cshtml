@@ -190,6 +190,16 @@
             </form>
             <p id="router-isdn-table-entry-selection-status" role="status" hidden></p>
             <ul id="router-isdn-table-entry-results" hidden></ul>
+            <form class="inline-action" id="router-mdt-table-entry-selection">
+                <fieldset>
+                    <legend>Router Current MDT Table entries</legend>
+                    <label>First entry <input name="first-entry" type="number" min="1" value="1" required /></label>
+                    <label>Last entry <input name="last-entry" type="number" min="1" value="1" required /></label>
+                    <button type="submit">Request entries</button>
+                </fieldset>
+            </form>
+            <p id="router-mdt-table-entry-selection-status" role="status" hidden></p>
+            <ul id="router-mdt-table-entry-results" hidden></ul>
             <p id="router-parameter-list-status" role="status" hidden></p>
             <table id="router-parameter-list" hidden>
                 <caption>Local Router Current Parameters</caption>
@@ -251,6 +261,9 @@
     const routerIsdnTableEntrySelection = document.getElementById("router-isdn-table-entry-selection");
     const routerIsdnTableEntrySelectionStatus = document.getElementById("router-isdn-table-entry-selection-status");
     const routerIsdnTableEntryResults = document.getElementById("router-isdn-table-entry-results");
+    const routerMdtTableEntrySelection = document.getElementById("router-mdt-table-entry-selection");
+    const routerMdtTableEntrySelectionStatus = document.getElementById("router-mdt-table-entry-selection-status");
+    const routerMdtTableEntryResults = document.getElementById("router-mdt-table-entry-results");
     let nextRoutingTableEntryRange = null;
     const redactedPasswordMarker = "PASSWORD";
     const participantCurrentParameterCatalogues = {
@@ -819,6 +832,42 @@
             routerIsdnTableEntryResults.hidden = false;
             routerIsdnTableEntrySelectionStatus.textContent =
                 "ISDN Table entries received.";
+        };
+        poll();
+    });
+
+    routerMdtTableEntrySelection.addEventListener("submit", async event => {
+        event.preventDefault();
+        const data = new FormData(routerMdtTableEntrySelection);
+        const firstEntry = Number(data.get("first-entry"));
+        const lastEntry = Number(data.get("last-entry"));
+        if (!Number.isInteger(firstEntry) || !Number.isInteger(lastEntry) ||
+            firstEntry < 1 || lastEntry < firstEntry) {
+            routerMdtTableEntrySelectionStatus.hidden = false;
+            routerMdtTableEntrySelectionStatus.textContent = "Last entry must be greater than or equal to first entry.";
+            return;
+        }
+        routerMdtTableEntrySelectionStatus.hidden = false;
+        routerMdtTableEntryResults.hidden = true;
+        routerMdtTableEntryResults.replaceChildren();
+        const response = await fetch(`/router/parameters/current/21/entries/${firstEntry}-${lastEntry}`, { method: "POST" });
+        if (!response.ok || !response.url) {
+            routerMdtTableEntrySelectionStatus.textContent = "The MDT Table request could not be submitted.";
+            return;
+        }
+        const poll = async () => {
+            const result = await fetch(response.url);
+            if (!result.ok) { routerMdtTableEntrySelectionStatus.textContent = "The MDT Table request could not be completed."; return; }
+            const request = await result.json();
+            if (request.state === "pending") { window.setTimeout(poll, 1000); return; }
+            if (request.state !== "received") { routerMdtTableEntrySelectionStatus.textContent = `MDT Table request ${request.state}.`; return; }
+            for (const entry of request.mdtTableEntries ?? []) {
+                const item = document.createElement("li");
+                item.textContent = `MDT Table entry ${entry.index}: ${entry.used ? "used" : "unused"}, ${entry.available ? "available" : "unavailable"}, next node ${entry.nextNode}, network user address ${entry.networkUserAddress}, hold time ${entry.holdTime}`;
+                routerMdtTableEntryResults.append(item);
+            }
+            routerMdtTableEntryResults.hidden = false;
+            routerMdtTableEntrySelectionStatus.textContent = "MDT Table entries received.";
         };
         poll();
     });

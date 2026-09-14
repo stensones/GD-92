@@ -199,6 +199,26 @@ public sealed class RouterParameterRequestSteps
 			RouterParameterCatalogue.IsdnTable.Encode(IsdnTable.FromEntries(entry)));
 	}
 
+	[Given(@"the local Router has MDT Table entry 1 to next node 26.101.0, network user address MDT, hold time 10, used, and available")]
+	public async Task GivenTheLocalRouterHasMdtTableEntryOne()
+	{
+		this.applicationProfile = RouterParameterRequestApplicationProfile.RouterWithRoutingTableEntry;
+		await this.EnsureApplicationStartedAsync();
+		var connectionString = await this.application!.GetConnectionStringAsync("router-database")
+			?? throw new InvalidOperationException("The test Router database connection string was not provided.");
+		var options = new DbContextOptionsBuilder<RouterDbContext>().UseNpgsql(connectionString).Options;
+		await using var database = new RouterDbContext(options);
+		var entry = MobileDataTerminalTableEntry.FromValues(
+			ParameterEntryIndex.FromValue(1), ProtocolBoolean.True,
+			CommunicationsAddress.FromValues(Brigade.FromValue(BrigadeOrAgencyIdentifier.FromValue(26)),
+				Node.FromValue(NodeIdentifier.FromValue(101)), Port.FromValue(PortIdentifier.FromValue(0))),
+			NetworkUserAddress.FromValue(SevenBitAsciiString.FromValue("MDT")),
+			HoldTime.FromValue(10), ProtocolBoolean.True);
+		var store = new EfRouterParameterStore(database);
+		await store.StoreAsync(ParameterTable.NonVolatile, RouterParameterCatalogue.MdtTable.Number,
+			RouterParameterCatalogue.MdtTable.Encode(MdtTable.FromEntries(entry)));
+	}
+
 	[When(@"I request the local Router brigade or agency number")]
 	public async Task WhenIRequestTheLocalRouterBrigadeOrAgencyNumber()
 	{
@@ -300,6 +320,13 @@ public sealed class RouterParameterRequestSteps
 	{
 		await this.EnsureApplicationStartedAsync();
 		this.response = await this.client!.PostAsync("/router/parameters/current/17/entries/1-1", null);
+	}
+
+	[When(@"I request local Router Current MDT Table entries 1 through 1")]
+	public async Task WhenIRequestLocalRouterCurrentMdtTableEntries()
+	{
+		await this.EnsureApplicationStartedAsync();
+		this.response = await this.client!.PostAsync("/router/parameters/current/21/entries/1-1", null);
 	}
 
 	[When(@"I request local Router Routing Table entry 1")]
@@ -1363,6 +1390,36 @@ public sealed class RouterParameterRequestSteps
 			await Task.Delay(TimeSpan.FromSeconds(1));
 		}
 		throw new Xunit.Sdk.XunitException("The Parameter Request status did not show the expected ISDN Table entry.");
+	}
+
+	[Then(@"the Parameter Request status shows MDT Table entry 1 as used and available with next node 26.101.0, network user address MDT, and hold time 10")]
+	public async Task ThenTheParameterRequestStatusShowsMdtTableEntryOne()
+	{
+		var statusAddress = this.response!.Headers.Location!;
+		for (var attempt = 0; attempt < 30; attempt++)
+		{
+			using var status = await this.client!.GetAsync(statusAddress);
+			if (status.StatusCode == HttpStatusCode.OK)
+			{
+				using var document = JsonDocument.Parse(await status.Content.ReadAsStringAsync());
+				if (document.RootElement.GetProperty("state").GetString() == "received" &&
+					document.RootElement.TryGetProperty("mdtTableEntries", out var entries) &&
+					entries.GetArrayLength() == 1)
+				{
+					var entry = entries[0];
+					if (entry.GetProperty("index").GetInt32() == 1 && entry.GetProperty("used").GetBoolean() &&
+						entry.GetProperty("nextNode").GetString() == "26.101.0" &&
+						entry.GetProperty("networkUserAddress").GetString() == "MDT" &&
+						entry.GetProperty("holdTime").GetInt32() == 10 &&
+						entry.GetProperty("available").GetBoolean())
+					{
+						return;
+					}
+				}
+			}
+			await Task.Delay(TimeSpan.FromSeconds(1));
+		}
+		throw new Xunit.Sdk.XunitException("The Parameter Request status did not show the expected MDT Table entry.");
 	}
 
 	[Then(@"the Parameter Request status eventually shows timed-out")]

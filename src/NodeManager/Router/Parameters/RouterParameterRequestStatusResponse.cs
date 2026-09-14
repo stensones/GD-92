@@ -15,6 +15,7 @@ public sealed record RouterParameterRequestStatusResponse(
 	public IReadOnlyList<WanTableEntryStatusResponse>? WanTableEntries { get; init; }
 	public IReadOnlyList<LanTableEntryStatusResponse>? LanTableEntries { get; init; }
 	public IReadOnlyList<IsdnTableEntryStatusResponse>? IsdnTableEntries { get; init; }
+	public IReadOnlyList<MdtTableEntryStatusResponse>? MdtTableEntries { get; init; }
 }
 
 public sealed record RoutingTableEntryStatusResponse(
@@ -47,5 +48,13 @@ public sealed record IsdnTableEntryStatusResponse(
 	bool Used,
 	string NextNode,
 	string TelephoneNumber,
+	byte HoldTime,
+	bool Available);
+
+public sealed record MdtTableEntryStatusResponse(
+	ushort Index,
+	bool Used,
+	string NextNode,
+	string NetworkUserAddress,
 	byte HoldTime,
 	bool Available);

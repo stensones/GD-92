@@ -146,6 +146,14 @@ Feature: Router Parameter Request
     Then I am redirected to the pending Parameter Request status
     And the Parameter Request status shows ISDN Table entry 1 as used and available with next node 26.101.0, telephone number 34, and hold time 20
 
+  Scenario: Browsing a local Router Current MDT Table entry
+    Given NodeManager is the User Agent at Brigade 26, Node 100, and Port 25
+    And its local Router is at Brigade 26, Node 100, and Port 0
+    And the local Router has MDT Table entry 1 to next node 26.101.0, network user address MDT, hold time 10, used, and available
+    When I request local Router Current MDT Table entries 1 through 1
+    Then I am redirected to the pending Parameter Request status
+    And the Parameter Request status shows MDT Table entry 1 as used and available with next node 26.101.0, network user address MDT, and hold time 10
+
   Scenario: Rejecting a partially missing local Router Routing Table range
     Given NodeManager is the User Agent at Brigade 26, Node 100, and Port 25
     And its local Router is at Brigade 26, Node 100, and Port 0
