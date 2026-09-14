@@ -745,6 +745,53 @@ public sealed class RouterLocalDeliveryTests
 	}
 
 	[Fact]
+	public async Task Delivers_an_acknowledgement_for_an_authorized_Permanent_Retries_change()
+	{
+		var routerAddress = RouterParameterModuleTestSupport.CreateAddress(26, 100, 0);
+		var userAgentAddress = RouterParameterModuleTestSupport.CreateAddress(26, 100, 25);
+		var currentParameters = new RouterCurrentParameterProjectionSource();
+		currentParameters.Publish(
+			RouterParameterModuleTestSupport.CreateCurrentParameters(routerAddress));
+		currentParameters.TryLogOnAtLevelOne(
+			RouterParameterModuleTestSupport.CreatePasswordParameter(
+				PasswordLevelNumber.Level1,
+				"FIRE",
+				userAgentAddress)).Should().BeTrue();
+		var parameterStore = new RecordingParameterStore();
+		var userAgentIngress = new CapturingUserAgentIngress();
+		var localDelivery = CreateLocalDelivery(
+			routerAddress,
+			currentParameters,
+			userAgentIngress,
+			new CapturingLocalParticipantIngress(),
+			parameterStore);
+
+		await localDelivery.ReceiveAsync(
+			Envelope.FromValues(
+				userAgentAddress,
+				Destinations.FromAddresses(routerAddress),
+				ProtocolAndPriority.FromValues(
+					MessagePriority.FromValue(MessagePriorityLevel.FromValue(3)),
+					RouterParameterModuleTestSupport.ProtocolVersion),
+				AcknowledgementAndSequence.FromValues(
+					SequenceNumber.FromValue(MessageSequenceIdentifier.FromValue(7)),
+					AcknowledgementRequest.Requested),
+				SetParameter.FromFields(
+					ParameterTable.Permanent,
+					RouterParameterCatalogue.Retries.Number,
+					RouterParameterCatalogue.Retries.Encode(
+						Retries.FromValue(Word8.FromValue(5))))),
+			CancellationToken.None);
+
+		userAgentIngress.Envelope!.Contents.Should().BeOfType<Acknowledgement>();
+		RouterParameterCatalogue.Retries.Read(
+			(await parameterStore.GetAsync(
+				ParameterTable.Permanent,
+				RouterParameterCatalogue.Retries.Number))!).Value.Value.Should().Be(5);
+		currentParameters.GetCurrent().Retries.Value.Value.Should().Be(3);
+	}
+
+	[Fact]
 	public async Task Does_not_deliver_an_unsupported_Router_Message()
 	{
 		var routerAddress = RouterParameterModuleTestSupport.CreateAddress(26, 100, 0);

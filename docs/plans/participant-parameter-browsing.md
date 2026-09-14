@@ -145,9 +145,12 @@ An operator with an active Level 1 Router Node Login can change Router
 Non-Volatile Parameter 19 (`retries`) through GD-92 Message 60
 (`Set_parameter`). Node Manager submits the typed value, exposes the Router ACK
 as `acknowledged`, and the Router persists the value before refreshing its
-effective Current Retries projection. This is currently the only exposed Router
-Parameter modification; unauthorized and invalid-value outcomes remain the
-next delivery slices.
+effective Current Retries projection. The same authorized Message 60 operation
+against Current Parameter 19 updates only the effective Current projection; it
+does not write retained storage. Against Permanent Parameter 19, it writes only
+the selected Permanent value and leaves Current unchanged. These are currently
+the only exposed Router Parameter modifications; unauthorized and invalid-value
+outcomes remain the next delivery slices.
 
 Selecting **View parameters** for a discovered Router concurrently requests
 every currently supported scalar value in its catalogue. Each resulting status

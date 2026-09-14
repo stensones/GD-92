@@ -27,7 +27,9 @@ internal sealed class RouterParameterModification(
 			return null;
 		}
 
-		if (table != ParameterTable.Current && table != ParameterTable.NonVolatile)
+		if (table != ParameterTable.Current &&
+			table != ParameterTable.NonVolatile &&
+			table != ParameterTable.Permanent)
 		{
 			return null;
 		}
@@ -51,16 +53,17 @@ internal sealed class RouterParameterModification(
 				ParameterReasonCode.InvalidSyntax);
 		}
 
-		if (table == ParameterTable.NonVolatile)
+		if (table != ParameterTable.Current)
 		{
 			await parameterStore.StoreAsync(
-				ParameterTable.NonVolatile,
+				table,
 				RouterParameterCatalogue.Retries.Number,
 				RouterParameterCatalogue.Retries.Encode(retries),
 				cancellationToken);
 		}
 
-		if (!currentParameterSource.TryChangeRetries(retries))
+		if (table != ParameterTable.Permanent &&
+			!currentParameterSource.TryChangeRetries(retries))
 		{
 			return this.CreateNegativeAcknowledgement(
 				envelope,

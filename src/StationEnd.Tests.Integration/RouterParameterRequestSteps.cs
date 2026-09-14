@@ -443,6 +443,13 @@ public sealed class RouterParameterRequestSteps
 		this.response = await this.client!.PostAsync("/router/parameters/permanent/3", null);
 	}
 
+	[When(@"I request local Router Permanent Parameter 19")]
+	public async Task WhenIRequestLocalRouterPermanentRetries()
+	{
+		await this.EnsureApplicationStartedAsync();
+		this.response = await this.client!.PostAsync("/router/parameters/permanent/19", null);
+	}
+
 	[When(@"I request local Router Current PSTN Table entries 1 through 1")]
 	public async Task WhenIRequestLocalRouterCurrentPstnTableEntries()
 	{
@@ -1084,6 +1091,19 @@ public sealed class RouterParameterRequestSteps
 			]));
 	}
 
+	[When(@"I set local Router Permanent Parameter 19 to 5")]
+	public async Task WhenISetLocalRouterPermanentRetries()
+	{
+		await this.EnsureApplicationStartedAsync();
+
+		this.response = await this.client!.PostAsync(
+			"/router/parameters/permanent/19/value",
+			new FormUrlEncodedContent(
+			[
+				new KeyValuePair<string, string>("value", "5")
+			]));
+	}
+
 	[Given(@"the Router persistent Parameter Tables are empty")]
 	public async Task GivenTheRouterPersistentParameterTablesAreEmpty()
 	{
@@ -1623,6 +1643,48 @@ public sealed class RouterParameterRequestSteps
 
 		throw new Xunit.Sdk.XunitException(
 			"The Parameter Request status did not show Router Current Retries 5.");
+	}
+
+	[Then(@"the Parameter Request status shows Router Current Retries 3")]
+	public async Task ThenTheParameterRequestStatusShowsRouterCurrentRetriesThree()
+	{
+		await this.ThenTheParameterRequestStatusShowsRetries(
+			"Current",
+			"3");
+	}
+
+	[Then(@"the Parameter Request status shows Router Permanent Retries 5")]
+	public async Task ThenTheParameterRequestStatusShowsRouterPermanentRetriesFive()
+	{
+		await this.ThenTheParameterRequestStatusShowsRetries(
+			"Permanent",
+			"5");
+	}
+
+	private async Task ThenTheParameterRequestStatusShowsRetries(
+		string parameterTable,
+		string expectedRetries)
+	{
+		var statusAddress = this.response!.Headers.Location!;
+		for (var attempt = 0; attempt < 30; attempt++)
+		{
+			using var status = await this.client!.GetAsync(statusAddress);
+			if (status.StatusCode == HttpStatusCode.OK)
+			{
+				using var document = JsonDocument.Parse(await status.Content.ReadAsStringAsync());
+				if (document.RootElement.GetProperty("state").GetString() == "received" &&
+					document.RootElement.GetProperty("parameterNumber").GetInt32() == 19 &&
+					document.RootElement.GetProperty("parameterValue").GetString() == expectedRetries)
+				{
+					return;
+				}
+			}
+
+			await Task.Delay(TimeSpan.FromSeconds(1));
+		}
+
+		throw new Xunit.Sdk.XunitException(
+			$"The Parameter Request status did not show Router {parameterTable} Retries {expectedRetries}.");
 	}
 
 	[Then(@"the Parameter Request status shows Router Current Maximum Message Length 1023")]
@@ -2204,6 +2266,32 @@ public sealed class RouterParameterRequestSteps
 
 		throw new Xunit.Sdk.XunitException(
 			"The Parameter Modification status did not show acknowledged.");
+	}
+
+	[Then(@"the Parameter Modification status eventually shows Parameter \/ No Modification Access rejection")]
+	public async Task ThenTheParameterModificationStatusEventuallyShowsNoModificationAccess()
+	{
+		var statusAddress = this.response!.Headers.Location!;
+
+		for (var attempt = 0; attempt < 30; attempt++)
+		{
+			using var status = await this.client!.GetAsync(statusAddress);
+			if (status.StatusCode == HttpStatusCode.OK)
+			{
+				using var document = JsonDocument.Parse(await status.Content.ReadAsStringAsync());
+				if (document.RootElement.GetProperty("state").GetString() == "rejected" &&
+					document.RootElement.GetProperty("rejectionReason").GetString() ==
+					"Parameter / No Modification Access")
+				{
+					return;
+				}
+			}
+
+			await Task.Delay(TimeSpan.FromSeconds(1));
+		}
+
+		throw new Xunit.Sdk.XunitException(
+			"The Parameter Modification status did not show a no-modification-access rejection.");
 	}
 
 	[Then(@"the Node Login status eventually shows the Router is logged off")]
