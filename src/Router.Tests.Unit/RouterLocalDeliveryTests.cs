@@ -243,6 +243,59 @@ public sealed class RouterLocalDeliveryTests
 	}
 
 	[Fact]
+	public async Task Delivers_a_requested_ISDN_Table_entry_from_the_non_volatile_store()
+	{
+		var routerAddress = RouterParameterModuleTestSupport.CreateAddress(26, 100, 0);
+		var nextNode = RouterParameterModuleTestSupport.CreateAddress(26, 101, 0);
+		var isdnTable = IsdnTable.FromEntries(
+			TelephoneTableEntry.FromValues(
+				ParameterEntryIndex.FromValue(1),
+				ProtocolBoolean.True,
+				nextNode,
+				TelephoneNumber.FromValue(SevenBitAsciiString.FromValue("34")),
+				HoldTime.FromValue(20),
+				ProtocolBoolean.True));
+		var userAgentIngress = new CapturingUserAgentIngress();
+		var localDelivery = CreateLocalDelivery(
+			routerAddress,
+			new RouterCurrentParameterProjectionSource(),
+			userAgentIngress,
+			new CapturingLocalParticipantIngress(),
+			new RetainedParameterStore(
+				RouterParameterCatalogue.IsdnTable.Encode(isdnTable),
+				RouterParameterCatalogue.IsdnTable.Number));
+		var request = Envelope.FromValues(
+			RouterParameterModuleTestSupport.CreateAddress(26, 100, 25),
+			Destinations.FromAddresses(routerAddress),
+			ProtocolAndPriority.FromValues(
+				MessagePriority.FromValue(MessagePriorityLevel.FromValue(3)),
+				RouterParameterModuleTestSupport.ProtocolVersion),
+			AcknowledgementAndSequence.FromValues(
+				SequenceNumber.FromValue(MessageSequenceIdentifier.FromValue(7)),
+				AcknowledgementRequest.Requested),
+			ParameterRequestMultiple.FromFields(
+				ParameterTable.Current,
+				RouterParameterCatalogue.IsdnTable.Number,
+				ParameterEntrySelection.Range(
+					ParameterEntryIndex.FromValue(1),
+					ParameterEntryIndex.FromValue(1))));
+
+		await localDelivery.ReceiveAsync(request, CancellationToken.None);
+
+		var response = userAgentIngress.Envelope!.Contents.Should().BeOfType<Parameter>().Which;
+		response.MoreValues.Should().Be(MoreValues.No);
+		var buffer = new EncodedMessageBuffer(response.ParameterValue.ToWireValue());
+		var returnedEntry = IsdnTable.FromEncodedMessageBuffer(ref buffer).Entries.Single();
+		returnedEntry.Index.Value.Should().Be(1);
+		returnedEntry.Used.Should().Be(ProtocolBoolean.True);
+		returnedEntry.NextNode.Should().Be(nextNode);
+		returnedEntry.TelephoneNumber.Value.Value.Should().Be("34");
+		returnedEntry.HoldTime.Value.Should().Be(20);
+		returnedEntry.Available.Should().Be(ProtocolBoolean.True);
+		buffer.RemainingBitCount.Should().Be(0);
+	}
+
+	[Fact]
 	public async Task Does_not_indicate_more_values_when_all_requested_Routing_Table_entries_fit()
 	{
 		var routerAddress = RouterParameterModuleTestSupport.CreateAddress(26, 100, 0);

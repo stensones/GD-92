@@ -18,6 +18,8 @@ public sealed class RouterParametersController(
 		ParameterNumber.FromValue(15);
 	private static readonly ParameterNumber LanTableParameterNumber =
 		ParameterNumber.FromValue(16);
+	private static readonly ParameterNumber IsdnTableParameterNumber =
+		ParameterNumber.FromValue(17);
 
 	[HttpPost("brigade-or-agency-number")]
 	public async Task<IActionResult> RequestBrigadeOrAgencyNumber(CancellationToken cancellationToken)
@@ -209,6 +211,9 @@ public sealed class RouterParametersController(
 		var lanTableEntries = status is ReceivedRouterParameterRequestStatus receivedLanTable
 			? FormatLanTableEntries(parameterNumber, receivedLanTable.ParameterValue)
 			: null;
+		var isdnTableEntries = status is ReceivedRouterParameterRequestStatus receivedIsdnTable
+			? FormatIsdnTableEntries(parameterNumber, receivedIsdnTable.ParameterValue)
+			: null;
 		bool? moreValues = status is ReceivedRouterParameterRequestStatus receivedMoreValues
 			? receivedMoreValues.MoreValues.Value == ProtocolBoolean.True
 			: null;
@@ -229,7 +234,8 @@ public sealed class RouterParametersController(
 			rejectionReason)
 		{
 			WanTableEntries = wanTableEntries,
-			LanTableEntries = lanTableEntries
+			LanTableEntries = lanTableEntries,
+			IsdnTableEntries = isdnTableEntries
 		};
 	}
 
@@ -370,6 +376,31 @@ public sealed class RouterParametersController(
 				entry.Used.Value,
 				Format(entry.NextNode),
 				entry.LanAddress.Value.Value))
+			.ToArray();
+	}
+
+	private static IReadOnlyList<IsdnTableEntryStatusResponse>? FormatIsdnTableEntries(
+		ParameterNumber? parameterNumber,
+		ParameterValue parameterValue)
+	{
+		if (parameterNumber != IsdnTableParameterNumber)
+		{
+			return null;
+		}
+
+		var buffer = new EncodedMessageBuffer(parameterValue.ToWireValue());
+		var isdnTable = IsdnTable.FromEncodedMessageBuffer(ref buffer);
+		if (buffer.RemainingBitCount != 0)
+		{
+			throw new ArgumentException(
+				"Router ISDN Table Parameter contains trailing encoded data.",
+				nameof(parameterValue));
+		}
+
+		return isdnTable.Entries
+			.Select(entry => new IsdnTableEntryStatusResponse(
+				entry.Index.Value, entry.Used.Value, Format(entry.NextNode),
+				entry.TelephoneNumber.Value.Value, entry.HoldTime.Value, entry.Available.Value))
 			.ToArray();
 	}
 

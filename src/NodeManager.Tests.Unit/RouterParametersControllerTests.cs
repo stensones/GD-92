@@ -883,6 +883,53 @@ public sealed class RouterParametersControllerTests
 	}
 
 	[Fact]
+	public async Task Presents_a_received_Current_ISDN_Table_entry()
+	{
+		using var managementTransactions = new TestManagementTransactions();
+		var identifier = await managementTransactions.Transactions.SubmitAsync(
+			new ManagementTransactionRequest(
+				Address(25), Address(0),
+				sequenceNumber => Envelope.FromValues(
+					Address(25), Destinations.FromAddresses(Address(0)),
+					ProtocolAndPriority.FromValues(
+						MessagePriority.FromValue(MessagePriorityLevel.FromValue(3)),
+						ProtocolVersion.FromValue(ProtocolVersionNumber.FromValue(2))),
+					AcknowledgementAndSequence.FromValues(sequenceNumber, AcknowledgementRequest.Requested),
+					ParameterRequestMultiple.FromFields(
+						ParameterTable.Current, ParameterNumber.FromValue(17),
+						ParameterEntrySelection.Range(
+							ParameterEntryIndex.FromValue(1), ParameterEntryIndex.FromValue(1)))),
+				ManagementTransactionKind.ParameterRequest),
+			CancellationToken.None);
+		var isdnTable = IsdnTable.FromEntries(TelephoneTableEntry.FromValues(
+			ParameterEntryIndex.FromValue(1), ProtocolBoolean.True, Address(0),
+			TelephoneNumber.FromValue(SevenBitAsciiString.FromValue("34")),
+			HoldTime.FromValue(20), ProtocolBoolean.True));
+		await managementTransactions.Transactions.ReceiveAsync(Envelope.FromValues(
+			Address(0), Destinations.FromAddresses(Address(25)),
+			ProtocolAndPriority.FromValues(
+				MessagePriority.FromValue(MessagePriorityLevel.FromValue(3)),
+				ProtocolVersion.FromValue(ProtocolVersionNumber.FromValue(2))),
+			AcknowledgementAndSequence.FromValues(identifier.USWR.SequenceNumber, AcknowledgementRequest.NotRequested),
+			Parameter.FromFields(MoreValues.No, ParameterValue.FromWireValue(isdnTable.ToWireValue()))),
+			CancellationToken.None);
+		var controller = new RouterParametersController(
+			new ReturningRouterParameterRequestService(identifier), managementTransactions.Transactions);
+
+		var response = controller.ParameterEntryStatus("current", 17, 1, 1, identifier.ToString())
+			.Should().BeOfType<OkObjectResult>().Which.Value
+			.Should().BeOfType<RouterParameterRequestStatusResponse>().Which;
+
+		var entry = response.IsdnTableEntries.Should().ContainSingle().Which;
+		entry.Index.Should().Be(1);
+		entry.Used.Should().BeTrue();
+		entry.NextNode.Should().Be("26.100.0");
+		entry.TelephoneNumber.Should().Be("34");
+		entry.HoldTime.Should().Be(20);
+		entry.Available.Should().BeTrue();
+	}
+
+	[Fact]
 	public void Returns_not_found_for_an_unknown_or_invalid_status()
 	{
 		using var managementTransactions = new TestManagementTransactions();

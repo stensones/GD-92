@@ -179,6 +179,26 @@ public sealed class RouterParameterRequestSteps
 			RouterParameterCatalogue.LanTable.Encode(LanTable.FromEntries(entry)));
 	}
 
+	[Given(@"the local Router has ISDN Table entry 1 to next node 26.101.0, telephone number 34, hold time 20, used, and available")]
+	public async Task GivenTheLocalRouterHasIsdnTableEntryOne()
+	{
+		this.applicationProfile = RouterParameterRequestApplicationProfile.RouterWithRoutingTableEntry;
+		await this.EnsureApplicationStartedAsync();
+		var connectionString = await this.application!.GetConnectionStringAsync("router-database")
+			?? throw new InvalidOperationException("The test Router database connection string was not provided.");
+		var options = new DbContextOptionsBuilder<RouterDbContext>().UseNpgsql(connectionString).Options;
+		await using var database = new RouterDbContext(options);
+		var entry = TelephoneTableEntry.FromValues(
+			ParameterEntryIndex.FromValue(1), ProtocolBoolean.True,
+			CommunicationsAddress.FromValues(Brigade.FromValue(BrigadeOrAgencyIdentifier.FromValue(26)),
+				Node.FromValue(NodeIdentifier.FromValue(101)), Port.FromValue(PortIdentifier.FromValue(0))),
+			TelephoneNumber.FromValue(SevenBitAsciiString.FromValue("34")),
+			HoldTime.FromValue(20), ProtocolBoolean.True);
+		var store = new EfRouterParameterStore(database);
+		await store.StoreAsync(ParameterTable.NonVolatile, RouterParameterCatalogue.IsdnTable.Number,
+			RouterParameterCatalogue.IsdnTable.Encode(IsdnTable.FromEntries(entry)));
+	}
+
 	[When(@"I request the local Router brigade or agency number")]
 	public async Task WhenIRequestTheLocalRouterBrigadeOrAgencyNumber()
 	{
@@ -273,6 +293,13 @@ public sealed class RouterParameterRequestSteps
 	{
 		await this.EnsureApplicationStartedAsync();
 		this.response = await this.client!.PostAsync("/router/parameters/current/16/entries/1-1", null);
+	}
+
+	[When(@"I request local Router Current ISDN Table entries 1 through 1")]
+	public async Task WhenIRequestLocalRouterCurrentIsdnTableEntries()
+	{
+		await this.EnsureApplicationStartedAsync();
+		this.response = await this.client!.PostAsync("/router/parameters/current/17/entries/1-1", null);
 	}
 
 	[When(@"I request local Router Routing Table entry 1")]
@@ -1306,6 +1333,36 @@ public sealed class RouterParameterRequestSteps
 			await Task.Delay(TimeSpan.FromSeconds(1));
 		}
 		throw new Xunit.Sdk.XunitException("The Parameter Request status did not show the expected LAN Table entry.");
+	}
+
+	[Then(@"the Parameter Request status shows ISDN Table entry 1 as used and available with next node 26.101.0, telephone number 34, and hold time 20")]
+	public async Task ThenTheParameterRequestStatusShowsIsdnTableEntryOne()
+	{
+		var statusAddress = this.response!.Headers.Location!;
+		for (var attempt = 0; attempt < 30; attempt++)
+		{
+			using var status = await this.client!.GetAsync(statusAddress);
+			if (status.StatusCode == HttpStatusCode.OK)
+			{
+				using var document = JsonDocument.Parse(await status.Content.ReadAsStringAsync());
+				if (document.RootElement.GetProperty("state").GetString() == "received" &&
+					document.RootElement.TryGetProperty("isdnTableEntries", out var entries) &&
+					entries.GetArrayLength() == 1)
+				{
+					var entry = entries[0];
+					if (entry.GetProperty("index").GetInt32() == 1 && entry.GetProperty("used").GetBoolean() &&
+						entry.GetProperty("nextNode").GetString() == "26.101.0" &&
+						entry.GetProperty("telephoneNumber").GetString() == "34" &&
+						entry.GetProperty("holdTime").GetInt32() == 20 &&
+						entry.GetProperty("available").GetBoolean())
+					{
+						return;
+					}
+				}
+			}
+			await Task.Delay(TimeSpan.FromSeconds(1));
+		}
+		throw new Xunit.Sdk.XunitException("The Parameter Request status did not show the expected ISDN Table entry.");
 	}
 
 	[Then(@"the Parameter Request status eventually shows timed-out")]

@@ -179,6 +179,17 @@
             </form>
             <p id="router-lan-table-entry-selection-status" role="status" hidden></p>
             <ul id="router-lan-table-entry-results" hidden></ul>
+            <form class="inline-action" id="router-isdn-table-entry-selection"
+                  aria-describedby="router-isdn-table-entry-selection-status">
+                <fieldset>
+                    <legend>Router Current ISDN Table entries</legend>
+                    <label>First entry <input name="first-entry" type="number" min="1" value="1" required /></label>
+                    <label>Last entry <input name="last-entry" type="number" min="1" value="1" required /></label>
+                    <button type="submit">Request entries</button>
+                </fieldset>
+            </form>
+            <p id="router-isdn-table-entry-selection-status" role="status" hidden></p>
+            <ul id="router-isdn-table-entry-results" hidden></ul>
             <p id="router-parameter-list-status" role="status" hidden></p>
             <table id="router-parameter-list" hidden>
                 <caption>Local Router Current Parameters</caption>
@@ -237,6 +248,9 @@
     const routerLanTableEntrySelection = document.getElementById("router-lan-table-entry-selection");
     const routerLanTableEntrySelectionStatus = document.getElementById("router-lan-table-entry-selection-status");
     const routerLanTableEntryResults = document.getElementById("router-lan-table-entry-results");
+    const routerIsdnTableEntrySelection = document.getElementById("router-isdn-table-entry-selection");
+    const routerIsdnTableEntrySelectionStatus = document.getElementById("router-isdn-table-entry-selection-status");
+    const routerIsdnTableEntryResults = document.getElementById("router-isdn-table-entry-results");
     let nextRoutingTableEntryRange = null;
     const redactedPasswordMarker = "PASSWORD";
     const participantCurrentParameterCatalogues = {
@@ -749,6 +763,64 @@
         }
 
         requestLanTableEntries(firstEntry, lastEntry);
+    });
+
+    routerIsdnTableEntrySelection.addEventListener("submit", async event => {
+        event.preventDefault();
+        const formData = new FormData(routerIsdnTableEntrySelection);
+        const firstEntry = Number(formData.get("first-entry"));
+        const lastEntry = Number(formData.get("last-entry"));
+        if (!Number.isInteger(firstEntry) || !Number.isInteger(lastEntry) ||
+            firstEntry < 1 || lastEntry < firstEntry) {
+            routerIsdnTableEntrySelectionStatus.hidden = false;
+            routerIsdnTableEntrySelectionStatus.textContent =
+                "Last entry must be greater than or equal to first entry.";
+            return;
+        }
+
+        routerIsdnTableEntrySelectionStatus.hidden = false;
+        routerIsdnTableEntryResults.hidden = true;
+        routerIsdnTableEntryResults.replaceChildren();
+        routerIsdnTableEntrySelectionStatus.textContent = "Requesting ISDN Table entries...";
+        const response = await fetch(
+            `/router/parameters/current/17/entries/${firstEntry}-${lastEntry}`,
+            { method: "POST" });
+        if (!response.ok || !response.url) {
+            routerIsdnTableEntrySelectionStatus.textContent =
+                "The ISDN Table request could not be submitted.";
+            return;
+        }
+
+        const poll = async () => {
+            const result = await fetch(response.url);
+            if (!result.ok) {
+                routerIsdnTableEntrySelectionStatus.textContent =
+                    "The ISDN Table request could not be completed.";
+                return;
+            }
+            const request = await result.json();
+            if (request.state === "pending") {
+                window.setTimeout(poll, 1000);
+                return;
+            }
+            if (request.state !== "received") {
+                routerIsdnTableEntrySelectionStatus.textContent = request.rejectionReason
+                    ? `ISDN Table request ${request.state}: ${request.rejectionReason}.`
+                    : `ISDN Table request ${request.state}.`;
+                return;
+            }
+            for (const entry of request.isdnTableEntries ?? []) {
+                const item = document.createElement("li");
+                item.textContent = `ISDN Table entry ${entry.index}: ${entry.used ? "used" : "unused"}, ` +
+                    `${entry.available ? "available" : "unavailable"}, next node ${entry.nextNode}, ` +
+                    `telephone number ${entry.telephoneNumber}, hold time ${entry.holdTime}`;
+                routerIsdnTableEntryResults.append(item);
+            }
+            routerIsdnTableEntryResults.hidden = false;
+            routerIsdnTableEntrySelectionStatus.textContent =
+                "ISDN Table entries received.";
+        };
+        poll();
     });
 
     logonForm.addEventListener("submit", async event => {
