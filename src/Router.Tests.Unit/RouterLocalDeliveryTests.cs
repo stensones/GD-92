@@ -652,7 +652,7 @@ public sealed class RouterLocalDeliveryTests
 	}
 
 	[Fact]
-	public async Task Delivers_an_acknowledgement_for_an_authorized_NonVolatile_Retries_change()
+	public async Task Delivers_a_no_modification_access_rejection_for_a_Level1_NonVolatile_Retries_change()
 	{
 		var routerAddress = RouterParameterModuleTestSupport.CreateAddress(26, 100, 0);
 		var userAgentAddress = RouterParameterModuleTestSupport.CreateAddress(26, 100, 25);
@@ -690,16 +690,732 @@ public sealed class RouterLocalDeliveryTests
 						Retries.FromValue(Word8.FromValue(5))))),
 			CancellationToken.None);
 
-		userAgentIngress.Envelope!.Contents.Should().BeOfType<Acknowledgement>();
-		RouterParameterCatalogue.Retries.Read(
-			(await parameterStore.GetAsync(
-				ParameterTable.NonVolatile,
-				RouterParameterCatalogue.Retries.Number))!).Value.Value.Should().Be(5);
-		currentParameters.GetCurrent().Retries.Value.Value.Should().Be(5);
+		userAgentIngress.Envelope!.Contents.Should().BeOfType<NegativeAcknowledgement>().Which
+			.ReasonCode.ParameterReasonCode.Should().Be(ParameterReasonCode.NoModificationAccess);
+		(await parameterStore.GetAsync(
+			ParameterTable.NonVolatile,
+			RouterParameterCatalogue.Retries.Number)).Should().BeNull();
+		currentParameters.GetCurrent().Retries.Value.Value.Should().Be(3);
 	}
 
 	[Fact]
-	public async Task Delivers_an_acknowledgement_for_an_authorized_Current_Retries_change()
+	public async Task Delivers_a_no_modification_access_rejection_for_a_Level1_NonVolatile_Network_Manager_Address_1_change()
+	{
+		var routerAddress = RouterParameterModuleTestSupport.CreateAddress(26, 100, 0);
+		var userAgentAddress = RouterParameterModuleTestSupport.CreateAddress(26, 100, 25);
+		var currentParameters = new RouterCurrentParameterProjectionSource();
+		currentParameters.Publish(
+			RouterParameterModuleTestSupport.CreateCurrentParameters(routerAddress));
+		currentParameters.TryLogOnAtLevelOne(
+			RouterParameterModuleTestSupport.CreatePasswordParameter(
+				PasswordLevelNumber.Level1,
+				"FIRE",
+				userAgentAddress)).Should().BeTrue();
+		var parameterStore = new RecordingParameterStore();
+		var userAgentIngress = new CapturingUserAgentIngress();
+		var localDelivery = CreateLocalDelivery(
+			routerAddress,
+			currentParameters,
+			userAgentIngress,
+			new CapturingLocalParticipantIngress(),
+			parameterStore);
+
+		await localDelivery.ReceiveAsync(
+			Envelope.FromValues(
+				userAgentAddress,
+				Destinations.FromAddresses(routerAddress),
+				ProtocolAndPriority.FromValues(
+					MessagePriority.FromValue(MessagePriorityLevel.FromValue(3)),
+					RouterParameterModuleTestSupport.ProtocolVersion),
+				AcknowledgementAndSequence.FromValues(
+					SequenceNumber.FromValue(MessageSequenceIdentifier.FromValue(7)),
+					AcknowledgementRequest.Requested),
+				SetParameter.FromFields(
+					ParameterTable.NonVolatile,
+					RouterParameterCatalogue.NetworkManagerAddress1.Number,
+					ParameterValue.FromWireValue([26, 25, 24]))),
+			CancellationToken.None);
+
+		userAgentIngress.Envelope!.Contents.Should().BeOfType<NegativeAcknowledgement>().Which
+			.ReasonCode.ParameterReasonCode.Should().Be(ParameterReasonCode.NoModificationAccess);
+		(await parameterStore.GetAsync(
+			ParameterTable.NonVolatile,
+			RouterParameterCatalogue.NetworkManagerAddress1.Number)).Should().BeNull();
+	}
+
+	[Fact]
+	public async Task Delivers_an_acknowledgement_for_a_source_matched_Level2_NonVolatile_Network_Manager_Address_1_change()
+	{
+		var routerAddress = RouterParameterModuleTestSupport.CreateAddress(26, 100, 0);
+		var userAgentAddress = RouterParameterModuleTestSupport.CreateAddress(26, 100, 25);
+		var networkManagerAddress = RouterParameterModuleTestSupport.CreateAddress(26, 100, 24);
+		var currentParameters = new RouterCurrentParameterProjectionSource();
+		currentParameters.Publish(
+			RouterParameterModuleTestSupport.CreateCurrentParameters(routerAddress));
+		currentParameters.TryLogOn(
+			RouterParameterModuleTestSupport.CreatePasswordParameter(
+				PasswordLevelNumber.Level2,
+				"FIRE",
+				userAgentAddress)).Should().BeTrue();
+		var parameterStore = new RecordingParameterStore();
+		var userAgentIngress = new CapturingUserAgentIngress();
+		var localDelivery = CreateLocalDelivery(
+			routerAddress,
+			currentParameters,
+			userAgentIngress,
+			new CapturingLocalParticipantIngress(),
+			parameterStore);
+
+		await localDelivery.ReceiveAsync(
+			Envelope.FromValues(
+				userAgentAddress,
+				Destinations.FromAddresses(routerAddress),
+				ProtocolAndPriority.FromValues(
+					MessagePriority.FromValue(MessagePriorityLevel.FromValue(3)),
+					RouterParameterModuleTestSupport.ProtocolVersion),
+				AcknowledgementAndSequence.FromValues(
+					SequenceNumber.FromValue(MessageSequenceIdentifier.FromValue(7)),
+					AcknowledgementRequest.Requested),
+				SetParameter.FromFields(
+					ParameterTable.NonVolatile,
+					RouterParameterCatalogue.NetworkManagerAddress1.Number,
+					ParameterValue.FromWireValue([26, 25, 24]))),
+			CancellationToken.None);
+
+		userAgentIngress.Envelope!.Contents.Should().BeOfType<Acknowledgement>();
+		RouterParameterCatalogue.NetworkManagerAddress1.Read(
+			(await parameterStore.GetAsync(
+				ParameterTable.NonVolatile,
+				RouterParameterCatalogue.NetworkManagerAddress1.Number))!)
+			.Should().Be(networkManagerAddress);
+	}
+
+	[Fact]
+	public async Task Delivers_a_no_modification_access_rejection_for_a_Level1_NonVolatile_No_Acknowledgement_Timeout_change()
+	{
+		var routerAddress = RouterParameterModuleTestSupport.CreateAddress(26, 100, 0);
+		var userAgentAddress = RouterParameterModuleTestSupport.CreateAddress(26, 100, 25);
+		var currentParameters = new RouterCurrentParameterProjectionSource();
+		currentParameters.Publish(
+			RouterParameterModuleTestSupport.CreateCurrentParameters(routerAddress));
+		currentParameters.TryLogOnAtLevelOne(
+			RouterParameterModuleTestSupport.CreatePasswordParameter(
+				PasswordLevelNumber.Level1,
+				"FIRE",
+				userAgentAddress)).Should().BeTrue();
+		var parameterStore = new RecordingParameterStore();
+		var userAgentIngress = new CapturingUserAgentIngress();
+		var localDelivery = CreateLocalDelivery(
+			routerAddress,
+			currentParameters,
+			userAgentIngress,
+			new CapturingLocalParticipantIngress(),
+			parameterStore);
+
+		await localDelivery.ReceiveAsync(
+			Envelope.FromValues(
+				userAgentAddress,
+				Destinations.FromAddresses(routerAddress),
+				ProtocolAndPriority.FromValues(
+					MessagePriority.FromValue(MessagePriorityLevel.FromValue(3)),
+					RouterParameterModuleTestSupport.ProtocolVersion),
+				AcknowledgementAndSequence.FromValues(
+					SequenceNumber.FromValue(MessageSequenceIdentifier.FromValue(7)),
+					AcknowledgementRequest.Requested),
+				SetParameter.FromFields(
+					ParameterTable.NonVolatile,
+					RouterParameterCatalogue.NoAcknowledgementTimeout.Number,
+					RouterParameterCatalogue.NoAcknowledgementTimeout.Encode(
+						NoAcknowledgementTimeout.FromValue(Word8.FromValue(10))))),
+			CancellationToken.None);
+
+		userAgentIngress.Envelope!.Contents.Should().BeOfType<NegativeAcknowledgement>().Which
+			.ReasonCode.ParameterReasonCode.Should().Be(ParameterReasonCode.NoModificationAccess);
+		(await parameterStore.GetAsync(
+			ParameterTable.NonVolatile,
+			RouterParameterCatalogue.NoAcknowledgementTimeout.Number)).Should().BeNull();
+		currentParameters.GetCurrent().NoAcknowledgementTimeout.Value.Value.Should().Be(5);
+	}
+
+	[Fact]
+	public async Task Delivers_an_acknowledged_Level2_NonVolatile_Maximum_Message_Length_change_without_changing_the_Current_startup_setting()
+	{
+		var routerAddress = RouterParameterModuleTestSupport.CreateAddress(26, 100, 0);
+		var userAgentAddress = RouterParameterModuleTestSupport.CreateAddress(26, 100, 25);
+		var currentParameters = new RouterCurrentParameterProjectionSource();
+		currentParameters.Publish(
+			RouterParameterModuleTestSupport.CreateCurrentParameters(routerAddress));
+		currentParameters.TryLogOn(
+			RouterParameterModuleTestSupport.CreatePasswordParameter(
+				PasswordLevelNumber.Level2,
+				"FIRE",
+				userAgentAddress)).Should().BeTrue();
+		var parameterStore = new RecordingParameterStore();
+		var userAgentIngress = new CapturingUserAgentIngress();
+		var localDelivery = CreateLocalDelivery(
+			routerAddress,
+			currentParameters,
+			userAgentIngress,
+			new CapturingLocalParticipantIngress(),
+			parameterStore,
+			maximumMessageLength: MaximumMessageLength.FromValue(1023));
+
+		await localDelivery.ReceiveAsync(
+			Envelope.FromValues(
+				userAgentAddress,
+				Destinations.FromAddresses(routerAddress),
+				ProtocolAndPriority.FromValues(
+					MessagePriority.FromValue(MessagePriorityLevel.FromValue(3)),
+					RouterParameterModuleTestSupport.ProtocolVersion),
+				AcknowledgementAndSequence.FromValues(
+					SequenceNumber.FromValue(MessageSequenceIdentifier.FromValue(7)),
+					AcknowledgementRequest.Requested),
+				SetParameter.FromFields(
+					ParameterTable.NonVolatile,
+					RouterParameterCatalogue.MaximumMessageLength.Number,
+					RouterParameterCatalogue.MaximumMessageLength.Encode(
+						MaximumMessageLength.FromValue(512)))),
+			CancellationToken.None);
+
+		userAgentIngress.Envelope!.Contents.Should().BeOfType<Acknowledgement>();
+		(await parameterStore.GetAsync(
+			ParameterTable.NonVolatile,
+			RouterParameterCatalogue.MaximumMessageLength.Number))!.ToWireValue().Should().Equal(
+				[2, 0]);
+
+		await localDelivery.ReceiveAsync(
+			RouterParameterModuleTestSupport.CreateParameterRequest(
+				routerAddress,
+				ParameterTable.Current,
+				RouterParameterCatalogue.MaximumMessageLength.Number),
+			CancellationToken.None);
+
+		RouterParameterCatalogue.MaximumMessageLength.Read(
+			userAgentIngress.Envelope!.Contents.Should().BeOfType<Parameter>().Which.ParameterValue)
+			.Value.Should().Be(1023);
+	}
+
+	[Fact]
+	public async Task Delivers_an_acknowledged_Level2_Current_Maximum_Message_Length_change_without_changing_the_NonVolatile_value()
+	{
+		var routerAddress = RouterParameterModuleTestSupport.CreateAddress(26, 100, 0);
+		var userAgentAddress = RouterParameterModuleTestSupport.CreateAddress(26, 100, 25);
+		var currentParameters = new RouterCurrentParameterProjectionSource();
+		currentParameters.Publish(
+		RouterParameterModuleTestSupport.CreateCurrentParameters(routerAddress));
+		currentParameters.TryLogOn(
+		RouterParameterModuleTestSupport.CreatePasswordParameter(
+			PasswordLevelNumber.Level2,
+			"FIRE",
+			userAgentAddress)).Should().BeTrue();
+		var parameterStore = new RecordingParameterStore();
+		await parameterStore.StoreAsync(
+		ParameterTable.NonVolatile,
+		RouterParameterCatalogue.MaximumMessageLength.Number,
+		RouterParameterCatalogue.MaximumMessageLength.Encode(
+			MaximumMessageLength.FromValue(1023)));
+		var userAgentIngress = new CapturingUserAgentIngress();
+		var localDelivery = CreateLocalDelivery(
+		routerAddress,
+		currentParameters,
+		userAgentIngress,
+		new CapturingLocalParticipantIngress(),
+		parameterStore,
+		maximumMessageLength: MaximumMessageLength.FromValue(1023));
+
+		await localDelivery.ReceiveAsync(
+		Envelope.FromValues(
+			userAgentAddress,
+			Destinations.FromAddresses(routerAddress),
+			ProtocolAndPriority.FromValues(
+				MessagePriority.FromValue(MessagePriorityLevel.FromValue(3)),
+				RouterParameterModuleTestSupport.ProtocolVersion),
+			AcknowledgementAndSequence.FromValues(
+				SequenceNumber.FromValue(MessageSequenceIdentifier.FromValue(7)),
+				AcknowledgementRequest.Requested),
+			SetParameter.FromFields(
+				ParameterTable.Current,
+				RouterParameterCatalogue.MaximumMessageLength.Number,
+				RouterParameterCatalogue.MaximumMessageLength.Encode(
+					MaximumMessageLength.FromValue(512)))),
+		CancellationToken.None);
+
+		userAgentIngress.Envelope!.Contents.Should().BeOfType<Acknowledgement>();
+		currentParameters.GetCurrent().MaximumMessageLength.Value.Should().Be(512);
+		(await parameterStore.GetAsync(
+		ParameterTable.NonVolatile,
+		RouterParameterCatalogue.MaximumMessageLength.Number))!.ToWireValue().Should().Equal(
+			[3, 255]);
+
+		await localDelivery.ReceiveAsync(
+		RouterParameterModuleTestSupport.CreateParameterRequest(
+			routerAddress,
+			ParameterTable.Current,
+			RouterParameterCatalogue.MaximumMessageLength.Number),
+		CancellationToken.None);
+
+		RouterParameterCatalogue.MaximumMessageLength.Read(
+		userAgentIngress.Envelope!.Contents.Should().BeOfType<Parameter>().Which.ParameterValue)
+		.Value.Should().Be(512);
+	}
+
+	[Fact]
+	public async Task Delivers_an_Invalid_Syntax_rejection_for_a_malformed_Level2_NonVolatile_Maximum_Message_Length_change()
+	{
+		var routerAddress = RouterParameterModuleTestSupport.CreateAddress(26, 100, 0);
+		var userAgentAddress = RouterParameterModuleTestSupport.CreateAddress(26, 100, 25);
+		var currentParameters = new RouterCurrentParameterProjectionSource();
+		currentParameters.Publish(
+			RouterParameterModuleTestSupport.CreateCurrentParameters(routerAddress));
+		currentParameters.TryLogOn(
+			RouterParameterModuleTestSupport.CreatePasswordParameter(
+				PasswordLevelNumber.Level2,
+				"FIRE",
+				userAgentAddress)).Should().BeTrue();
+		var parameterStore = new RecordingParameterStore();
+		var userAgentIngress = new CapturingUserAgentIngress();
+		var localDelivery = CreateLocalDelivery(
+			routerAddress,
+			currentParameters,
+			userAgentIngress,
+			new CapturingLocalParticipantIngress(),
+			parameterStore);
+
+		await localDelivery.ReceiveAsync(
+			Envelope.FromValues(
+				userAgentAddress,
+				Destinations.FromAddresses(routerAddress),
+				ProtocolAndPriority.FromValues(
+					MessagePriority.FromValue(MessagePriorityLevel.FromValue(3)),
+					RouterParameterModuleTestSupport.ProtocolVersion),
+				AcknowledgementAndSequence.FromValues(
+					SequenceNumber.FromValue(MessageSequenceIdentifier.FromValue(7)),
+					AcknowledgementRequest.Requested),
+				SetParameter.FromFields(
+					ParameterTable.NonVolatile,
+					RouterParameterCatalogue.MaximumMessageLength.Number,
+					ParameterValue.FromWireValue([2, 0, 0]))),
+			CancellationToken.None);
+
+		userAgentIngress.Envelope!.Contents.Should().BeOfType<NegativeAcknowledgement>().Which
+			.ReasonCode.ParameterReasonCode.Should().Be(ParameterReasonCode.InvalidSyntax);
+		(await parameterStore.GetAsync(
+			ParameterTable.NonVolatile,
+			RouterParameterCatalogue.MaximumMessageLength.Number)).Should().BeNull();
+	}
+
+	[Fact]
+	public async Task Delivers_a_no_modification_access_rejection_for_a_Level1_NonVolatile_Maximum_Message_Length_change()
+	{
+		var routerAddress = RouterParameterModuleTestSupport.CreateAddress(26, 100, 0);
+		var userAgentAddress = RouterParameterModuleTestSupport.CreateAddress(26, 100, 25);
+		var currentParameters = new RouterCurrentParameterProjectionSource();
+		currentParameters.Publish(
+			RouterParameterModuleTestSupport.CreateCurrentParameters(routerAddress));
+		currentParameters.TryLogOnAtLevelOne(
+			RouterParameterModuleTestSupport.CreatePasswordParameter(
+				PasswordLevelNumber.Level1,
+				"FIRE",
+				userAgentAddress)).Should().BeTrue();
+		var parameterStore = new RecordingParameterStore();
+		var userAgentIngress = new CapturingUserAgentIngress();
+		var localDelivery = CreateLocalDelivery(
+			routerAddress,
+			currentParameters,
+			userAgentIngress,
+			new CapturingLocalParticipantIngress(),
+			parameterStore);
+
+		await localDelivery.ReceiveAsync(
+			Envelope.FromValues(
+				userAgentAddress,
+				Destinations.FromAddresses(routerAddress),
+				ProtocolAndPriority.FromValues(
+					MessagePriority.FromValue(MessagePriorityLevel.FromValue(3)),
+					RouterParameterModuleTestSupport.ProtocolVersion),
+				AcknowledgementAndSequence.FromValues(
+					SequenceNumber.FromValue(MessageSequenceIdentifier.FromValue(7)),
+					AcknowledgementRequest.Requested),
+				SetParameter.FromFields(
+					ParameterTable.NonVolatile,
+					RouterParameterCatalogue.MaximumMessageLength.Number,
+					RouterParameterCatalogue.MaximumMessageLength.Encode(
+						MaximumMessageLength.FromValue(512)))),
+			CancellationToken.None);
+
+		userAgentIngress.Envelope!.Contents.Should().BeOfType<NegativeAcknowledgement>().Which
+			.ReasonCode.ParameterReasonCode.Should().Be(ParameterReasonCode.NoModificationAccess);
+		(await parameterStore.GetAsync(
+			ParameterTable.NonVolatile,
+			RouterParameterCatalogue.MaximumMessageLength.Number)).Should().BeNull();
+	}
+
+	[Fact]
+	public async Task Delivers_a_no_modification_access_rejection_for_a_Level1_NonVolatile_Manual_Acknowledgement_Timeout_change()
+	{
+		var routerAddress = RouterParameterModuleTestSupport.CreateAddress(26, 100, 0);
+		var userAgentAddress = RouterParameterModuleTestSupport.CreateAddress(26, 100, 25);
+		var currentParameters = new RouterCurrentParameterProjectionSource();
+		currentParameters.Publish(
+			RouterParameterModuleTestSupport.CreateCurrentParameters(routerAddress));
+		currentParameters.TryLogOnAtLevelOne(
+			RouterParameterModuleTestSupport.CreatePasswordParameter(
+				PasswordLevelNumber.Level1,
+				"FIRE",
+				userAgentAddress)).Should().BeTrue();
+		var parameterStore = new RecordingParameterStore();
+		var userAgentIngress = new CapturingUserAgentIngress();
+		var localDelivery = CreateLocalDelivery(
+			routerAddress,
+			currentParameters,
+			userAgentIngress,
+			new CapturingLocalParticipantIngress(),
+			parameterStore);
+
+		await localDelivery.ReceiveAsync(
+			Envelope.FromValues(
+				userAgentAddress,
+				Destinations.FromAddresses(routerAddress),
+				ProtocolAndPriority.FromValues(
+					MessagePriority.FromValue(MessagePriorityLevel.FromValue(3)),
+					RouterParameterModuleTestSupport.ProtocolVersion),
+				AcknowledgementAndSequence.FromValues(
+					SequenceNumber.FromValue(MessageSequenceIdentifier.FromValue(7)),
+					AcknowledgementRequest.Requested),
+				SetParameter.FromFields(
+					ParameterTable.NonVolatile,
+					RouterParameterCatalogue.ManualAcknowledgementTimeout.Number,
+					RouterParameterCatalogue.ManualAcknowledgementTimeout.Encode(
+						ManualAcknowledgementTimeout.FromValue(30)))),
+			CancellationToken.None);
+
+		userAgentIngress.Envelope!.Contents.Should().BeOfType<NegativeAcknowledgement>().Which
+			.ReasonCode.ParameterReasonCode.Should().Be(ParameterReasonCode.NoModificationAccess);
+		(await parameterStore.GetAsync(
+			ParameterTable.NonVolatile,
+			RouterParameterCatalogue.ManualAcknowledgementTimeout.Number)).Should().BeNull();
+	}
+
+	[Fact]
+	public async Task Delivers_a_no_modification_access_rejection_for_a_Level1_NonVolatile_Brigade_or_Agency_change()
+	{
+		var routerAddress = RouterParameterModuleTestSupport.CreateAddress(26, 100, 0);
+		var userAgentAddress = RouterParameterModuleTestSupport.CreateAddress(26, 100, 25);
+		var currentParameters = new RouterCurrentParameterProjectionSource();
+		currentParameters.Publish(
+			RouterParameterModuleTestSupport.CreateCurrentParameters(routerAddress));
+		currentParameters.TryLogOnAtLevelOne(
+			RouterParameterModuleTestSupport.CreatePasswordParameter(
+				PasswordLevelNumber.Level1,
+				"FIRE",
+				userAgentAddress)).Should().BeTrue();
+		var parameterStore = new RecordingParameterStore();
+		var userAgentIngress = new CapturingUserAgentIngress();
+		var localDelivery = CreateLocalDelivery(
+			routerAddress,
+			currentParameters,
+			userAgentIngress,
+			new CapturingLocalParticipantIngress(),
+			parameterStore);
+
+		await localDelivery.ReceiveAsync(
+			Envelope.FromValues(
+				userAgentAddress,
+				Destinations.FromAddresses(routerAddress),
+				ProtocolAndPriority.FromValues(
+					MessagePriority.FromValue(MessagePriorityLevel.FromValue(3)),
+					RouterParameterModuleTestSupport.ProtocolVersion),
+				AcknowledgementAndSequence.FromValues(
+					SequenceNumber.FromValue(MessageSequenceIdentifier.FromValue(7)),
+					AcknowledgementRequest.Requested),
+				SetParameter.FromFields(
+					ParameterTable.NonVolatile,
+					RouterParameterCatalogue.BrigadeOrAgency.Number,
+					RouterParameterCatalogue.BrigadeOrAgency.Encode(
+						BrigadeOrAgencyIdentifier.FromValue(25)))),
+			CancellationToken.None);
+
+		userAgentIngress.Envelope!.Contents.Should().BeOfType<NegativeAcknowledgement>().Which
+			.ReasonCode.ParameterReasonCode.Should().Be(ParameterReasonCode.NoModificationAccess);
+		(await parameterStore.GetAsync(
+			ParameterTable.NonVolatile,
+			RouterParameterCatalogue.BrigadeOrAgency.Number)).Should().BeNull();
+	}
+
+	[Fact]
+	public async Task Delivers_an_acknowledgement_for_a_source_matched_Level3_NonVolatile_Brigade_or_Agency_change_without_changing_Current()
+	{
+		var routerAddress = RouterParameterModuleTestSupport.CreateAddress(26, 100, 0);
+		var userAgentAddress = RouterParameterModuleTestSupport.CreateAddress(26, 100, 25);
+		var currentParameters = new RouterCurrentParameterProjectionSource();
+		currentParameters.Publish(
+			RouterParameterModuleTestSupport.CreateCurrentParameters(routerAddress));
+		currentParameters.TryLogOn(
+			RouterParameterModuleTestSupport.CreatePasswordParameter(
+				PasswordLevelNumber.Level3,
+				"FIRE",
+				userAgentAddress)).Should().BeTrue();
+		var parameterStore = new RecordingParameterStore();
+		var userAgentIngress = new CapturingUserAgentIngress();
+		var localDelivery = CreateLocalDelivery(
+			routerAddress,
+			currentParameters,
+			userAgentIngress,
+			new CapturingLocalParticipantIngress(),
+			parameterStore);
+
+		await localDelivery.ReceiveAsync(
+			Envelope.FromValues(
+				userAgentAddress,
+				Destinations.FromAddresses(routerAddress),
+				ProtocolAndPriority.FromValues(
+					MessagePriority.FromValue(MessagePriorityLevel.FromValue(3)),
+					RouterParameterModuleTestSupport.ProtocolVersion),
+				AcknowledgementAndSequence.FromValues(
+					SequenceNumber.FromValue(MessageSequenceIdentifier.FromValue(7)),
+					AcknowledgementRequest.Requested),
+				SetParameter.FromFields(
+					ParameterTable.NonVolatile,
+					RouterParameterCatalogue.BrigadeOrAgency.Number,
+					RouterParameterCatalogue.BrigadeOrAgency.Encode(
+						BrigadeOrAgencyIdentifier.FromValue(25)))),
+			CancellationToken.None);
+
+		userAgentIngress.Envelope!.Contents.Should().BeOfType<Acknowledgement>();
+		RouterParameterCatalogue.BrigadeOrAgency.Read(
+			(await parameterStore.GetAsync(
+				ParameterTable.NonVolatile,
+				RouterParameterCatalogue.BrigadeOrAgency.Number))!).Should().Be(
+					BrigadeOrAgencyIdentifier.FromValue(25));
+		currentParameters.GetCurrent().BrigadeOrAgencyIdentifier.Should().Be(
+			BrigadeOrAgencyIdentifier.FromValue(26));
+	}
+
+	[Fact]
+	public async Task Delivers_an_acknowledgement_for_a_source_matched_Level3_Current_No_Acknowledgement_Timeout_change_without_changing_NonVolatile()
+	{
+		var routerAddress = RouterParameterModuleTestSupport.CreateAddress(26, 100, 0);
+		var userAgentAddress = RouterParameterModuleTestSupport.CreateAddress(26, 100, 25);
+		var currentParameters = new RouterCurrentParameterProjectionSource();
+		currentParameters.Publish(
+			RouterParameterModuleTestSupport.CreateCurrentParameters(routerAddress));
+		currentParameters.TryLogOn(
+			RouterParameterModuleTestSupport.CreatePasswordParameter(
+				PasswordLevelNumber.Level3,
+				"FIRE",
+				userAgentAddress)).Should().BeTrue();
+		var parameterStore = new RecordingParameterStore();
+		await parameterStore.StoreAsync(
+			ParameterTable.NonVolatile,
+			RouterParameterCatalogue.NoAcknowledgementTimeout.Number,
+			RouterParameterCatalogue.NoAcknowledgementTimeout.Encode(
+				NoAcknowledgementTimeout.FromValue(Word8.FromValue(5))));
+		var userAgentIngress = new CapturingUserAgentIngress();
+		var localDelivery = CreateLocalDelivery(
+			routerAddress,
+			currentParameters,
+			userAgentIngress,
+			new CapturingLocalParticipantIngress(),
+			parameterStore);
+
+		await localDelivery.ReceiveAsync(
+			Envelope.FromValues(
+				userAgentAddress,
+				Destinations.FromAddresses(routerAddress),
+				ProtocolAndPriority.FromValues(
+					MessagePriority.FromValue(MessagePriorityLevel.FromValue(3)),
+					RouterParameterModuleTestSupport.ProtocolVersion),
+				AcknowledgementAndSequence.FromValues(
+					SequenceNumber.FromValue(MessageSequenceIdentifier.FromValue(7)),
+					AcknowledgementRequest.Requested),
+				SetParameter.FromFields(
+					ParameterTable.Current,
+					RouterParameterCatalogue.NoAcknowledgementTimeout.Number,
+					RouterParameterCatalogue.NoAcknowledgementTimeout.Encode(
+						NoAcknowledgementTimeout.FromValue(Word8.FromValue(10))))),
+			CancellationToken.None);
+
+		userAgentIngress.Envelope!.Contents.Should().BeOfType<Acknowledgement>();
+		currentParameters.GetCurrent().NoAcknowledgementTimeout.Value.Value.Should().Be(10);
+		RouterParameterCatalogue.NoAcknowledgementTimeout.Read(
+			(await parameterStore.GetAsync(
+				ParameterTable.NonVolatile,
+				RouterParameterCatalogue.NoAcknowledgementTimeout.Number))!).Value.Value.Should().Be(5);
+	}
+
+	[Fact]
+	public async Task Delivers_an_acknowledgement_for_a_Level3_NonVolatile_No_Acknowledgement_Timeout_change_without_changing_Current()
+	{
+		var routerAddress = RouterParameterModuleTestSupport.CreateAddress(26, 100, 0);
+		var userAgentAddress = RouterParameterModuleTestSupport.CreateAddress(26, 100, 25);
+		var currentParameters = new RouterCurrentParameterProjectionSource();
+		currentParameters.Publish(
+			RouterParameterModuleTestSupport.CreateCurrentParameters(routerAddress));
+		currentParameters.TryLogOn(
+			RouterParameterModuleTestSupport.CreatePasswordParameter(
+				PasswordLevelNumber.Level3,
+				"FIRE",
+				userAgentAddress)).Should().BeTrue();
+		var parameterStore = new RecordingParameterStore();
+		var userAgentIngress = new CapturingUserAgentIngress();
+		var localDelivery = CreateLocalDelivery(
+			routerAddress,
+			currentParameters,
+			userAgentIngress,
+			new CapturingLocalParticipantIngress(),
+			parameterStore);
+
+		await localDelivery.ReceiveAsync(
+			Envelope.FromValues(
+				userAgentAddress,
+				Destinations.FromAddresses(routerAddress),
+				ProtocolAndPriority.FromValues(
+					MessagePriority.FromValue(MessagePriorityLevel.FromValue(3)),
+					RouterParameterModuleTestSupport.ProtocolVersion),
+				AcknowledgementAndSequence.FromValues(
+					SequenceNumber.FromValue(MessageSequenceIdentifier.FromValue(7)),
+					AcknowledgementRequest.Requested),
+				SetParameter.FromFields(
+					ParameterTable.NonVolatile,
+					RouterParameterCatalogue.NoAcknowledgementTimeout.Number,
+					RouterParameterCatalogue.NoAcknowledgementTimeout.Encode(
+						NoAcknowledgementTimeout.FromValue(Word8.FromValue(10))))),
+			CancellationToken.None);
+
+		userAgentIngress.Envelope!.Contents.Should().BeOfType<Acknowledgement>();
+		RouterParameterCatalogue.NoAcknowledgementTimeout.Read(
+			(await parameterStore.GetAsync(
+				ParameterTable.NonVolatile,
+				RouterParameterCatalogue.NoAcknowledgementTimeout.Number))!).Value.Value.Should().Be(10);
+		currentParameters.GetCurrent().NoAcknowledgementTimeout.Value.Value.Should().Be(5);
+	}
+
+	[Fact]
+	public async Task Delivers_an_acknowledgement_for_a_source_matched_Level3_NonVolatile_Manual_Acknowledgement_Timeout_change_without_changing_Current()
+	{
+		var routerAddress = RouterParameterModuleTestSupport.CreateAddress(26, 100, 0);
+		var userAgentAddress = RouterParameterModuleTestSupport.CreateAddress(26, 100, 25);
+		var currentParameters = new RouterCurrentParameterProjectionSource();
+		currentParameters.Publish(
+			RouterParameterModuleTestSupport.CreateCurrentParameters(routerAddress));
+		currentParameters.TryLogOn(
+			RouterParameterModuleTestSupport.CreatePasswordParameter(
+				PasswordLevelNumber.Level3,
+				"FIRE",
+				userAgentAddress)).Should().BeTrue();
+		var parameterStore = new RecordingParameterStore();
+		var userAgentIngress = new CapturingUserAgentIngress();
+		var localDelivery = CreateLocalDelivery(
+			routerAddress,
+			currentParameters,
+			userAgentIngress,
+			new CapturingLocalParticipantIngress(),
+			parameterStore,
+			ManualAcknowledgementTimeout.FromValue(60));
+
+		await localDelivery.ReceiveAsync(
+			Envelope.FromValues(
+				userAgentAddress,
+				Destinations.FromAddresses(routerAddress),
+				ProtocolAndPriority.FromValues(
+					MessagePriority.FromValue(MessagePriorityLevel.FromValue(3)),
+					RouterParameterModuleTestSupport.ProtocolVersion),
+				AcknowledgementAndSequence.FromValues(
+					SequenceNumber.FromValue(MessageSequenceIdentifier.FromValue(7)),
+					AcknowledgementRequest.Requested),
+				SetParameter.FromFields(
+					ParameterTable.NonVolatile,
+					RouterParameterCatalogue.ManualAcknowledgementTimeout.Number,
+					RouterParameterCatalogue.ManualAcknowledgementTimeout.Encode(
+						ManualAcknowledgementTimeout.FromValue(30)))),
+			CancellationToken.None);
+
+		userAgentIngress.Envelope!.Contents.Should().BeOfType<Acknowledgement>();
+		RouterParameterCatalogue.ManualAcknowledgementTimeout.Read(
+			(await parameterStore.GetAsync(
+				ParameterTable.NonVolatile,
+				RouterParameterCatalogue.ManualAcknowledgementTimeout.Number))!).Value.Should().Be(
+					30);
+
+		await localDelivery.ReceiveAsync(
+			RouterParameterModuleTestSupport.CreateParameterRequest(
+				routerAddress,
+				ParameterTable.Current,
+				RouterParameterCatalogue.ManualAcknowledgementTimeout.Number),
+			CancellationToken.None);
+
+		RouterParameterCatalogue.ManualAcknowledgementTimeout.Read(
+			userAgentIngress.Envelope!.Contents.Should().BeOfType<Parameter>().Which.ParameterValue)
+			.Value.Should().Be(60);
+	}
+
+	[Fact]
+	public async Task Delivers_an_acknowledgement_for_a_source_matched_Level3_Current_Manual_Acknowledgement_Timeout_change_without_changing_NonVolatile()
+	{
+		var routerAddress = RouterParameterModuleTestSupport.CreateAddress(26, 100, 0);
+		var userAgentAddress = RouterParameterModuleTestSupport.CreateAddress(26, 100, 25);
+		var currentParameters = new RouterCurrentParameterProjectionSource();
+		currentParameters.Publish(
+			RouterParameterModuleTestSupport.CreateCurrentParameters(routerAddress));
+		currentParameters.TryLogOn(
+			RouterParameterModuleTestSupport.CreatePasswordParameter(
+				PasswordLevelNumber.Level3,
+				"FIRE",
+				userAgentAddress)).Should().BeTrue();
+		var parameterStore = new RecordingParameterStore();
+		await parameterStore.StoreAsync(
+			ParameterTable.NonVolatile,
+			RouterParameterCatalogue.ManualAcknowledgementTimeout.Number,
+			RouterParameterCatalogue.ManualAcknowledgementTimeout.Encode(
+				ManualAcknowledgementTimeout.FromValue(60)));
+		var userAgentIngress = new CapturingUserAgentIngress();
+		var localDelivery = CreateLocalDelivery(
+			routerAddress,
+			currentParameters,
+			userAgentIngress,
+			new CapturingLocalParticipantIngress(),
+			parameterStore,
+			ManualAcknowledgementTimeout.FromValue(60));
+
+		await localDelivery.ReceiveAsync(
+			Envelope.FromValues(
+				userAgentAddress,
+				Destinations.FromAddresses(routerAddress),
+				ProtocolAndPriority.FromValues(
+					MessagePriority.FromValue(MessagePriorityLevel.FromValue(3)),
+					RouterParameterModuleTestSupport.ProtocolVersion),
+				AcknowledgementAndSequence.FromValues(
+					SequenceNumber.FromValue(MessageSequenceIdentifier.FromValue(7)),
+					AcknowledgementRequest.Requested),
+				SetParameter.FromFields(
+					ParameterTable.Current,
+					RouterParameterCatalogue.ManualAcknowledgementTimeout.Number,
+					RouterParameterCatalogue.ManualAcknowledgementTimeout.Encode(
+						ManualAcknowledgementTimeout.FromValue(30)))),
+			CancellationToken.None);
+
+		userAgentIngress.Envelope!.Contents.Should().BeOfType<Acknowledgement>();
+		currentParameters.GetCurrent().ManualAcknowledgementTimeout.Value.Should().Be(30);
+		RouterParameterCatalogue.ManualAcknowledgementTimeout.Read(
+			(await parameterStore.GetAsync(
+				ParameterTable.NonVolatile,
+				RouterParameterCatalogue.ManualAcknowledgementTimeout.Number))!).Value.Should().Be(
+					60);
+
+		await localDelivery.ReceiveAsync(
+			RouterParameterModuleTestSupport.CreateParameterRequest(
+				routerAddress,
+				ParameterTable.Current,
+				RouterParameterCatalogue.ManualAcknowledgementTimeout.Number),
+			CancellationToken.None);
+
+		RouterParameterCatalogue.ManualAcknowledgementTimeout.Read(
+			userAgentIngress.Envelope!.Contents.Should().BeOfType<Parameter>().Which.ParameterValue)
+			.Value.Should().Be(30);
+	}
+
+	[Fact]
+	public async Task Delivers_a_no_modification_access_rejection_for_a_Level1_Current_Retries_change()
 	{
 		var routerAddress = RouterParameterModuleTestSupport.CreateAddress(26, 100, 0);
 		var userAgentAddress = RouterParameterModuleTestSupport.CreateAddress(26, 100, 25);
@@ -737,15 +1453,16 @@ public sealed class RouterLocalDeliveryTests
 						Retries.FromValue(Word8.FromValue(5))))),
 			CancellationToken.None);
 
-		userAgentIngress.Envelope!.Contents.Should().BeOfType<Acknowledgement>();
+		userAgentIngress.Envelope!.Contents.Should().BeOfType<NegativeAcknowledgement>().Which
+			.ReasonCode.ParameterReasonCode.Should().Be(ParameterReasonCode.NoModificationAccess);
 		(await parameterStore.GetAsync(
 			ParameterTable.NonVolatile,
 			RouterParameterCatalogue.Retries.Number)).Should().BeNull();
-		currentParameters.GetCurrent().Retries.Value.Value.Should().Be(5);
+		currentParameters.GetCurrent().Retries.Value.Value.Should().Be(3);
 	}
 
 	[Fact]
-	public async Task Delivers_an_acknowledgement_for_an_authorized_Permanent_Retries_change()
+	public async Task Delivers_a_no_modification_access_rejection_for_an_authorized_Permanent_Retries_change()
 	{
 		var routerAddress = RouterParameterModuleTestSupport.CreateAddress(26, 100, 0);
 		var userAgentAddress = RouterParameterModuleTestSupport.CreateAddress(26, 100, 25);
@@ -783,11 +1500,11 @@ public sealed class RouterLocalDeliveryTests
 						Retries.FromValue(Word8.FromValue(5))))),
 			CancellationToken.None);
 
-		userAgentIngress.Envelope!.Contents.Should().BeOfType<Acknowledgement>();
-		RouterParameterCatalogue.Retries.Read(
-			(await parameterStore.GetAsync(
-				ParameterTable.Permanent,
-				RouterParameterCatalogue.Retries.Number))!).Value.Value.Should().Be(5);
+		userAgentIngress.Envelope!.Contents.Should().BeOfType<NegativeAcknowledgement>().Which
+			.ReasonCode.ParameterReasonCode.Should().Be(ParameterReasonCode.NoModificationAccess);
+		(await parameterStore.GetAsync(
+			ParameterTable.Permanent,
+			RouterParameterCatalogue.Retries.Number)).Should().BeNull();
 		currentParameters.GetCurrent().Retries.Value.Value.Should().Be(3);
 	}
 
@@ -979,14 +1696,18 @@ public sealed class RouterLocalDeliveryTests
 		RouterCurrentParameterProjectionSource currentParameters,
 		IUserAgentIngress userAgentIngress,
 		ILocalParticipantIngress localParticipantIngress,
-		IParticipantParameterStore? parameterStore = null) =>
+		IParticipantParameterStore? parameterStore = null,
+		ManualAcknowledgementTimeout? manualAcknowledgementTimeout = null,
+		MaximumMessageLength? maximumMessageLength = null) =>
 		new(
 			routerAddress,
 			new RouterParameterRead(
 				routerAddress,
 				RouterParameterModuleTestSupport.ProtocolVersion,
 				currentParameters,
-				parameterStore),
+				parameterStore,
+				maximumMessageLength: maximumMessageLength,
+				manualAcknowledgementTimeout: manualAcknowledgementTimeout),
 			new NodeLogin(
 				routerAddress,
 				RouterParameterModuleTestSupport.ProtocolVersion,

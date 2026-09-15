@@ -123,6 +123,47 @@ public sealed class RouterParametersController(
 			$"{firstEntry}-{lastEntry}/status/{statusIdentifier}");
 	}
 
+	[HttpGet("tables")]
+	public IActionResult TableSelection()
+	{
+		return this.View(
+			"TableSelection",
+			CreateTableSelection("current", ParameterNumber.FromValue(13), 1, 1));
+	}
+
+	[HttpPost("tables")]
+	public async Task<IActionResult> RequestTableEntries(
+		[FromForm] string parameterTable,
+		[FromForm] byte parameterNumber,
+		[FromForm] ushort firstEntry,
+		[FromForm] ushort lastEntry,
+		CancellationToken cancellationToken)
+	{
+		if (!TryCreateTableSelection(
+			parameterTable,
+			ParameterNumber.FromValue(parameterNumber),
+			firstEntry,
+			lastEntry,
+			out var selection,
+			out var table,
+			out var parameterTableValue))
+		{
+			return this.View("TableSelection", selection);
+		}
+
+		var statusIdentifier = await routerParameterRequests.RequestLocalRouterParameterEntries(
+			parameterTableValue,
+			table.ParameterNumber,
+			ParameterEntrySelection.Range(
+				ParameterEntryIndex.FromValue(firstEntry),
+				ParameterEntryIndex.FromValue(lastEntry)),
+			cancellationToken);
+
+		return new SeeOtherRedirectResult(
+			$"/router/parameters/tables/{parameterTable}/{parameterNumber}/entries/" +
+			$"{firstEntry}-{lastEntry}/status/{statusIdentifier}");
+	}
+
 	[HttpPost("logon")]
 	[RequireHttps]
 	public async Task<IActionResult> LogOn(
@@ -130,14 +171,22 @@ public sealed class RouterParametersController(
 		[FromForm(Name = "brigade")] byte brigade,
 		[FromForm(Name = "node")] ushort node,
 		[FromForm(Name = "port")] byte port,
+		[FromForm(Name = "passwordLevel")] byte passwordLevel,
 		CancellationToken cancellationToken)
 	{
+		if (!Enum.IsDefined((PasswordLevelNumber)passwordLevel) ||
+			passwordLevel == (byte)PasswordLevelNumber.Unauthenticated)
+		{
+			return this.BadRequest("Password level must be between 1 and 4.");
+		}
+
 		var communicationsAddress = CommunicationsAddress.FromValues(
 			Brigade.FromValue(BrigadeOrAgencyIdentifier.FromValue(brigade)),
 			Node.FromValue(NodeIdentifier.FromValue(node)),
 			Port.FromValue(PortIdentifier.FromValue(port)));
 		var statusIdentifier = await routerParameterRequests.RequestLocalRouterLogon(
 			communicationsAddress,
+			PasswordLevel.FromValue((PasswordLevelNumber)passwordLevel),
 			PasswordValue.FromValue(SevenBitAsciiString.FromValue(password)),
 			cancellationToken);
 
@@ -185,6 +234,42 @@ public sealed class RouterParametersController(
 		return this.Status(identifier, ParameterNumber.FromValue(parameterNumber));
 	}
 
+	[HttpGet("tables/{parameterTable}/{parameterNumber}/entries/{firstEntry}-{lastEntry}/status/{identifier}")]
+	public IActionResult TableEntryStatus(
+		string parameterTable,
+		byte parameterNumber,
+		ushort firstEntry,
+		ushort lastEntry,
+		string identifier)
+	{
+		if (!TryCreateTableSelection(
+			parameterTable,
+			ParameterNumber.FromValue(parameterNumber),
+			firstEntry,
+			lastEntry,
+			out var selection,
+			out var table,
+			out _))
+		{
+			return this.NotFound();
+		}
+
+		if (!RouterParameterRequestStatusIdentifier.TryParse(identifier, out var statusIdentifier))
+		{
+			return this.NotFound();
+		}
+
+		var status = managementTransactions.GetStatus(statusIdentifier);
+		if (status is null)
+		{
+			return this.NotFound();
+		}
+
+		return this.View(
+			"TableStatus",
+			new RouterParameterTableStatus(selection, table, ToResponse(status, table.ParameterNumber)));
+	}
+
 	private IActionResult Status(
 		string identifier,
 		ParameterNumber? parameterNumber)
@@ -202,6 +287,74 @@ public sealed class RouterParametersController(
 		}
 
 		return this.Ok(ToResponse(status, parameterNumber));
+	}
+
+	private static RouterParameterTableSelection CreateTableSelection(
+		string parameterTable,
+		ParameterNumber parameterNumber,
+		ushort firstEntry,
+		ushort lastEntry,
+		string? validationMessage = null)
+	{
+		return new RouterParameterTableSelection(
+			parameterTable,
+			parameterNumber.Value,
+			firstEntry,
+			lastEntry,
+			RouterParameterTables.Supported,
+			validationMessage);
+	}
+
+	private static bool TryCreateTableSelection(
+		string parameterTable,
+		ParameterNumber parameterNumber,
+		ushort firstEntry,
+		ushort lastEntry,
+		out RouterParameterTableSelection selection,
+		out RouterParameterTableDefinition table,
+		out ParameterTable parameterTableValue)
+	{
+		parameterTableValue = null!;
+
+		if (!ParameterTableRoute.TryParse(parameterTable, out var parsedParameterTable))
+		{
+			selection = CreateTableSelection(
+				parameterTable,
+				parameterNumber,
+				firstEntry,
+				lastEntry,
+				"Parameter Table must be permanent, non-volatile, or current.");
+			table = null!;
+			return false;
+		}
+
+		parameterTableValue = parsedParameterTable ?? throw new InvalidOperationException(
+			"A parsed Parameter Table must have a value.");
+
+		if (!RouterParameterTables.TryGet(parameterNumber, out table))
+		{
+			selection = CreateTableSelection(
+				parameterTable,
+				parameterNumber,
+				firstEntry,
+				lastEntry,
+				"Select a supported Router Parameter Table.");
+			return false;
+		}
+
+		if (firstEntry == 0 || lastEntry < firstEntry)
+		{
+			selection = CreateTableSelection(
+				parameterTable,
+				parameterNumber,
+				firstEntry,
+				lastEntry,
+				"First entry must be at least 1 and no greater than last entry.");
+			return false;
+		}
+
+		selection = CreateTableSelection(parameterTable, parameterNumber, firstEntry, lastEntry);
+		return true;
 	}
 
 	private static RouterParameterRequestStatusResponse ToResponse(

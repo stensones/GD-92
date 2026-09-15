@@ -93,6 +93,32 @@ public sealed class RouterParameterReadTests
 	}
 
 	[Fact]
+	public async Task Returns_the_Current_Maximum_Message_Length_from_the_published_projection()
+	{
+		var localAddress = RouterParameterModuleTestSupport.CreateAddress(26, 100, 0);
+		var source = new RouterCurrentParameterProjectionSource();
+		source.Publish(RouterParameterModuleTestSupport.CreateCurrentParameters(
+			localAddress,
+			maximumMessageLength: MaximumMessageLength.FromValue(512)));
+		var parameterRead = new RouterParameterRead(
+			localAddress,
+			RouterParameterModuleTestSupport.ProtocolVersion,
+			source,
+			maximumMessageLength: MaximumMessageLength.FromValue(1023));
+
+		var response = await parameterRead.HandleAsync(
+			RouterParameterModuleTestSupport.CreateParameterRequest(
+				localAddress,
+				ParameterTable.Current,
+				RouterParameterCatalogue.MaximumMessageLength.Number),
+			CancellationToken.None);
+
+		RouterParameterCatalogue.MaximumMessageLength.Read(
+			response!.Contents.Should().BeOfType<Parameter>().Which.ParameterValue).Value
+			.Should().Be(512);
+	}
+
+	[Fact]
 	public async Task Returns_the_Current_Manual_Acknowledgement_Timeout_Parameter_from_the_configuration()
 	{
 		var localAddress = RouterParameterModuleTestSupport.CreateAddress(26, 100, 0);
@@ -112,6 +138,32 @@ public sealed class RouterParameterReadTests
 		RouterParameterCatalogue.ManualAcknowledgementTimeout.Read(
 			response!.Contents.Should().BeOfType<Parameter>().Which.ParameterValue).Value
 			.Should().Be(60);
+	}
+
+	[Fact]
+	public async Task Returns_the_Current_Manual_Acknowledgement_Timeout_from_the_published_projection()
+	{
+		var localAddress = RouterParameterModuleTestSupport.CreateAddress(26, 100, 0);
+		var source = new RouterCurrentParameterProjectionSource();
+		source.Publish(RouterParameterModuleTestSupport.CreateCurrentParameters(
+			localAddress,
+			manualAcknowledgementTimeout: ManualAcknowledgementTimeout.FromValue(30)));
+		var parameterRead = new RouterParameterRead(
+			localAddress,
+			RouterParameterModuleTestSupport.ProtocolVersion,
+			source,
+			manualAcknowledgementTimeout: ManualAcknowledgementTimeout.FromValue(60));
+
+		var response = await parameterRead.HandleAsync(
+			RouterParameterModuleTestSupport.CreateParameterRequest(
+				localAddress,
+				ParameterTable.Current,
+				RouterParameterCatalogue.ManualAcknowledgementTimeout.Number),
+			CancellationToken.None);
+
+		RouterParameterCatalogue.ManualAcknowledgementTimeout.Read(
+			response!.Contents.Should().BeOfType<Parameter>().Which.ParameterValue).Value
+			.Should().Be(30);
 	}
 
 	[Fact]
@@ -488,6 +540,35 @@ public sealed class NodeLoginTests
 	}
 
 	[Fact]
+	public async Task Acknowledges_a_valid_Level2_Current_Password_and_records_its_level_and_address()
+	{
+		var localAddress = RouterParameterModuleTestSupport.CreateAddress(26, 100, 0);
+		var suppliedAddress = RouterParameterModuleTestSupport.CreateAddress(26, 100, 25);
+		var source = new RouterCurrentParameterProjectionSource();
+		source.Publish(
+			RouterParameterModuleTestSupport.CreateCurrentParameters(
+				localAddress,
+				level2Password: "FIRE2"));
+		var nodeLogin = new NodeLogin(
+			localAddress,
+			RouterParameterModuleTestSupport.ProtocolVersion,
+			source);
+
+		var response = await nodeLogin.HandleAsync(
+			RouterParameterModuleTestSupport.CreateCurrentPasswordSet(
+				localAddress,
+				PasswordLevelNumber.Level2,
+				"FIRE2",
+				suppliedAddress),
+			CancellationToken.None);
+
+		response!.Contents.Should().BeOfType<Acknowledgement>();
+		source.GetCurrent().CurrentPassword.Level.Should().Be(
+			PasswordLevel.FromValue(PasswordLevelNumber.Level2));
+		source.GetCurrent().CurrentPassword.CommunicationsAddress.Should().Be(suppliedAddress);
+	}
+
+	[Fact]
 	public async Task Acknowledges_Level0_Current_Password_and_clears_the_active_Node_Login()
 	{
 		var localAddress = RouterParameterModuleTestSupport.CreateAddress(26, 100, 0);
@@ -712,26 +793,34 @@ internal static class RouterParameterModuleTestSupport
 
 	public static RouterCurrentParameterProjection CreateCurrentParameters(
 		CommunicationsAddress localAddress,
-		byte? brigade = null)
+		byte? brigade = null,
+		string level2Password = "FIRE",
+		ManualAcknowledgementTimeout? manualAcknowledgementTimeout = null,
+		MaximumMessageLength? maximumMessageLength = null)
 	{
 		var level1PasswordVerifier = PasswordVerifier.Create(
 			PasswordValue.FromValue(SevenBitAsciiString.FromValue("FIRE")),
+			PasswordVerifierWorkFactor.Default);
+		var level2PasswordVerifier = PasswordVerifier.Create(
+			PasswordValue.FromValue(SevenBitAsciiString.FromValue(level2Password)),
 			PasswordVerifierWorkFactor.Default);
 
 		return RouterCurrentParameterProjection.FromNonVolatileParameters(
 			brigade is null
 				? localAddress.Brigade.Value
 				: BrigadeOrAgencyIdentifier.FromValue(brigade.Value),
+			maximumMessageLength ?? MaximumMessageLength.FromValue(1023),
 			PasswordParameter.FromFields(
 				PasswordLevel.FromValue(PasswordLevelNumber.Unauthenticated),
 				Password.FromValue(
 					PasswordValue.FromValue(SevenBitAsciiString.FromValue(string.Empty))),
 				localAddress),
 			level1PasswordVerifier,
-			level1PasswordVerifier,
+			level2PasswordVerifier,
 			level1PasswordVerifier,
 			level1PasswordVerifier,
 			NoAcknowledgementTimeout.FromValue(Word8.FromValue(5)),
+			manualAcknowledgementTimeout ?? ManualAcknowledgementTimeout.FromValue(60),
 			Retries.FromValue(Word8.FromValue(3)));
 	}
 

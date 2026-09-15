@@ -1,0 +1,69 @@
+@using NodeManager.Router.Parameters
+@model RouterParameterTableSelection
+@{
+    Layout = "_Layout";
+    ViewData["Title"] = "Router Parameter Tables";
+}
+
+<div class="workspace">
+    <header class="workspace-header">
+        <div>
+            <p class="eyebrow">Parameters</p>
+            <h1>Router Parameter Tables</h1>
+            <p class="workspace-introduction">
+                Request an inclusive range from a Router Permanent, Non-Volatile, or Current
+                Parameter Table.
+            </p>
+        </div>
+    </header>
+
+    <section class="panel">
+        <h2>Request entries</h2>
+        <form action="/router/parameters/tables" method="post">
+            <label>
+                Router Parameter Table
+                <select name="parameterNumber">
+                    @foreach (var table in Model.Tables)
+                    {
+                        <option value="@table.ParameterNumber.Value"
+                                selected="@(table.ParameterNumber.Value == Model.ParameterNumber ? "selected" : null)">
+                            @table.Name
+                        </option>
+                    }
+                </select>
+            </label>
+            <label class="parameter-table-selector">
+                Parameter Table
+                <select name="parameterTable">
+                    <option value="permanent" selected="@(Model.ParameterTable == "permanent" ? "selected" : null)">
+                        Permanent
+                    </option>
+                    <option value="non-volatile" selected="@(Model.ParameterTable == "non-volatile" ? "selected" : null)">
+                        Non-Volatile
+                    </option>
+                    <option value="current" selected="@(Model.ParameterTable == "current" ? "selected" : null)">
+                        Current
+                    </option>
+                </select>
+            </label>
+            <label>
+                First entry
+                <input name="firstEntry" type="number" min="1" max="65535"
+                       value="@Model.FirstEntry" required />
+            </label>
+            <label>
+                Last entry
+                <input name="lastEntry" type="number" min="1" max="65535"
+                       value="@Model.LastEntry" required />
+            </label>
+            <button type="submit">Request entries</button>
+        </form>
+
+        @if (Model.ValidationMessage is not null)
+        {
+            <p role="alert">@Model.ValidationMessage</p>
+        }
+    </section>
+
+    <p><a href="/">Return to operational overview</a></p>
+</div>

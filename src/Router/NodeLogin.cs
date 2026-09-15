@@ -8,9 +8,6 @@ internal sealed class NodeLogin
 {
 	private static readonly PasswordLevel LevelZero =
 		PasswordLevel.FromValue(PasswordLevelNumber.Unauthenticated);
-	private static readonly PasswordLevel LevelOne =
-		PasswordLevel.FromValue(PasswordLevelNumber.Level1);
-
 	private readonly CommunicationsAddress localAddress;
 	private readonly ProtocolVersion protocolVersion;
 	private readonly RouterCurrentParameterProjectionSource currentParameterSource;
@@ -53,12 +50,7 @@ internal sealed class NodeLogin
 				Envelope.CreateAcknowledgement(envelope, this.localAddress, this.protocolVersion));
 		}
 
-		if (submittedPassword.Level != LevelOne)
-		{
-			return ValueTask.FromResult<Envelope?>(null);
-		}
-
-		if (!this.currentParameterSource.TryLogOnAtLevelOne(submittedPassword))
+		if (!this.currentParameterSource.TryLogOn(submittedPassword))
 		{
 			return ValueTask.FromResult<Envelope?>(
 				Envelope.CreateNegativeAcknowledgement(

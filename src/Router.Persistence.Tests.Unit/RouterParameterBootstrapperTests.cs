@@ -119,6 +119,7 @@ public sealed class RouterParameterBootstrapperTests
 			ParameterNumber.FromValue(3));
 
 		currentParameters.BrigadeOrAgencyIdentifier.ToWireValue().Should().Equal([26]);
+		currentParameters.MaximumMessageLength.Value.Should().Be(1_023);
 		permanentNodeNumber.Should().NotBeNull();
 		permanentNodeNumber!.ToWireValue().Should().Equal([0, 100]);
 		nonVolatileNodeNumber.Should().NotBeNull();
@@ -371,6 +372,14 @@ public sealed class RouterParameterBootstrapperTests
 			ParameterValue.FromWireValue([42]));
 		await parameterStore.StoreAsync(
 			ParameterTable.Permanent,
+			RouterParameterCatalogue.MaximumMessageLength.Number,
+			ParameterValue.FromWireValue([3, 255]));
+		await parameterStore.StoreAsync(
+			ParameterTable.NonVolatile,
+			RouterParameterCatalogue.MaximumMessageLength.Number,
+			ParameterValue.FromWireValue([2, 0]));
+		await parameterStore.StoreAsync(
+			ParameterTable.Permanent,
 			ParameterNumber.FromValue(4),
 			CreateNeutralCurrentPassword(permanentAddress));
 		await parameterStore.StoreAsync(
@@ -408,6 +417,7 @@ public sealed class RouterParameterBootstrapperTests
 				PasswordValue.FromValue(SevenBitAsciiString.FromValue("INITIAL"))));
 
 		currentParameters.BrigadeOrAgencyIdentifier.ToWireValue().Should().Equal([42]);
+		currentParameters.MaximumMessageLength.Value.Should().Be(512);
 		currentParameters.CurrentPassword.ToWireValue().Should().Equal(
 			CreateNeutralCurrentPassword(nonVolatileAddress).ToWireValue());
 		currentParameters.NoAcknowledgementTimeout.Should().Be(

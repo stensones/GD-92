@@ -55,6 +55,73 @@ public sealed class RouterParametersControllerTests
 	}
 
 	[Fact]
+	public void Presents_a_Router_Parameter_Table_selection_for_all_supported_tables()
+	{
+		using var managementTransactions = new TestManagementTransactions();
+		var controller = new RouterParametersController(
+			new ReturningRouterParameterRequestService(Identifier()),
+			managementTransactions.Transactions);
+
+		var result = controller.TableSelection()
+			.Should().BeOfType<ViewResult>().Which;
+		var model = result.Model
+			.Should().BeOfType<RouterParameterTableSelection>().Which;
+
+		result.ViewName.Should().Be("TableSelection");
+		model.ParameterTable.Should().Be("current");
+		model.FirstEntry.Should().Be(1);
+		model.LastEntry.Should().Be(1);
+		model.Tables.Select(table => table.ParameterNumber.Value)
+			.Should().Equal(13, 14, 15, 16, 17, 21);
+	}
+
+	[Fact]
+	public async Task Redisplays_the_Router_Parameter_Table_selection_for_an_invalid_entry_range()
+	{
+		using var managementTransactions = new TestManagementTransactions();
+		var controller = new RouterParametersController(
+			new ReturningRouterParameterRequestService(Identifier()),
+			managementTransactions.Transactions);
+
+		var result = await controller.RequestTableEntries(
+			"current",
+			13,
+			0,
+			1,
+			CancellationToken.None);
+
+		var view = result.Should().BeOfType<ViewResult>().Which;
+		var model = view.Model
+			.Should().BeOfType<RouterParameterTableSelection>().Which;
+
+		view.ViewName.Should().Be("TableSelection");
+		model.ValidationMessage.Should().Be(
+			"First entry must be at least 1 and no greater than last entry.");
+	}
+
+	[Fact]
+	public async Task Redirects_a_Router_Parameter_Table_request_to_a_rendered_status()
+	{
+		var identifier = Identifier();
+		using var managementTransactions = new TestManagementTransactions();
+		var requests = new ReturningRouterParameterRequestService(identifier);
+		var controller = new RouterParametersController(requests, managementTransactions.Transactions);
+
+		var result = await controller.RequestTableEntries(
+			"non-volatile",
+			13,
+			1,
+			200,
+			CancellationToken.None);
+
+		requests.EntryParameterTable.Should().Be(ParameterTable.NonVolatile);
+		requests.EntryParameterNumber.Should().Be(ParameterNumber.FromValue(13));
+		result.Should().BeOfType<SeeOtherRedirectResult>().Which.Location
+			.Should().Be(
+				$"/router/parameters/tables/non-volatile/13/entries/1-200/status/{identifier}");
+	}
+
+	[Fact]
 	public async Task Redirects_a_Router_parameter_change_to_its_transaction_status()
 	{
 		var identifier = Identifier();
@@ -84,7 +151,7 @@ public sealed class RouterParametersControllerTests
 			new ReturningRouterParameterRequestService(identifier),
 			managementTransactions.Transactions);
 
-		var logon = await controller.LogOn("FIRE1", 26, 100, 25, CancellationToken.None);
+		var logon = await controller.LogOn("FIRE1", 26, 100, 25, 1, CancellationToken.None);
 		var logoff = await controller.LogOff(CancellationToken.None);
 
 		logon.Should().BeOfType<SeeOtherRedirectResult>().Which.Location
@@ -979,6 +1046,8 @@ public sealed class RouterParametersControllerTests
 	{
 		public ParameterNumber? CurrentParameterNumber { get; private set; }
 		public ParameterValue? ModificationValue { get; private set; }
+		public ParameterTable? EntryParameterTable { get; private set; }
+		public ParameterNumber? EntryParameterNumber { get; private set; }
 
 		public Task<RouterParameterRequestStatusIdentifier> RequestLocalRouterBrigadeOrAgencyNumber(
 			CancellationToken cancellationToken) => Task.FromResult(statusIdentifier);
@@ -1000,7 +1069,12 @@ public sealed class RouterParametersControllerTests
 			ParameterTable parameterTable,
 			ParameterNumber parameterNumber,
 			ParameterEntrySelection entrySelection,
-			CancellationToken cancellationToken) => Task.FromResult(statusIdentifier);
+			CancellationToken cancellationToken)
+		{
+			this.EntryParameterTable = parameterTable;
+			this.EntryParameterNumber = parameterNumber;
+			return Task.FromResult(statusIdentifier);
+		}
 
 		public Task<RouterParameterRequestStatusIdentifier> ModifyLocalRouterParameter(
 			ParameterTable parameterTable,
@@ -1014,6 +1088,7 @@ public sealed class RouterParametersControllerTests
 
 		public Task<RouterParameterRequestStatusIdentifier> RequestLocalRouterLogon(
 			CommunicationsAddress communicationsAddress,
+			PasswordLevel passwordLevel,
 			PasswordValue password,
 			CancellationToken cancellationToken) => Task.FromResult(statusIdentifier);
 

@@ -119,6 +119,8 @@ public sealed class RouterParameterBootstrapper
 		return RouterCurrentParameterProjection.FromNonVolatileParameters(
 			RouterParameterCatalogue.BrigadeOrAgency.Read(
 				nonVolatileValues[RouterParameterCatalogue.BrigadeOrAgency.Number]),
+			RouterParameterCatalogue.MaximumMessageLength.Read(
+				nonVolatileValues[RouterParameterCatalogue.MaximumMessageLength.Number]),
 			RouterParameterCatalogue.CurrentPassword.Read(
 				nonVolatileValues[RouterParameterCatalogue.CurrentPassword.Number]),
 			level1PasswordVerifier,
@@ -127,6 +129,9 @@ public sealed class RouterParameterBootstrapper
 			level4PasswordVerifier,
 			RouterParameterCatalogue.NoAcknowledgementTimeout.Read(
 				nonVolatileValues[RouterParameterCatalogue.NoAcknowledgementTimeout.Number]),
+			RouterParameterCatalogue.ManualAcknowledgementTimeout.Read(
+				nonVolatileValues[
+					RouterParameterCatalogue.ManualAcknowledgementTimeout.Number]),
 			RouterParameterCatalogue.Retries.Read(
 				nonVolatileValues[RouterParameterCatalogue.Retries.Number]));
 	}

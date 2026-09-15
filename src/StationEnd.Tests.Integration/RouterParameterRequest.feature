@@ -382,7 +382,7 @@ Feature: Router Parameter Request
     And the Parameter Request status shows Router Current Manual Acknowledgement Timeout 60
     And NodeManager lists Manual Acknowledgement Timeout in the Router Current Parameter catalogue
 
-  Scenario: Changing the local Router Non-Volatile Retries
+  Scenario: Rejecting a Level 1 local Router Non-Volatile Retries change
     Given NodeManager is the User Agent at Brigade 26, Node 100, and Port 25
     And its local Router is at Brigade 26, Node 100, and Port 0
     And the Router Level 1 password is "FIRE1"
@@ -390,10 +390,23 @@ Feature: Router Parameter Request
     Then the Node Login status eventually shows User-Agent address 26.100.25 is logged on
     When I set local Router Non-Volatile Parameter 19 to 5
     Then I am redirected to the pending Parameter Modification status
+    And the Parameter Modification status eventually shows Parameter / No Modification Access rejection
+
+  Scenario: Changing the local Router Non-Volatile Retries with a Level 2 Node Login
+    Given NodeManager is the User Agent at Brigade 26, Node 100, and Port 25
+    And its local Router is at Brigade 26, Node 100, and Port 0
+    And the Router Level 2 password is "FIRE2"
+    When I log on User-Agent address Brigade 26, Node 100, and Port 25 with the Level 2 password
+    Then the Node Login status eventually shows User-Agent address 26.100.25 is logged on
+    When I set local Router Non-Volatile Parameter 19 to 5
+    Then I am redirected to the pending Parameter Modification status
     And the Parameter Modification status eventually shows acknowledged
+    When I request local Router Non-Volatile Parameter 19
+    Then I am redirected to the pending Parameter Request status
+    And the Parameter Request status shows Router Non-Volatile Retries 5
     When I request local Router Current Parameter 19
     Then I am redirected to the pending Parameter Request status
-    And the Parameter Request status shows Router Current Retries 5
+    And the Parameter Request status shows Router Current Retries 3
 
   Scenario: Changing the local Router Current Retries
     Given NodeManager is the User Agent at Brigade 26, Node 100, and Port 25
@@ -403,13 +416,20 @@ Feature: Router Parameter Request
     Then the Node Login status eventually shows User-Agent address 26.100.25 is logged on
     When I set local Router Current Parameter 19 to 5
     Then I am redirected to the pending Parameter Modification status
+    And the Parameter Modification status eventually shows Parameter / No Modification Access rejection
+
+  Scenario: Changing the local Router Current Retries with a Level 2 Node Login
+    Given NodeManager is the User Agent at Brigade 26, Node 100, and Port 25
+    And its local Router is at Brigade 26, Node 100, and Port 0
+    And the Router Level 2 password is "FIRE2"
+    When I log on User-Agent address Brigade 26, Node 100, and Port 25 with the Level 2 password
+    Then the Node Login status eventually shows User-Agent address 26.100.25 is logged on
+    When I set local Router Current Parameter 19 to 5
+    Then I am redirected to the pending Parameter Modification status
     And the Parameter Modification status eventually shows acknowledged
     When I request local Router Current Parameter 19
     Then I am redirected to the pending Parameter Request status
     And the Parameter Request status shows Router Current Retries 5
-    When I request local Router Non-Volatile Parameter 19
-    Then I am redirected to the pending Parameter Request status
-    And the Parameter Request status shows Router Non-Volatile Retries 3
 
   Scenario: Changing the local Router Permanent Retries
     Given NodeManager is the User Agent at Brigade 26, Node 100, and Port 25
@@ -419,10 +439,7 @@ Feature: Router Parameter Request
     Then the Node Login status eventually shows User-Agent address 26.100.25 is logged on
     When I set local Router Permanent Parameter 19 to 5
     Then I am redirected to the pending Parameter Modification status
-    And the Parameter Modification status eventually shows acknowledged
-    When I request local Router Permanent Parameter 19
-    Then I am redirected to the pending Parameter Request status
-    And the Parameter Request status shows Router Permanent Retries 5
+    And the Parameter Modification status eventually shows Parameter / No Modification Access rejection
     When I request local Router Current Parameter 19
     Then I am redirected to the pending Parameter Request status
     And the Parameter Request status shows Router Current Retries 3
@@ -444,7 +461,7 @@ Feature: Router Parameter Request
     Then I am redirected to the pending Parameter Modification status
     And the Parameter Modification status eventually shows Parameter / Invalid Syntax rejection
 
-  Scenario: Changing the local Router Non-Volatile No Acknowledgement Timeout
+  Scenario: Rejecting a Level 1 local Router Non-Volatile No Acknowledgement Timeout change
     Given NodeManager is the User Agent at Brigade 26, Node 100, and Port 25
     And its local Router is at Brigade 26, Node 100, and Port 0
     And the Router Level 1 password is "FIRE1"
@@ -452,10 +469,223 @@ Feature: Router Parameter Request
     Then the Node Login status eventually shows User-Agent address 26.100.25 is logged on
     When I set local Router Non-Volatile Parameter 12 to 10
     Then I am redirected to the pending Parameter Modification status
+    And the Parameter Modification status eventually shows Parameter / No Modification Access rejection
+
+  Scenario: Changing the local Router Non-Volatile No Acknowledgement Timeout with a Level 3 Node Login
+    Given NodeManager is the User Agent at Brigade 26, Node 100, and Port 25
+    And its local Router is at Brigade 26, Node 100, and Port 0
+    And the Router Level 3 password is "FIRE3"
+    When I log on User-Agent address Brigade 26, Node 100, and Port 25 with the Level 3 password
+    Then the Node Login status eventually shows User-Agent address 26.100.25 is logged on
+    When I set local Router Non-Volatile Parameter 12 to 10
+    Then I am redirected to the pending Parameter Modification status
+    And the Parameter Modification status eventually shows acknowledged
+    When I request local Router Non-Volatile Parameter 12
+    Then I am redirected to the pending Parameter Request status
+    And the Parameter Request status shows Router Non-Volatile No Acknowledgement Timeout 10
+    When I request local Router Current Parameter 12
+    Then I am redirected to the pending Parameter Request status
+    And the Parameter Request status shows Router Current No Acknowledgement Timeout 5
+
+  Scenario: Changing the local Router Current No Acknowledgement Timeout with a Level 3 Node Login
+    Given NodeManager is the User Agent at Brigade 26, Node 100, and Port 25
+    And its local Router is at Brigade 26, Node 100, and Port 0
+    And the Router Level 3 password is "FIRE3"
+    When I log on User-Agent address Brigade 26, Node 100, and Port 25 with the Level 3 password
+    Then the Node Login status eventually shows User-Agent address 26.100.25 is logged on
+    When I set local Router Current Parameter 12 to 10
+    Then I am redirected to the pending Parameter Modification status
     And the Parameter Modification status eventually shows acknowledged
     When I request local Router Current Parameter 12
     Then I am redirected to the pending Parameter Request status
     And the Parameter Request status shows Router Current No Acknowledgement Timeout 10
+    When I request local Router Non-Volatile Parameter 12
+    Then I am redirected to the pending Parameter Request status
+    And the Parameter Request status shows Router Non-Volatile No Acknowledgement Timeout 5
+
+  Scenario: Rejecting a Level 3 local Router Permanent No Acknowledgement Timeout change
+    Given NodeManager is the User Agent at Brigade 26, Node 100, and Port 25
+    And its local Router is at Brigade 26, Node 100, and Port 0
+    And the Router Level 3 password is "FIRE3"
+    When I log on User-Agent address Brigade 26, Node 100, and Port 25 with the Level 3 password
+    Then the Node Login status eventually shows User-Agent address 26.100.25 is logged on
+    When I set local Router Permanent Parameter 12 to 10
+    Then I am redirected to the pending Parameter Modification status
+    And the Parameter Modification status eventually shows Parameter / No Modification Access rejection
+    When I request local Router Current Parameter 12
+    Then I am redirected to the pending Parameter Request status
+    And the Parameter Request status shows Router Current No Acknowledgement Timeout 5
+    When I request local Router Non-Volatile Parameter 12
+    Then I am redirected to the pending Parameter Request status
+    And the Parameter Request status shows Router Non-Volatile No Acknowledgement Timeout 5
+
+  Scenario: Rejecting a Level 1 local Router Non-Volatile Brigade Number change
+    Given NodeManager is the User Agent at Brigade 26, Node 100, and Port 25
+    And its local Router is at Brigade 26, Node 100, and Port 0
+    And the Router Level 1 password is "FIRE1"
+    When I log on User-Agent address Brigade 26, Node 100, and Port 25 with the Level 1 password
+    Then the Node Login status eventually shows User-Agent address 26.100.25 is logged on
+    When I set local Router Non-Volatile Parameter 1 to 25
+    Then I am redirected to the pending Parameter Modification status
+    And the Parameter Modification status eventually shows Parameter / No Modification Access rejection
+
+  Scenario: Changing the local Router Non-Volatile Brigade Number with a Level 3 Node Login
+    Given NodeManager is the User Agent at Brigade 26, Node 100, and Port 25
+    And its local Router is at Brigade 26, Node 100, and Port 0
+    And the Router Level 3 password is "FIRE3"
+    When I log on User-Agent address Brigade 26, Node 100, and Port 25 with the Level 3 password
+    Then the Node Login status eventually shows User-Agent address 26.100.25 is logged on
+    When I set local Router Non-Volatile Parameter 1 to 25
+    Then I am redirected to the pending Parameter Modification status
+    And the Parameter Modification status eventually shows acknowledged
+    When I request local Router Non-Volatile Parameter 1
+    Then I am redirected to the pending Parameter Request status
+    And the Parameter Request status shows Router Non-Volatile Brigade or Agency 25
+    When I request local Router Current Parameter 1
+    Then I am redirected to the pending Parameter Request status
+    And the Parameter Request status shows Router Current Brigade or Agency 26
+
+  Scenario: Rejecting a Level 1 local Router Non-Volatile Manual Acknowledgement Timeout change
+    Given NodeManager is the User Agent at Brigade 26, Node 100, and Port 25
+    And its local Router is at Brigade 26, Node 100, and Port 0
+    And the Router Level 1 password is "FIRE1"
+    When I log on User-Agent address Brigade 26, Node 100, and Port 25 with the Level 1 password
+    Then the Node Login status eventually shows User-Agent address 26.100.25 is logged on
+    When I set local Router Non-Volatile Parameter 18 to 30
+    Then I am redirected to the pending Parameter Modification status
+    And the Parameter Modification status eventually shows Parameter / No Modification Access rejection
+
+  Scenario: Changing the local Router Non-Volatile Manual Acknowledgement Timeout with a Level 3 Node Login
+    Given NodeManager is the User Agent at Brigade 26, Node 100, and Port 25
+    And its local Router is at Brigade 26, Node 100, and Port 0
+    And the Router Level 3 password is "FIRE3"
+    When I log on User-Agent address Brigade 26, Node 100, and Port 25 with the Level 3 password
+    Then the Node Login status eventually shows User-Agent address 26.100.25 is logged on
+    When I set local Router Non-Volatile Parameter 18 to 30
+    Then I am redirected to the pending Parameter Modification status
+    And the Parameter Modification status eventually shows acknowledged
+    When I request local Router Non-Volatile Parameter 18
+    Then I am redirected to the pending Parameter Request status
+    And the Parameter Request status shows Router Non-Volatile Manual Acknowledgement Timeout 30
+    When I request local Router Current Parameter 18
+    Then I am redirected to the pending Parameter Request status
+    And the Parameter Request status shows Router Current Manual Acknowledgement Timeout 60
+
+  Scenario: Changing the local Router Current Manual Acknowledgement Timeout with a Level 3 Node Login
+    Given NodeManager is the User Agent at Brigade 26, Node 100, and Port 25
+    And its local Router is at Brigade 26, Node 100, and Port 0
+    And the Router Level 3 password is "FIRE3"
+    When I log on User-Agent address Brigade 26, Node 100, and Port 25 with the Level 3 password
+    Then the Node Login status eventually shows User-Agent address 26.100.25 is logged on
+    When I set local Router Current Parameter 18 to 30
+    Then I am redirected to the pending Parameter Modification status
+    And the Parameter Modification status eventually shows acknowledged
+    When I request local Router Current Parameter 18
+    Then I am redirected to the pending Parameter Request status
+    And the Parameter Request status shows Router Current Manual Acknowledgement Timeout 30
+    When I request local Router Non-Volatile Parameter 18
+    Then I am redirected to the pending Parameter Request status
+    And the Parameter Request status shows Router Non-Volatile Manual Acknowledgement Timeout 60
+
+  Scenario: Rejecting a Level 3 local Router Permanent Manual Acknowledgement Timeout change
+    Given NodeManager is the User Agent at Brigade 26, Node 100, and Port 25
+    And its local Router is at Brigade 26, Node 100, and Port 0
+    And the Router Level 3 password is "FIRE3"
+    When I log on User-Agent address Brigade 26, Node 100, and Port 25 with the Level 3 password
+    Then the Node Login status eventually shows User-Agent address 26.100.25 is logged on
+    When I set local Router Permanent Parameter 18 to 30
+    Then I am redirected to the pending Parameter Modification status
+    And the Parameter Modification status eventually shows Parameter / No Modification Access rejection
+    When I request local Router Current Parameter 18
+    Then I am redirected to the pending Parameter Request status
+    And the Parameter Request status shows Router Current Manual Acknowledgement Timeout 60
+    When I request local Router Non-Volatile Parameter 18
+    Then I am redirected to the pending Parameter Request status
+    And the Parameter Request status shows Router Non-Volatile Manual Acknowledgement Timeout 60
+
+  Scenario: Rejecting a Level 1 local Router Non-Volatile Maximum Message Length change
+    Given NodeManager is the User Agent at Brigade 26, Node 100, and Port 25
+    And its local Router is at Brigade 26, Node 100, and Port 0
+    And the Router Level 1 password is "FIRE1"
+    When I log on User-Agent address Brigade 26, Node 100, and Port 25 with the Level 1 password
+    Then the Node Login status eventually shows User-Agent address 26.100.25 is logged on
+    When I set local Router Non-Volatile Parameter 9 to 512
+    Then I am redirected to the pending Parameter Modification status
+    And the Parameter Modification status eventually shows Parameter / No Modification Access rejection
+
+  Scenario: Changing the local Router Non-Volatile Maximum Message Length with a Level 2 Node Login
+    Given NodeManager is the User Agent at Brigade 26, Node 100, and Port 25
+    And its local Router is at Brigade 26, Node 100, and Port 0
+    And the Router Level 2 password is "FIRE2"
+    When I log on User-Agent address Brigade 26, Node 100, and Port 25 with the Level 2 password
+    Then the Node Login status eventually shows User-Agent address 26.100.25 is logged on
+    When I set local Router Non-Volatile Parameter 9 to 512
+    Then I am redirected to the pending Parameter Modification status
+    And the Parameter Modification status eventually shows acknowledged
+    When I request local Router Non-Volatile Parameter 9
+    Then I am redirected to the pending Parameter Request status
+    And the Parameter Request status shows Router Non-Volatile Maximum Message Length 512
+    When I request local Router Current Parameter 9
+    Then I am redirected to the pending Parameter Request status
+    And the Parameter Request status shows Router Current Maximum Message Length 1023
+
+  Scenario: Changing the local Router Current Maximum Message Length with a Level 2 Node Login
+    Given NodeManager is the User Agent at Brigade 26, Node 100, and Port 25
+    And its local Router is at Brigade 26, Node 100, and Port 0
+    And the Router Level 2 password is "FIRE2"
+    When I log on User-Agent address Brigade 26, Node 100, and Port 25 with the Level 2 password
+    Then the Node Login status eventually shows User-Agent address 26.100.25 is logged on
+    When I set local Router Current Parameter 9 to 512
+    Then I am redirected to the pending Parameter Modification status
+    And the Parameter Modification status eventually shows acknowledged
+    When I request local Router Current Parameter 9
+    Then I am redirected to the pending Parameter Request status
+    And the Parameter Request status shows Router Current Maximum Message Length 512
+    When I request local Router Non-Volatile Parameter 9
+    Then I am redirected to the pending Parameter Request status
+    And the Parameter Request status shows Router Non-Volatile Maximum Message Length 1023
+
+  Scenario: Rejecting a Level 2 local Router Permanent Maximum Message Length change
+    Given NodeManager is the User Agent at Brigade 26, Node 100, and Port 25
+    And its local Router is at Brigade 26, Node 100, and Port 0
+    And the Router Level 2 password is "FIRE2"
+    When I log on User-Agent address Brigade 26, Node 100, and Port 25 with the Level 2 password
+    Then the Node Login status eventually shows User-Agent address 26.100.25 is logged on
+    When I set local Router Permanent Parameter 9 to 512
+    Then I am redirected to the pending Parameter Modification status
+    And the Parameter Modification status eventually shows Parameter / No Modification Access rejection
+    When I request local Router Current Parameter 9
+    Then I am redirected to the pending Parameter Request status
+    And the Parameter Request status shows Router Current Maximum Message Length 1023
+    When I request local Router Non-Volatile Parameter 9
+    Then I am redirected to the pending Parameter Request status
+    And the Parameter Request status shows Router Non-Volatile Maximum Message Length 1023
+
+  Scenario: Rejecting a Level 1 local Router Non-Volatile Network Manager Address 1 change
+    Given NodeManager is the User Agent at Brigade 26, Node 100, and Port 25
+    And its local Router is at Brigade 26, Node 100, and Port 0
+    And the Router Level 1 password is "FIRE1"
+    When I log on User-Agent address Brigade 26, Node 100, and Port 25 with the Level 1 password
+    Then the Node Login status eventually shows User-Agent address 26.100.25 is logged on
+    When I set local Router Non-Volatile Parameter 10 to 26.100.24
+    Then I am redirected to the pending Parameter Modification status
+    And the Parameter Modification status eventually shows Parameter / No Modification Access rejection
+
+  Scenario: Changing the local Router Non-Volatile Network Manager Address 1 with a Level 2 Node Login
+    Given NodeManager is the User Agent at Brigade 26, Node 100, and Port 25
+    And its local Router is at Brigade 26, Node 100, and Port 0
+    And the Router Level 2 password is "FIRE2"
+    When I log on User-Agent address Brigade 26, Node 100, and Port 25 with the Level 2 password
+    Then the Node Login status eventually shows User-Agent address 26.100.25 is logged on
+    When I set local Router Non-Volatile Parameter 10 to 26.100.24
+    Then I am redirected to the pending Parameter Modification status
+    And the Parameter Modification status eventually shows acknowledged
+    When I request local Router Non-Volatile Parameter 10
+    Then I am redirected to the pending Parameter Request status
+    And the Parameter Request status shows Router Non-Volatile Network Manager Address 1 26.100.24
+    When I request local Router Current Parameter 10
+    Then I am redirected to the pending Parameter Request status
+    And the Parameter Request status shows Router Current Network Manager Address 1 26.100.25
 
   Scenario: Browsing the local Router Current Time and Date
     Given NodeManager is the User Agent at Brigade 26, Node 100, and Port 25

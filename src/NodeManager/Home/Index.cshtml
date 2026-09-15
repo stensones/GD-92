@@ -45,6 +45,15 @@
 
             <form class="login-form" id="router-logon" action="/router/parameters/logon" method="post">
                 <label>
+                    Password Level
+                    <select name="passwordLevel">
+                        <option value="1" selected>Level 1</option>
+                        <option value="2">Level 2</option>
+                        <option value="3">Level 3</option>
+                        <option value="4">Level 4</option>
+                    </select>
+                </label>
+                <label>
                     Password
                     <input type="password" name="password" required />
                 </label>
@@ -109,97 +118,9 @@
                     <option value="current" selected>Current</option>
                 </select>
             </label>
-            <form class="inline-action" id="router-routing-table-entry-selection"
-                  aria-describedby="router-routing-table-entry-selection-status">
-                <fieldset>
-                    <legend>Router Current Routing Table entries</legend>
-                    <label>
-                        First entry
-                        <input name="first-entry" type="number" min="1" value="1" required />
-                    </label>
-                    <label>
-                        Last entry
-                        <input name="last-entry" type="number" min="1" value="1" required />
-                    </label>
-                    <button type="submit">Request entries</button>
-                </fieldset>
-            </form>
-            <p id="router-routing-table-entry-selection-status" role="status" hidden></p>
-            <ul id="router-routing-table-entry-results" hidden></ul>
-            <button id="router-routing-table-next-page" hidden type="button" disabled
-                    aria-controls="router-routing-table-entry-results">Next entries</button>
-            <form class="inline-action" id="router-pstn-table-entry-selection"
-                  aria-describedby="router-pstn-table-entry-selection-status">
-                <fieldset>
-                    <legend>Router Current PSTN Table entries</legend>
-                    <label>
-                        First entry
-                        <input name="first-entry" type="number" min="1" value="1" required />
-                    </label>
-                    <label>
-                        Last entry
-                        <input name="last-entry" type="number" min="1" value="1" required />
-                    </label>
-                    <button type="submit">Request entries</button>
-                </fieldset>
-            </form>
-            <p id="router-pstn-table-entry-selection-status" role="status" hidden></p>
-            <ul id="router-pstn-table-entry-results" hidden></ul>
-            <form class="inline-action" id="router-wan-table-entry-selection"
-                  aria-describedby="router-wan-table-entry-selection-status">
-                <fieldset>
-                    <legend>Router Current WAN Table entries</legend>
-                    <label>
-                        First entry
-                        <input name="first-entry" type="number" min="1" value="1" required />
-                    </label>
-                    <label>
-                        Last entry
-                        <input name="last-entry" type="number" min="1" value="1" required />
-                    </label>
-                    <button type="submit">Request entries</button>
-                </fieldset>
-            </form>
-            <p id="router-wan-table-entry-selection-status" role="status" hidden></p>
-            <ul id="router-wan-table-entry-results" hidden></ul>
-            <form class="inline-action" id="router-lan-table-entry-selection"
-                  aria-describedby="router-lan-table-entry-selection-status">
-                <fieldset>
-                    <legend>Router Current LAN Table entries</legend>
-                    <label>
-                        First entry
-                        <input name="first-entry" type="number" min="1" value="1" required />
-                    </label>
-                    <label>
-                        Last entry
-                        <input name="last-entry" type="number" min="1" value="1" required />
-                    </label>
-                    <button type="submit">Request entries</button>
-                </fieldset>
-            </form>
-            <p id="router-lan-table-entry-selection-status" role="status" hidden></p>
-            <ul id="router-lan-table-entry-results" hidden></ul>
-            <form class="inline-action" id="router-isdn-table-entry-selection"
-                  aria-describedby="router-isdn-table-entry-selection-status">
-                <fieldset>
-                    <legend>Router Current ISDN Table entries</legend>
-                    <label>First entry <input name="first-entry" type="number" min="1" value="1" required /></label>
-                    <label>Last entry <input name="last-entry" type="number" min="1" value="1" required /></label>
-                    <button type="submit">Request entries</button>
-                </fieldset>
-            </form>
-            <p id="router-isdn-table-entry-selection-status" role="status" hidden></p>
-            <ul id="router-isdn-table-entry-results" hidden></ul>
-            <form class="inline-action" id="router-mdt-table-entry-selection">
-                <fieldset>
-                    <legend>Router Current MDT Table entries</legend>
-                    <label>First entry <input name="first-entry" type="number" min="1" value="1" required /></label>
-                    <label>Last entry <input name="last-entry" type="number" min="1" value="1" required /></label>
-                    <button type="submit">Request entries</button>
-                </fieldset>
-            </form>
-            <p id="router-mdt-table-entry-selection-status" role="status" hidden></p>
-            <ul id="router-mdt-table-entry-results" hidden></ul>
+            <p>
+                <a href="/router/parameters/tables">Browse Router Parameter Tables</a>
+            </p>
             <p id="router-parameter-list-status" role="status" hidden></p>
             <table id="router-parameter-list" hidden>
                 <caption>Local Router Current Parameters</caption>
@@ -245,26 +166,6 @@
     const routerParameterListStatus = document.getElementById("router-parameter-list-status");
     const routerParameterListRows = routerParameterList.querySelector("tbody");
     const participantParameterTable = document.getElementById("participant-parameter-table");
-    const routerRoutingTableEntrySelection = document.getElementById("router-routing-table-entry-selection");
-    const routerRoutingTableEntrySelectionStatus = document.getElementById("router-routing-table-entry-selection-status");
-    const routerRoutingTableEntryResults = document.getElementById("router-routing-table-entry-results");
-    const routerRoutingTableNextPage = document.getElementById("router-routing-table-next-page");
-    const routerPstnTableEntrySelection = document.getElementById("router-pstn-table-entry-selection");
-    const routerPstnTableEntrySelectionStatus = document.getElementById("router-pstn-table-entry-selection-status");
-    const routerPstnTableEntryResults = document.getElementById("router-pstn-table-entry-results");
-    const routerWanTableEntrySelection = document.getElementById("router-wan-table-entry-selection");
-    const routerWanTableEntrySelectionStatus = document.getElementById("router-wan-table-entry-selection-status");
-    const routerWanTableEntryResults = document.getElementById("router-wan-table-entry-results");
-    const routerLanTableEntrySelection = document.getElementById("router-lan-table-entry-selection");
-    const routerLanTableEntrySelectionStatus = document.getElementById("router-lan-table-entry-selection-status");
-    const routerLanTableEntryResults = document.getElementById("router-lan-table-entry-results");
-    const routerIsdnTableEntrySelection = document.getElementById("router-isdn-table-entry-selection");
-    const routerIsdnTableEntrySelectionStatus = document.getElementById("router-isdn-table-entry-selection-status");
-    const routerIsdnTableEntryResults = document.getElementById("router-isdn-table-entry-results");
-    const routerMdtTableEntrySelection = document.getElementById("router-mdt-table-entry-selection");
-    const routerMdtTableEntrySelectionStatus = document.getElementById("router-mdt-table-entry-selection-status");
-    const routerMdtTableEntryResults = document.getElementById("router-mdt-table-entry-results");
-    let nextRoutingTableEntryRange = null;
     const redactedPasswordMarker = "PASSWORD";
     const participantCurrentParameterCatalogues = {
         router: [
@@ -540,29 +441,6 @@
         poll();
     };
 
-    routerRoutingTableEntrySelection.addEventListener("submit", async event => {
-        event.preventDefault();
-        const formData = new FormData(routerRoutingTableEntrySelection);
-        const firstEntry = Number(formData.get("first-entry"));
-        const lastEntry = Number(formData.get("last-entry"));
-
-        if (!Number.isInteger(firstEntry) || !Number.isInteger(lastEntry) ||
-            firstEntry < 1 || lastEntry < firstEntry) {
-            routerRoutingTableEntrySelectionStatus.hidden = false;
-            routerRoutingTableEntrySelectionStatus.textContent =
-                "Last entry must be greater than or equal to first entry.";
-            return;
-        }
-
-        requestRoutingTableEntries(firstEntry, lastEntry);
-    });
-
-    routerRoutingTableNextPage.addEventListener("click", () => {
-        if (nextRoutingTableEntryRange !== null) {
-            requestRoutingTableEntries(nextRoutingTableEntryRange.firstEntry, nextRoutingTableEntryRange.lastEntry);
-        }
-    });
-
     const requestPstnTableEntries = async (firstEntry, lastEntry) => {
         routerPstnTableEntrySelectionStatus.hidden = false;
         routerPstnTableEntryResults.hidden = true;
@@ -617,23 +495,6 @@
 
         poll();
     };
-
-    routerPstnTableEntrySelection.addEventListener("submit", async event => {
-        event.preventDefault();
-        const formData = new FormData(routerPstnTableEntrySelection);
-        const firstEntry = Number(formData.get("first-entry"));
-        const lastEntry = Number(formData.get("last-entry"));
-
-        if (!Number.isInteger(firstEntry) || !Number.isInteger(lastEntry) ||
-            firstEntry < 1 || lastEntry < firstEntry) {
-            routerPstnTableEntrySelectionStatus.hidden = false;
-            routerPstnTableEntrySelectionStatus.textContent =
-                "Last entry must be greater than or equal to first entry.";
-            return;
-        }
-
-        requestPstnTableEntries(firstEntry, lastEntry);
-    });
 
     const requestWanTableEntries = async (firstEntry, lastEntry) => {
         routerWanTableEntrySelectionStatus.hidden = false;
@@ -690,23 +551,6 @@
         poll();
     };
 
-    routerWanTableEntrySelection.addEventListener("submit", async event => {
-        event.preventDefault();
-        const formData = new FormData(routerWanTableEntrySelection);
-        const firstEntry = Number(formData.get("first-entry"));
-        const lastEntry = Number(formData.get("last-entry"));
-
-        if (!Number.isInteger(firstEntry) || !Number.isInteger(lastEntry) ||
-            firstEntry < 1 || lastEntry < firstEntry) {
-            routerWanTableEntrySelectionStatus.hidden = false;
-            routerWanTableEntrySelectionStatus.textContent =
-                "Last entry must be greater than or equal to first entry.";
-            return;
-        }
-
-        requestWanTableEntries(firstEntry, lastEntry);
-    });
-
     const requestLanTableEntries = async (firstEntry, lastEntry) => {
         routerLanTableEntrySelectionStatus.hidden = false;
         routerLanTableEntryResults.hidden = true;
@@ -760,117 +604,6 @@
 
         poll();
     };
-
-    routerLanTableEntrySelection.addEventListener("submit", async event => {
-        event.preventDefault();
-        const formData = new FormData(routerLanTableEntrySelection);
-        const firstEntry = Number(formData.get("first-entry"));
-        const lastEntry = Number(formData.get("last-entry"));
-
-        if (!Number.isInteger(firstEntry) || !Number.isInteger(lastEntry) ||
-            firstEntry < 1 || lastEntry < firstEntry) {
-            routerLanTableEntrySelectionStatus.hidden = false;
-            routerLanTableEntrySelectionStatus.textContent =
-                "Last entry must be greater than or equal to first entry.";
-            return;
-        }
-
-        requestLanTableEntries(firstEntry, lastEntry);
-    });
-
-    routerIsdnTableEntrySelection.addEventListener("submit", async event => {
-        event.preventDefault();
-        const formData = new FormData(routerIsdnTableEntrySelection);
-        const firstEntry = Number(formData.get("first-entry"));
-        const lastEntry = Number(formData.get("last-entry"));
-        if (!Number.isInteger(firstEntry) || !Number.isInteger(lastEntry) ||
-            firstEntry < 1 || lastEntry < firstEntry) {
-            routerIsdnTableEntrySelectionStatus.hidden = false;
-            routerIsdnTableEntrySelectionStatus.textContent =
-                "Last entry must be greater than or equal to first entry.";
-            return;
-        }
-
-        routerIsdnTableEntrySelectionStatus.hidden = false;
-        routerIsdnTableEntryResults.hidden = true;
-        routerIsdnTableEntryResults.replaceChildren();
-        routerIsdnTableEntrySelectionStatus.textContent = "Requesting ISDN Table entries...";
-        const response = await fetch(
-            `/router/parameters/${participantParameterTable.value}/17/entries/${firstEntry}-${lastEntry}`,
-            { method: "POST" });
-        if (!response.ok || !response.url) {
-            routerIsdnTableEntrySelectionStatus.textContent =
-                "The ISDN Table request could not be submitted.";
-            return;
-        }
-
-        const poll = async () => {
-            const result = await fetch(response.url);
-            if (!result.ok) {
-                routerIsdnTableEntrySelectionStatus.textContent =
-                    "The ISDN Table request could not be completed.";
-                return;
-            }
-            const request = await result.json();
-            if (request.state === "pending") {
-                window.setTimeout(poll, 1000);
-                return;
-            }
-            if (request.state !== "received") {
-                routerIsdnTableEntrySelectionStatus.textContent = request.rejectionReason
-                    ? `ISDN Table request ${request.state}: ${request.rejectionReason}.`
-                    : `ISDN Table request ${request.state}.`;
-                return;
-            }
-            for (const entry of request.isdnTableEntries ?? []) {
-                const item = document.createElement("li");
-                item.textContent = `ISDN Table entry ${entry.index}: ${entry.used ? "used" : "unused"}, ` +
-                    `${entry.available ? "available" : "unavailable"}, next node ${entry.nextNode}, ` +
-                    `telephone number ${entry.telephoneNumber}, hold time ${entry.holdTime}`;
-                routerIsdnTableEntryResults.append(item);
-            }
-            routerIsdnTableEntryResults.hidden = false;
-            routerIsdnTableEntrySelectionStatus.textContent =
-                "ISDN Table entries received.";
-        };
-        poll();
-    });
-
-    routerMdtTableEntrySelection.addEventListener("submit", async event => {
-        event.preventDefault();
-        const data = new FormData(routerMdtTableEntrySelection);
-        const firstEntry = Number(data.get("first-entry"));
-        const lastEntry = Number(data.get("last-entry"));
-        if (!Number.isInteger(firstEntry) || !Number.isInteger(lastEntry) ||
-            firstEntry < 1 || lastEntry < firstEntry) {
-            routerMdtTableEntrySelectionStatus.hidden = false;
-            routerMdtTableEntrySelectionStatus.textContent = "Last entry must be greater than or equal to first entry.";
-            return;
-        }
-        routerMdtTableEntrySelectionStatus.hidden = false;
-        routerMdtTableEntryResults.hidden = true;
-        routerMdtTableEntryResults.replaceChildren();
-        const response = await fetch(`/router/parameters/${participantParameterTable.value}/21/entries/${firstEntry}-${lastEntry}`, { method: "POST" });
-        if (!response.ok || !response.url) {
-            routerMdtTableEntrySelectionStatus.textContent = "The MDT Table request could not be submitted.";
-            return;
-        }
-        const poll = async () => {
-            const result = await fetch(response.url);
-            if (!result.ok) { routerMdtTableEntrySelectionStatus.textContent = "The MDT Table request could not be completed."; return; }
-            const request = await result.json();
-            if (request.state === "pending") { window.setTimeout(poll, 1000); return; }
-            if (request.state !== "received") { routerMdtTableEntrySelectionStatus.textContent = `MDT Table request ${request.state}.`; return; }
-            for (const entry of request.mdtTableEntries ?? []) {
-                const item = document.createElement("li");
-                item.textContent = `MDT Table entry ${entry.index}: ${entry.used ? "used" : "unused"}, ${entry.available ? "available" : "unavailable"}, next node ${entry.nextNode}, network user address ${entry.networkUserAddress}, hold time ${entry.holdTime}`;
-                routerMdtTableEntryResults.append(item);
-            }
-            routerMdtTableEntryResults.hidden = false;
-            routerMdtTableEntrySelectionStatus.textContent = "MDT Table entries received.";
-        };
-        poll();
-    });
 
     logonForm.addEventListener("submit", async event => {
         event.preventDefault();

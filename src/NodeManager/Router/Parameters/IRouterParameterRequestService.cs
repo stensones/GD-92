@@ -31,6 +31,7 @@ public interface IRouterParameterRequestService
 
 	Task<RouterParameterRequestStatusIdentifier> RequestLocalRouterLogon(
 		CommunicationsAddress communicationsAddress,
+		PasswordLevel passwordLevel,
 		PasswordValue password,
 		CancellationToken cancellationToken);
 

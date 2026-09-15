@@ -25,6 +25,8 @@ public sealed class RouterParameterRequestSteps
 	private HttpClient? client;
 	private HttpResponseMessage? response;
 	private string? level1Password;
+	private string? level2Password;
+	private string? level3Password;
 	private string? pageContent;
 	private Uri? inventoryScanStatusAddress;
 	private IReadOnlyDictionary<byte, Uri>? routerParameterStatusAddresses;
@@ -370,6 +372,14 @@ public sealed class RouterParameterRequestSteps
 		await this.EnsureApplicationStartedAsync();
 
 		this.response = await this.client!.PostAsync("/router/parameters/current/19", null);
+	}
+
+	[When(@"I request local Router Current Parameter 1")]
+	public async Task WhenIRequestLocalRouterCurrentParameterOne()
+	{
+		await this.EnsureApplicationStartedAsync();
+
+		this.response = await this.client!.PostAsync("/router/parameters/current/1", null);
 	}
 
 	[When(@"I request local Router Current Parameter 20")]
@@ -1037,6 +1047,34 @@ public sealed class RouterParameterRequestSteps
 		await this.LogOnUserAgentAddressAsync(brigade, node, port, this.level1Password!);
 	}
 
+	[When(@"I log on User-Agent address Brigade (.*), Node (.*), and Port (.*) with the Level 2 password")]
+	public async Task WhenILogOnUserAgentAddressWithTheLevel2Password(
+		byte brigade,
+		ushort node,
+		byte port)
+	{
+		await this.LogOnUserAgentAddressAsync(
+			brigade,
+			node,
+			port,
+			this.level2Password!,
+			PasswordLevelNumber.Level2);
+	}
+
+	[When(@"I log on User-Agent address Brigade (.*), Node (.*), and Port (.*) with the Level 3 password")]
+	public async Task WhenILogOnUserAgentAddressWithTheLevel3Password(
+		byte brigade,
+		ushort node,
+		byte port)
+	{
+		await this.LogOnUserAgentAddressAsync(
+			brigade,
+			node,
+			port,
+			this.level3Password!,
+			PasswordLevelNumber.Level3);
+	}
+
 	[When(@"I log on User-Agent address Brigade (.*), Node (.*), and Port (.*) with the incorrect password ""(.*)""")]
 	public async Task WhenILogOnUserAgentAddressWithTheIncorrectPassword(
 		byte brigade,
@@ -1051,7 +1089,8 @@ public sealed class RouterParameterRequestSteps
 		byte brigade,
 		ushort node,
 		byte port,
-		string password)
+		string password,
+		PasswordLevelNumber passwordLevel = PasswordLevelNumber.Level1)
 	{
 		await this.EnsureApplicationStartedAsync();
 
@@ -1062,7 +1101,8 @@ public sealed class RouterParameterRequestSteps
 				new KeyValuePair<string, string>("password", password),
 				new KeyValuePair<string, string>("brigade", brigade.ToString()),
 				new KeyValuePair<string, string>("node", node.ToString()),
-				new KeyValuePair<string, string>("port", port.ToString())
+				new KeyValuePair<string, string>("port", port.ToString()),
+				new KeyValuePair<string, string>("passwordLevel", ((byte)passwordLevel).ToString())
 			]));
 	}
 
@@ -1124,6 +1164,144 @@ public sealed class RouterParameterRequestSteps
 			]));
 	}
 
+	[When(@"I set local Router Current Parameter 12 to 10")]
+	public async Task WhenISetLocalRouterCurrentNoAcknowledgementTimeout()
+	{
+		await this.EnsureApplicationStartedAsync();
+
+		this.response = await this.client!.PostAsync(
+			"/router/parameters/current/12/value",
+			new FormUrlEncodedContent(
+			[
+				new KeyValuePair<string, string>("value", "10")
+			]));
+	}
+
+	[When(@"I set local Router Permanent Parameter 12 to 10")]
+	public async Task WhenISetLocalRouterPermanentNoAcknowledgementTimeout()
+	{
+		await this.EnsureApplicationStartedAsync();
+
+		this.response = await this.client!.PostAsync(
+			"/router/parameters/permanent/12/value",
+			new FormUrlEncodedContent(
+			[
+				new KeyValuePair<string, string>("value", "10")
+			]));
+	}
+
+	[When(@"I set local Router Non-Volatile Parameter 1 to 25")]
+	public async Task WhenISetLocalRouterNonVolatileBrigadeNumber()
+	{
+		await this.EnsureApplicationStartedAsync();
+
+		this.response = await this.client!.PostAsync(
+			"/router/parameters/non-volatile/1/value",
+			new FormUrlEncodedContent(
+			[
+				new KeyValuePair<string, string>("value", "25")
+			]));
+	}
+
+	[When(@"I set local Router Non-Volatile Parameter 18 to 30")]
+	public async Task WhenISetLocalRouterNonVolatileManualAcknowledgementTimeout()
+	{
+		await this.EnsureApplicationStartedAsync();
+
+		this.response = await this.client!.PostAsync(
+			"/router/parameters/non-volatile/18/value",
+			new FormUrlEncodedContent(
+			[
+				new KeyValuePair<string, string>("value", "0"),
+				new KeyValuePair<string, string>("value", "30")
+			]));
+	}
+
+	[When(@"I set local Router Current Parameter 18 to 30")]
+	public async Task WhenISetLocalRouterCurrentManualAcknowledgementTimeout()
+	{
+		await this.EnsureApplicationStartedAsync();
+
+		this.response = await this.client!.PostAsync(
+			"/router/parameters/current/18/value",
+			new FormUrlEncodedContent(
+			[
+				new KeyValuePair<string, string>("value", "0"),
+				new KeyValuePair<string, string>("value", "30")
+			]));
+	}
+
+	[When(@"I set local Router Permanent Parameter 18 to 30")]
+	public async Task WhenISetLocalRouterPermanentManualAcknowledgementTimeout()
+	{
+		await this.EnsureApplicationStartedAsync();
+
+		this.response = await this.client!.PostAsync(
+			"/router/parameters/permanent/18/value",
+			new FormUrlEncodedContent(
+			[
+				new KeyValuePair<string, string>("value", "0"),
+				new KeyValuePair<string, string>("value", "30")
+			]));
+	}
+
+	[When(@"I set local Router Non-Volatile Parameter 9 to 512")]
+	public async Task WhenISetLocalRouterNonVolatileMaximumMessageLength()
+	{
+		await this.EnsureApplicationStartedAsync();
+
+		this.response = await this.client!.PostAsync(
+			"/router/parameters/non-volatile/9/value",
+			new FormUrlEncodedContent(
+			[
+				new KeyValuePair<string, string>("value", "2"),
+				new KeyValuePair<string, string>("value", "0")
+			]));
+	}
+
+	[When(@"I set local Router Current Parameter 9 to 512")]
+	public async Task WhenISetLocalRouterCurrentMaximumMessageLength()
+	{
+		await this.EnsureApplicationStartedAsync();
+
+		this.response = await this.client!.PostAsync(
+			"/router/parameters/current/9/value",
+			new FormUrlEncodedContent(
+			[
+				new KeyValuePair<string, string>("value", "2"),
+				new KeyValuePair<string, string>("value", "0")
+			]));
+	}
+
+	[When(@"I set local Router Permanent Parameter 9 to 512")]
+	public async Task WhenISetLocalRouterPermanentMaximumMessageLength()
+	{
+		await this.EnsureApplicationStartedAsync();
+
+		this.response = await this.client!.PostAsync(
+			"/router/parameters/permanent/9/value",
+			new FormUrlEncodedContent(
+			[
+				new KeyValuePair<string, string>("value", "2"),
+				new KeyValuePair<string, string>("value", "0")
+			]));
+	}
+
+	[When(@"I set local Router Non-Volatile Parameter 10 to 26.100.24")]
+	public async Task WhenISetLocalRouterNonVolatileNetworkManagerAddressOne()
+	{
+		await this.EnsureApplicationStartedAsync();
+
+		this.response = await this.client!.PostAsync(
+			"/router/parameters/non-volatile/10/value",
+			new FormUrlEncodedContent(
+			[
+				new KeyValuePair<string, string>("value", "26"),
+				new KeyValuePair<string, string>("value", "25"),
+				new KeyValuePair<string, string>("value", "24")
+			]));
+	}
+
 	[When(@"I set local Router Non-Volatile Parameter 19 to malformed value 5, 0")]
 	public async Task WhenISetLocalRouterNonVolatileRetriesToMalformedValue()
 	{
@@ -1149,6 +1327,18 @@ public sealed class RouterParameterRequestSteps
 	public void GivenTheRouterLevel1PasswordIs(string password)
 	{
 		this.level1Password = password;
+	}
+
+	[Given(@"the Router Level 2 password is ""(.*)""")]
+	public void GivenTheRouterLevel2PasswordIs(string password)
+	{
+		this.level2Password = password;
+	}
+
+	[Given(@"the Router Level 3 password is ""(.*)""")]
+	public void GivenTheRouterLevel3PasswordIs(string password)
+	{
+		this.level3Password = password;
 	}
 
 	[Then(@"I am redirected to the pending Parameter Request status")]
@@ -1493,8 +1683,9 @@ public sealed class RouterParameterRequestSteps
 			"The Parameter Request status did not show Router Permanent Node Name Station End.");
 	}
 
-	[Then(@"the Parameter Request status shows Router Non-Volatile Maximum Message Length 1023")]
-	public async Task ThenTheParameterRequestStatusShowsRouterNonVolatileMaximumMessageLength()
+	[Then(@"the Parameter Request status shows Router Non-Volatile Maximum Message Length (.*)")]
+	public async Task ThenTheParameterRequestStatusShowsRouterNonVolatileMaximumMessageLength(
+		ushort expectedMaximumMessageLength)
 	{
 		var statusAddress = this.response!.Headers.Location!;
 		for (var attempt = 0; attempt < 30; attempt++)
@@ -1505,7 +1696,8 @@ public sealed class RouterParameterRequestSteps
 				using var document = JsonDocument.Parse(await status.Content.ReadAsStringAsync());
 				if (document.RootElement.GetProperty("state").GetString() == "received" &&
 					document.RootElement.GetProperty("parameterNumber").GetInt32() == 9 &&
-					document.RootElement.GetProperty("parameterValue").GetString() == "1023")
+					document.RootElement.GetProperty("parameterValue").GetString() ==
+						expectedMaximumMessageLength.ToString())
 				{
 					return;
 				}
@@ -1516,8 +1708,9 @@ public sealed class RouterParameterRequestSteps
 			"The Parameter Request status did not show Router Non-Volatile Maximum Message Length 1023.");
 	}
 
-	[Then(@"the Parameter Request status shows Router Non-Volatile Network Manager Address 1 26.100.25")]
-	public async Task ThenTheParameterRequestStatusShowsRouterNonVolatileNetworkManagerAddressOne()
+	[Then(@"the Parameter Request status shows Router Non-Volatile Network Manager Address 1 (.*)")]
+	public async Task ThenTheParameterRequestStatusShowsRouterNonVolatileNetworkManagerAddressOne(
+		string expectedAddress)
 	{
 		var statusAddress = this.response!.Headers.Location!;
 		for (var attempt = 0; attempt < 30; attempt++)
@@ -1528,7 +1721,7 @@ public sealed class RouterParameterRequestSteps
 				using var document = JsonDocument.Parse(await status.Content.ReadAsStringAsync());
 				if (document.RootElement.GetProperty("state").GetString() == "received" &&
 					document.RootElement.GetProperty("parameterNumber").GetInt32() == 10 &&
-					document.RootElement.GetProperty("parameterValue").GetString() == "26.100.25")
+					document.RootElement.GetProperty("parameterValue").GetString() == expectedAddress)
 				{
 					return;
 				}
@@ -1562,8 +1755,9 @@ public sealed class RouterParameterRequestSteps
 			"The Parameter Request status did not show Router Non-Volatile Network Manager Address 2.");
 	}
 
-	[Then(@"the Parameter Request status shows Router Non-Volatile No Acknowledgement Timeout 5")]
-	public async Task ThenTheParameterRequestStatusShowsRouterNonVolatileNoAcknowledgementTimeout()
+	[Then(@"the Parameter Request status shows Router Non-Volatile No Acknowledgement Timeout (.*)")]
+	public async Task ThenTheParameterRequestStatusShowsRouterNonVolatileNoAcknowledgementTimeout(
+		byte expectedTimeout)
 	{
 		var statusAddress = this.response!.Headers.Location!;
 		for (var attempt = 0; attempt < 30; attempt++)
@@ -1574,7 +1768,8 @@ public sealed class RouterParameterRequestSteps
 				using var document = JsonDocument.Parse(await status.Content.ReadAsStringAsync());
 				if (document.RootElement.GetProperty("state").GetString() == "received" &&
 					document.RootElement.GetProperty("parameterNumber").GetInt32() == 12 &&
-					document.RootElement.GetProperty("parameterValue").GetString() == "5")
+					document.RootElement.GetProperty("parameterValue").GetString() ==
+						expectedTimeout.ToString())
 				{
 					return;
 				}
@@ -1585,8 +1780,9 @@ public sealed class RouterParameterRequestSteps
 			"The Parameter Request status did not show Router Non-Volatile No Acknowledgement Timeout.");
 	}
 
-	[Then(@"the Parameter Request status shows Router Non-Volatile Manual Acknowledgement Timeout 60")]
-	public async Task ThenTheParameterRequestStatusShowsRouterNonVolatileManualAcknowledgementTimeout()
+	[Then(@"the Parameter Request status shows Router Non-Volatile Manual Acknowledgement Timeout (.*)")]
+	public async Task ThenTheParameterRequestStatusShowsRouterNonVolatileManualAcknowledgementTimeout(
+		byte expectedTimeout)
 	{
 		var statusAddress = this.response!.Headers.Location!;
 		for (var attempt = 0; attempt < 30; attempt++)
@@ -1597,7 +1793,8 @@ public sealed class RouterParameterRequestSteps
 				using var document = JsonDocument.Parse(await status.Content.ReadAsStringAsync());
 				if (document.RootElement.GetProperty("state").GetString() == "received" &&
 					document.RootElement.GetProperty("parameterNumber").GetInt32() == 18 &&
-					document.RootElement.GetProperty("parameterValue").GetString() == "60")
+					document.RootElement.GetProperty("parameterValue").GetString() ==
+						expectedTimeout.ToString())
 				{
 					return;
 				}
@@ -1608,8 +1805,9 @@ public sealed class RouterParameterRequestSteps
 			"The Parameter Request status did not show Router Non-Volatile Manual Acknowledgement Timeout.");
 	}
 
-	[Then(@"the Parameter Request status shows Router Non-Volatile Retries 3")]
-	public async Task ThenTheParameterRequestStatusShowsRouterNonVolatileRetries()
+	[Then(@"the Parameter Request status shows Router Non-Volatile Retries (.*)")]
+	public async Task ThenTheParameterRequestStatusShowsRouterNonVolatileRetries(
+		byte expectedRetries)
 	{
 		var statusAddress = this.response!.Headers.Location!;
 		for (var attempt = 0; attempt < 30; attempt++)
@@ -1620,7 +1818,8 @@ public sealed class RouterParameterRequestSteps
 				using var document = JsonDocument.Parse(await status.Content.ReadAsStringAsync());
 				if (document.RootElement.GetProperty("state").GetString() == "received" &&
 					document.RootElement.GetProperty("parameterNumber").GetInt32() == 19 &&
-					document.RootElement.GetProperty("parameterValue").GetString() == "3")
+					document.RootElement.GetProperty("parameterValue").GetString() ==
+						expectedRetries.ToString())
 				{
 					return;
 				}
@@ -1631,8 +1830,9 @@ public sealed class RouterParameterRequestSteps
 			"The Parameter Request status did not show Router Non-Volatile Retries.");
 	}
 
-	[Then(@"the Parameter Request status shows Router Non-Volatile Brigade or Agency 26")]
-	public async Task ThenTheParameterRequestStatusShowsRouterNonVolatileBrigadeOrAgency()
+	[Then(@"the Parameter Request status shows Router Non-Volatile Brigade or Agency (.*)")]
+	public async Task ThenTheParameterRequestStatusShowsRouterNonVolatileBrigadeOrAgency(
+		byte expectedBrigade)
 	{
 		var statusAddress = this.response!.Headers.Location!;
 		for (var attempt = 0; attempt < 30; attempt++)
@@ -1643,7 +1843,8 @@ public sealed class RouterParameterRequestSteps
 				using var document = JsonDocument.Parse(await status.Content.ReadAsStringAsync());
 				if (document.RootElement.GetProperty("state").GetString() == "received" &&
 					document.RootElement.GetProperty("parameterNumber").GetInt32() == 1 &&
-					document.RootElement.GetProperty("parameterValue").GetString() == "26")
+					document.RootElement.GetProperty("parameterValue").GetString() ==
+						expectedBrigade.ToString())
 				{
 					return;
 				}
@@ -1652,6 +1853,31 @@ public sealed class RouterParameterRequestSteps
 		}
 		throw new Xunit.Sdk.XunitException(
 			"The Parameter Request status did not show Router Non-Volatile Brigade or Agency.");
+	}
+
+	[Then(@"the Parameter Request status shows Router Current Brigade or Agency (.*)")]
+	public async Task ThenTheParameterRequestStatusShowsRouterCurrentBrigadeOrAgency(
+		byte expectedBrigade)
+	{
+		var statusAddress = this.response!.Headers.Location!;
+		for (var attempt = 0; attempt < 30; attempt++)
+		{
+			using var status = await this.client!.GetAsync(statusAddress);
+			if (status.StatusCode == HttpStatusCode.OK)
+			{
+				using var document = JsonDocument.Parse(await status.Content.ReadAsStringAsync());
+				if (document.RootElement.GetProperty("state").GetString() == "received" &&
+					document.RootElement.GetProperty("parameterNumber").GetInt32() == 1 &&
+					document.RootElement.GetProperty("parameterValue").GetString() ==
+						expectedBrigade.ToString())
+				{
+					return;
+				}
+			}
+			await Task.Delay(TimeSpan.FromSeconds(1));
+		}
+		throw new Xunit.Sdk.XunitException(
+			"The Parameter Request status did not show Router Current Brigade or Agency.");
 	}
 
 	[Then(@"the Parameter Request status shows Router Current Retries 5")]
@@ -1721,8 +1947,9 @@ public sealed class RouterParameterRequestSteps
 			$"The Parameter Request status did not show Router {parameterTable} Retries {expectedRetries}.");
 	}
 
-	[Then(@"the Parameter Request status shows Router Current No Acknowledgement Timeout 10")]
-	public async Task ThenTheParameterRequestStatusShowsRouterCurrentNoAcknowledgementTimeout()
+	[Then(@"the Parameter Request status shows Router Current No Acknowledgement Timeout (.*)")]
+	public async Task ThenTheParameterRequestStatusShowsRouterCurrentNoAcknowledgementTimeout(
+		byte expectedTimeout)
 	{
 		var statusAddress = this.response!.Headers.Location!;
 		for (var attempt = 0; attempt < 30; attempt++)
@@ -1733,7 +1960,8 @@ public sealed class RouterParameterRequestSteps
 				using var document = JsonDocument.Parse(await status.Content.ReadAsStringAsync());
 				if (document.RootElement.GetProperty("state").GetString() == "received" &&
 					document.RootElement.GetProperty("parameterNumber").GetInt32() == 12 &&
-					document.RootElement.GetProperty("parameterValue").GetString() == "10")
+					document.RootElement.GetProperty("parameterValue").GetString() ==
+						expectedTimeout.ToString())
 				{
 					return;
 				}
@@ -1746,8 +1974,9 @@ public sealed class RouterParameterRequestSteps
 			"The Parameter Request status did not show Router Current No Acknowledgement Timeout 10.");
 	}
 
-	[Then(@"the Parameter Request status shows Router Current Maximum Message Length 1023")]
-	public async Task ThenTheParameterRequestStatusShowsRouterCurrentMaximumMessageLength()
+	[Then(@"the Parameter Request status shows Router Current Maximum Message Length (.*)")]
+	public async Task ThenTheParameterRequestStatusShowsRouterCurrentMaximumMessageLength(
+		ushort expectedMaximumMessageLength)
 	{
 		var statusAddress = this.response!.Headers.Location!;
 
@@ -1759,7 +1988,8 @@ public sealed class RouterParameterRequestSteps
 				using var document = JsonDocument.Parse(await status.Content.ReadAsStringAsync());
 				if (document.RootElement.GetProperty("state").GetString() == "received" &&
 					document.RootElement.GetProperty("parameterNumber").GetInt32() == 9 &&
-					document.RootElement.GetProperty("parameterValue").GetString() == "1023")
+					document.RootElement.GetProperty("parameterValue").GetString() ==
+						expectedMaximumMessageLength.ToString())
 				{
 					return;
 				}
@@ -1769,7 +1999,7 @@ public sealed class RouterParameterRequestSteps
 		}
 
 		throw new Xunit.Sdk.XunitException(
-			"The Parameter Request status did not show Router Current Maximum Message Length 1023.");
+			"The Parameter Request status did not show Router Current Maximum Message Length.");
 	}
 
 	[Then(@"NodeManager lists Maximum Message Length in the Router Current Parameter catalogue")]
@@ -1842,8 +2072,9 @@ public sealed class RouterParameterRequestSteps
 		this.pageContent.Should().Contain("""{ number: 11, name: "Network Manager Address 2" },""");
 	}
 
-	[Then(@"the Parameter Request status shows Router Current Manual Acknowledgement Timeout 60")]
-	public async Task ThenTheParameterRequestStatusShowsRouterCurrentManualAcknowledgementTimeout()
+	[Then(@"the Parameter Request status shows Router Current Manual Acknowledgement Timeout (.*)")]
+	public async Task ThenTheParameterRequestStatusShowsRouterCurrentManualAcknowledgementTimeout(
+		ushort expectedTimeout)
 	{
 		var statusAddress = this.response!.Headers.Location!;
 
@@ -1855,7 +2086,8 @@ public sealed class RouterParameterRequestSteps
 				using var document = JsonDocument.Parse(await status.Content.ReadAsStringAsync());
 				if (document.RootElement.GetProperty("state").GetString() == "received" &&
 					document.RootElement.GetProperty("parameterNumber").GetInt32() == 18 &&
-					document.RootElement.GetProperty("parameterValue").GetString() == "60")
+					document.RootElement.GetProperty("parameterValue").GetString() ==
+						expectedTimeout.ToString())
 				{
 					return;
 				}
@@ -1865,7 +2097,7 @@ public sealed class RouterParameterRequestSteps
 		}
 
 		throw new Xunit.Sdk.XunitException(
-			"The Parameter Request status did not show Router Current Manual Acknowledgement Timeout 60.");
+			"The Parameter Request status did not show Router Current Manual Acknowledgement Timeout.");
 	}
 
 	[Then(@"NodeManager lists Manual Acknowledgement Timeout in the Router Current Parameter catalogue")]
@@ -2477,7 +2709,9 @@ public sealed class RouterParameterRequestSteps
 					, "--Parameters:router-level2-password=TESTL2",
 					"--Parameters:router-level3-password=TESTL3",
 					"--Parameters:router-level4-password=TESTL4"
+					, "--Parameters:router-level2-password=FIRE2"
 				]);
+		appHost.Configuration["Parameters:router-level3-password"] = "FIRE3";
 
 		var application = await appHost.BuildAsync();
 		await application.StartAsync();

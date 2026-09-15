@@ -111,10 +111,12 @@ public sealed class RouterParameterRequestService(
 
 	public async Task<RouterParameterRequestStatusIdentifier> RequestLocalRouterLogon(
 		CommunicationsAddress communicationsAddress,
+		PasswordLevel passwordLevel,
 		PasswordValue password,
 		CancellationToken cancellationToken)
 	{
 		ArgumentNullException.ThrowIfNull(communicationsAddress);
+		ArgumentNullException.ThrowIfNull(passwordLevel);
 
 		return await managementTransactions.SubmitAsync(
 			new ManagementTransactionRequest(
@@ -134,7 +136,7 @@ public sealed class RouterParameterRequestService(
 						ParameterNumber.FromValue(4),
 						ParameterValue.FromWireValue(
 							PasswordParameter.FromFields(
-								PasswordLevel.FromValue(PasswordLevelNumber.Level1),
+								passwordLevel,
 								Password.FromValue(password),
 								communicationsAddress).ToWireValue()))),
 				ManagementTransactionKind.NodeLogin,

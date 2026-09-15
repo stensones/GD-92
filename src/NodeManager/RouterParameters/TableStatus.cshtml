@@ -1,0 +1,144 @@
+@using NodeManager.Router.Parameters
+@model RouterParameterTableStatus
+@{
+    Layout = "_Layout";
+    ViewData["Title"] = "Router Parameter Table Status";
+    var response = Model.Response;
+}
+
+<div class="workspace">
+    <header class="workspace-header">
+        <div>
+            <p class="eyebrow">Parameters</p>
+            <h1>@Model.Table.Name</h1>
+            <p class="workspace-introduction">
+                @Model.Selection.ParameterTable Parameter Table entries
+                @Model.Selection.FirstEntry through @Model.Selection.LastEntry.
+            </p>
+        </div>
+    </header>
+
+    <section class="panel">
+        @if (response.State == "pending")
+        {
+            <p role="status">The Router Parameter Request is pending.</p>
+            <p><a href="@Context.Request.Path">Refresh status</a></p>
+        }
+        else if (response.State == "received")
+        {
+            @if (response.RoutingTableEntries is { } routingEntries)
+            {
+                <table>
+                    <caption>Routing Table entries</caption>
+                    <thead>
+                        <tr><th scope="col">Entry</th><th scope="col">Next node</th></tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var entry in routingEntries)
+                        {
+                            <tr><td>@entry.Index</td><td>@entry.NextNode</td></tr>
+                        }
+                    </tbody>
+                </table>
+            }
+            else if (response.PstnTableEntries is { } pstnEntries)
+            {
+                <table>
+                    <caption>PSTN Table entries</caption>
+                    <thead>
+                        <tr><th scope="col">Entry</th><th scope="col">Used</th><th scope="col">Available</th><th scope="col">Next node</th><th scope="col">Telephone number</th><th scope="col">Hold time</th></tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var entry in pstnEntries)
+                        {
+                            <tr><td>@entry.Index</td><td>@entry.Used</td><td>@entry.Available</td><td>@entry.NextNode</td><td>@entry.TelephoneNumber</td><td>@entry.HoldTime</td></tr>
+                        }
+                    </tbody>
+                </table>
+            }
+            else if (response.WanTableEntries is { } wanEntries)
+            {
+                <table>
+                    <caption>WAN Table entries</caption>
+                    <thead>
+                        <tr><th scope="col">Entry</th><th scope="col">Used</th><th scope="col">Next node</th><th scope="col">WAN address</th><th scope="col">Connect type</th></tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var entry in wanEntries)
+                        {
+                            <tr><td>@entry.Index</td><td>@entry.Used</td><td>@entry.NextNode</td><td>@entry.WanAddress</td><td>@entry.ConnectType</td></tr>
+                        }
+                    </tbody>
+                </table>
+            }
+            else if (response.LanTableEntries is { } lanEntries)
+            {
+                <table>
+                    <caption>LAN Table entries</caption>
+                    <thead>
+                        <tr><th scope="col">Entry</th><th scope="col">Used</th><th scope="col">Next node</th><th scope="col">LAN address</th></tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var entry in lanEntries)
+                        {
+                            <tr><td>@entry.Index</td><td>@entry.Used</td><td>@entry.NextNode</td><td>@entry.LanAddress</td></tr>
+                        }
+                    </tbody>
+                </table>
+            }
+            else if (response.IsdnTableEntries is { } isdnEntries)
+            {
+                <table>
+                    <caption>ISDN Table entries</caption>
+                    <thead>
+                        <tr><th scope="col">Entry</th><th scope="col">Used</th><th scope="col">Available</th><th scope="col">Next node</th><th scope="col">Telephone number</th><th scope="col">Hold time</th></tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var entry in isdnEntries)
+                        {
+                            <tr><td>@entry.Index</td><td>@entry.Used</td><td>@entry.Available</td><td>@entry.NextNode</td><td>@entry.TelephoneNumber</td><td>@entry.HoldTime</td></tr>
+                        }
+                    </tbody>
+                </table>
+            }
+            else if (response.MdtTableEntries is { } mdtEntries)
+            {
+                <table>
+                    <caption>MDT Table entries</caption>
+                    <thead>
+                        <tr><th scope="col">Entry</th><th scope="col">Used</th><th scope="col">Available</th><th scope="col">Next node</th><th scope="col">Network User address</th><th scope="col">Hold time</th></tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var entry in mdtEntries)
+                        {
+                            <tr><td>@entry.Index</td><td>@entry.Used</td><td>@entry.Available</td><td>@entry.NextNode</td><td>@entry.NetworkUserAddress</td><td>@entry.HoldTime</td></tr>
+                        }
+                    </tbody>
+                </table>
+            }
+            else
+            {
+                <p role="status">No @Model.Table.Name entries were returned.</p>
+            }
+
+            @if (Model.NextFirstEntry is { } nextFirstEntry)
+            {
+                <form action="/router/parameters/tables" method="post">
+                    <input name="parameterTable" type="hidden" value="@Model.Selection.ParameterTable" />
+                    <input name="parameterNumber" type="hidden" value="@Model.Selection.ParameterNumber" />
+                    <input name="firstEntry" type="hidden" value="@nextFirstEntry" />
+                    <input name="lastEntry" type="hidden" value="@Model.Selection.LastEntry" />
+                    <button type="submit">Request next Routing Table entries</button>
+                </form>
+            }
+        }
+        else
+        {
+            <p role="alert">
+                The Router Parameter Request @response.State@if (response.RejectionReason is not null) {<text>: @response.RejectionReason</text>}.
+            </p>
+        }
+    </section>
+
+    <p><a href="/router/parameters/tables">Return to Router Parameter Table selection</a></p>
+</div>

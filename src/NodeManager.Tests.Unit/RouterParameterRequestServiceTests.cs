@@ -42,7 +42,7 @@ public sealed class RouterParameterRequestServiceTests
 	}
 
 	[Fact]
-	public async Task Submits_a_Node_Login_with_the_supplied_User_Agent_address()
+	public async Task Submits_a_Level2_Node_Login_with_the_supplied_User_Agent_address()
 	{
 		var transactions = new RecordingManagementTransactions();
 		var service = new RouterParameterRequestService(Settings(), transactions);
@@ -50,12 +50,17 @@ public sealed class RouterParameterRequestServiceTests
 
 		await service.RequestLocalRouterLogon(
 			userAgent,
+			PasswordLevel.FromValue(PasswordLevelNumber.Level2),
 			PasswordValue.FromValue(SevenBitAsciiString.FromValue("FIRE1")),
 			CancellationToken.None);
 
 		transactions.Request!.Kind.Should().Be(ManagementTransactionKind.NodeLogin);
 		transactions.Request.NodeLoginUserAgentAddress.Should().Be(userAgent);
-		transactions.Envelope!.Contents.Should().BeOfType<SetParameter>().Which.ParameterNumber.Value.Should().Be(4);
+		var nodeLogin = transactions.Envelope!.Contents.Should().BeOfType<SetParameter>().Which;
+		nodeLogin.ParameterNumber.Value.Should().Be(4);
+		var buffer = new EncodedMessageBuffer(nodeLogin.ParameterValue.ToWireValue());
+		PasswordParameter.FromEncodedMessageBuffer(ref buffer).Level.Should().Be(
+			PasswordLevel.FromValue(PasswordLevelNumber.Level2));
 	}
 
 	[Fact]

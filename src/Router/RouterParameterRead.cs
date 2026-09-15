@@ -310,9 +310,13 @@ internal sealed class RouterParameterRead
 					? null
 					: RouterParameterCatalogue.NodeName.Encode(this.nodeName)
 			: number == RouterParameterCatalogue.MaximumMessageLength.Number
-				? this.maximumMessageLength is null
-					? null
-					: RouterParameterCatalogue.MaximumMessageLength.Encode(this.maximumMessageLength)
+				? currentParameters is not null
+					? RouterParameterCatalogue.MaximumMessageLength.Encode(
+						currentParameters.MaximumMessageLength)
+					: this.maximumMessageLength is null
+						? null
+						: RouterParameterCatalogue.MaximumMessageLength.Encode(
+							this.maximumMessageLength)
 			: number == RouterParameterCatalogue.NetworkManagerAddress1.Number
 				? this.networkManagerAddress1 is null
 					? null
@@ -322,10 +326,13 @@ internal sealed class RouterParameterRead
 					? null
 					: RouterParameterCatalogue.NetworkManagerAddress2.Encode(this.networkManagerAddress2)
 			: number == RouterParameterCatalogue.ManualAcknowledgementTimeout.Number
-				? this.manualAcknowledgementTimeout is null
-					? null
-					: RouterParameterCatalogue.ManualAcknowledgementTimeout.Encode(
-						this.manualAcknowledgementTimeout)
+				? currentParameters is not null
+					? RouterParameterCatalogue.ManualAcknowledgementTimeout.Encode(
+						currentParameters.ManualAcknowledgementTimeout)
+					: this.manualAcknowledgementTimeout is null
+						? null
+						: RouterParameterCatalogue.ManualAcknowledgementTimeout.Encode(
+							this.manualAcknowledgementTimeout)
 			: number == RouterParameterCatalogue.TimeAndDate.Number
 				? RouterParameterCatalogue.TimeAndDate.Encode(TimeAndDate.FromValue(
 					SevenBitAsciiString.FromValue(this.timeProvider.GetUtcNow().ToString(
