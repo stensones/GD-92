@@ -20,7 +20,7 @@ internal static class StationEndApplicationStartup
 			{
 				await application.ResourceNotifications.WaitForResourceHealthyAsync(
 					resourceName,
-					timeout.Token);
+					timeout.Token).WaitAsync(timeout.Token);
 			}
 		}
 		catch (OperationCanceledException exception) when (timeout.IsCancellationRequested)

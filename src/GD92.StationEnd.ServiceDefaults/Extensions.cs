@@ -18,6 +18,15 @@ public static class Extensions
     private const string HealthEndpointPath = "/health";
     private const string AlivenessEndpointPath = "/alive";
 
+    public static void PreferAspireAssignedPorts()
+    {
+        if (!string.IsNullOrWhiteSpace(
+            Environment.GetEnvironmentVariable("ASPNETCORE_HTTP_PORTS")))
+        {
+            Environment.SetEnvironmentVariable("ASPNETCORE_URLS", null);
+        }
+    }
+
     public static TBuilder AddServiceDefaults<TBuilder>(this TBuilder builder) where TBuilder : IHostApplicationBuilder
     {
         builder.ConfigureOpenTelemetry();

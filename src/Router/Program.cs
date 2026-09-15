@@ -10,6 +10,7 @@ using Stensones.GD92.Transport.RabbitMQ;
 using Wolverine;
 using Wolverine.RabbitMQ;
 
+Extensions.PreferAspireAssignedPorts();
 var builder = WebApplication.CreateBuilder(args);
 builder.AddServiceDefaults();
 var routerSettings = RouterSettings.FromConfiguration(builder.Configuration);
