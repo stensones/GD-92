@@ -33,7 +33,11 @@ public sealed class NodeManagerParameterPersistenceSteps
 			NodeManagerAddress.Brigade,
 			NodeManagerAddress.Node,
 			Port.FromValue(PortIdentifier.FromValue(0)));
-	private static int nextRemoteUserAgentPort = 30;
+	private static readonly CommunicationsAddress RemoteUserAgentAddress =
+		CommunicationsAddress.FromValues(
+			NodeManagerAddress.Brigade,
+			NodeManagerAddress.Node,
+			Port.FromValue(PortIdentifier.FromValue(30)));
 
 	private DistributedApplication? application;
 	private IHost? remoteUserAgent;
@@ -44,7 +48,6 @@ public sealed class NodeManagerParameterPersistenceSteps
 	private ParameterResponseReceiver? responses;
 	private Envelope? response;
 	private byte nextSequenceNumber;
-	private readonly CommunicationsAddress remoteUserAgentAddress = CreateRemoteUserAgentAddress();
 
 	[Given(@"an empty dedicated NodeManager Parameter Store")]
 	public Task GivenAnEmptyDedicatedNodeManagerParameterStore()
@@ -60,7 +63,7 @@ public sealed class NodeManagerParameterPersistenceSteps
 		using var scope = this.remoteUserAgent!.Services.CreateScope();
 		var routerIngress = scope.ServiceProvider.GetRequiredService<IRouterIngress>();
 		var request = Envelope.FromValues(
-			this.remoteUserAgentAddress,
+			RemoteUserAgentAddress,
 			Destinations.FromAddresses(NodeManagerAddress),
 			ProtocolAndPriority.FromValues(
 				MessagePriority.FromValue(MessagePriorityLevel.FromValue(3)),
@@ -150,7 +153,7 @@ public sealed class NodeManagerParameterPersistenceSteps
 	{
 		this.response.Should().NotBeNull();
 		this.response!.Source.Should().Be(NodeManagerAddress);
-		this.response.Destinations.Addresses.Should().Equal(this.remoteUserAgentAddress);
+		this.response.Destinations.Addresses.Should().Equal(RemoteUserAgentAddress);
 		var parameter = this.response.Contents.Should().BeOfType<Parameter>().Subject;
 		return parameter.ParameterValue.ToWireValue();
 	}
@@ -202,7 +205,7 @@ public sealed class NodeManagerParameterPersistenceSteps
 
 		var rabbitMqConnectionString = await this.application!.GetConnectionStringAsync("RabbitMQ")
 			?? throw new InvalidOperationException("The test RabbitMQ connection string was not provided.");
-		var queueName = UserAgentIngressEndpoint.QueueNameFrom(this.remoteUserAgentAddress);
+		var queueName = UserAgentIngressEndpoint.QueueNameFrom(RemoteUserAgentAddress);
 		this.responses = new ParameterResponseReceiver(rabbitMqConnectionString, queueName);
 		await this.StartRemoteUserAgentListenerAsync(rabbitMqConnectionString, queueName);
 
@@ -342,20 +345,6 @@ public sealed class NodeManagerParameterPersistenceSteps
 		}
 
 		return envelope;
-	}
-
-	private static CommunicationsAddress CreateRemoteUserAgentAddress()
-	{
-		var port = Interlocked.Increment(ref nextRemoteUserAgentPort);
-		if (port > 63)
-		{
-			throw new InvalidOperationException("The test User Agent port range has been exhausted.");
-		}
-
-		return CommunicationsAddress.FromValues(
-			NodeManagerAddress.Brigade,
-			NodeManagerAddress.Node,
-			Port.FromValue(PortIdentifier.FromValue(checked((byte)port))));
 	}
 
 	public sealed class ParameterResponseReceiver

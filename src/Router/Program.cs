@@ -86,5 +86,34 @@ await using (var scope = app.Services.CreateAsyncScope())
 	app.Services.GetRequiredService<RouterCurrentParameterProjectionSource>().Publish(projection);
 }
 
+if (builder.Configuration.GetValue("Testing:EnableRouterStateReset", false))
+{
+	app.MapPost("/testing/reset-state", async (
+		RouterDbContext database,
+		RouterParameterBootstrapper bootstrapper,
+		RouterSettings settings,
+		RouterCurrentParameterProjectionSource projectionSource,
+		CancellationToken cancellationToken) =>
+	{
+		await database.Database.ExecuteSqlRawAsync(
+			"""
+			TRUNCATE TABLE
+				node.parameter_value,
+				security.password_verifier,
+				node.parameter_set,
+				node.managed_entity,
+				node.communications_node
+			CASCADE;
+			""",
+			cancellationToken);
+
+		var projection = await bootstrapper.LoadCurrentParameterProjectionAsync(
+			settings.ParameterBootstrapConfiguration,
+			cancellationToken);
+		projectionSource.Publish(projection);
+		return Results.NoContent();
+	});
+}
+
 app.MapHealthChecks("/health");
 await app.RunAsync();

@@ -40,6 +40,9 @@ var includeBusMtaAndIoUa = builder.Configuration.GetValue(
 	true);
 var inventoryScanMaximumConcurrentProbes = builder.Configuration[
 	"InventoryScan:MaximumConcurrentProbes"] ?? "8";
+var enableRouterTestStateReset = builder.Configuration.GetValue(
+	"Testing:EnableRouterStateReset",
+	false);
 
 if (useExternalPostgres)
 {
@@ -56,6 +59,9 @@ if (useExternalPostgres)
 		.WithEnvironment("Router__InitialLevel2Password", routerLevel2Password)
 		.WithEnvironment("Router__InitialLevel3Password", routerLevel3Password)
 		.WithEnvironment("Router__InitialLevel4Password", routerLevel4Password)
+		.WithEnvironment(
+			"Testing__EnableRouterStateReset",
+			enableRouterTestStateReset.ToString())
 		.WithHttpEndpoint(name: "http", env: "ASPNETCORE_HTTP_PORTS")
 		.WithHttpHealthCheck("/health");
 
@@ -121,6 +127,9 @@ else
 		.WithEnvironment("Router__InitialLevel2Password", routerLevel2Password)
 		.WithEnvironment("Router__InitialLevel3Password", routerLevel3Password)
 		.WithEnvironment("Router__InitialLevel4Password", routerLevel4Password)
+		.WithEnvironment(
+			"Testing__EnableRouterStateReset",
+			enableRouterTestStateReset.ToString())
 		.WithHttpEndpoint(name: "http", env: "ASPNETCORE_HTTP_PORTS")
 		.WithHttpHealthCheck("/health");
 

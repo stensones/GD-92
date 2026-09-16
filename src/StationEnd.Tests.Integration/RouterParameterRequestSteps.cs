@@ -20,6 +20,7 @@ namespace Stensones.GD92.StationEnd.Tests.Integration;
 public sealed class RouterParameterRequestSteps
 {
 	private static readonly RouterParameterRequestApplicationPool applications = new();
+	private static readonly SemaphoreSlim scenarioGate = new(1, 1);
 
 	private DistributedApplication? application;
 	private HttpClient? client;
@@ -33,6 +34,14 @@ public sealed class RouterParameterRequestSteps
 	private IReadOnlyDictionary<byte, Uri>? participantParameterStatusAddresses;
 	private ushort? lastReturnedRoutingTableEntry;
 	private RouterParameterRequestApplicationProfile applicationProfile;
+	private bool holdsScenarioGate;
+
+	[BeforeScenario]
+	public async Task SerializeScenarioAsync()
+	{
+		await scenarioGate.WaitAsync();
+		this.holdsScenarioGate = true;
+	}
 
 	[Given(@"NodeManager is the User Agent at Brigade (.*), Node (.*), and Port (.*)")]
 	public void GivenNodeManagerIsTheUserAgentAt(byte brigade, ushort node, byte port)
@@ -52,16 +61,9 @@ public sealed class RouterParameterRequestSteps
 		this.applicationProfile = RouterParameterRequestApplicationProfile.NonrespondingRouter;
 	}
 
-	[BeforeScenario("HighConcurrencyInventoryScan")]
-	public void UseHighConcurrencyInventoryScan()
-	{
-		this.applicationProfile = RouterParameterRequestApplicationProfile.HighConcurrencyInventoryScan;
-	}
-
 	[Given(@"the local Router has Routing Table entry 1 to next node 26.101.0")]
 	public async Task GivenTheLocalRouterHasRoutingTableEntryOne()
 	{
-		this.applicationProfile = RouterParameterRequestApplicationProfile.RouterWithRoutingTableEntry;
 		await this.EnsureApplicationStartedAsync();
 		await this.ConfigureLocalRouterRoutingTableAsync(101);
 	}
@@ -69,7 +71,6 @@ public sealed class RouterParameterRequestSteps
 	[Given(@"the local Router has Permanent Routing Table entry 1 to next node 26.101.0")]
 	public async Task GivenTheLocalRouterHasPermanentRoutingTableEntryOne()
 	{
-		this.applicationProfile = RouterParameterRequestApplicationProfile.RouterWithRoutingTableEntry;
 		await this.EnsureApplicationStartedAsync();
 		await this.ConfigureLocalRouterRoutingTableAsync(ParameterTable.Permanent, 101);
 	}
@@ -77,7 +78,6 @@ public sealed class RouterParameterRequestSteps
 	[Given(@"the local Router has Routing Table entries 1 and 2")]
 	public async Task GivenTheLocalRouterHasRoutingTableEntriesOneAndTwo()
 	{
-		this.applicationProfile = RouterParameterRequestApplicationProfile.RouterWithRoutingTableEntry;
 		await this.EnsureApplicationStartedAsync();
 		await this.ConfigureLocalRouterRoutingTableAsync(101, 102);
 	}
@@ -85,7 +85,6 @@ public sealed class RouterParameterRequestSteps
 	[Given(@"the local Router has Routing Table entries 1 through 200")]
 	public async Task GivenTheLocalRouterHasRoutingTableEntriesOneThroughTwoHundred()
 	{
-		this.applicationProfile = RouterParameterRequestApplicationProfile.RouterWithRoutingTableEntry;
 		await this.EnsureApplicationStartedAsync();
 		await this.ConfigureLocalRouterRoutingTableAsync(
 			[.. Enumerable.Range(101, 200).Select(number => (ushort)number)]);
@@ -132,7 +131,6 @@ public sealed class RouterParameterRequestSteps
 	[Given(@"the local Router has PSTN Table entry 1 to next node 26.101.0, telephone number 12, hold time 30, used, and available")]
 	public async Task GivenTheLocalRouterHasPstnTableEntryOne()
 	{
-		this.applicationProfile = RouterParameterRequestApplicationProfile.RouterWithRoutingTableEntry;
 		await this.EnsureApplicationStartedAsync();
 		await this.ConfigureLocalRouterPstnTableAsync(ParameterTable.NonVolatile);
 	}
@@ -140,7 +138,6 @@ public sealed class RouterParameterRequestSteps
 	[Given(@"the local Router has Permanent PSTN Table entry 1 to next node 26.101.0, telephone number 12, hold time 30, used, and available")]
 	public async Task GivenTheLocalRouterHasPermanentPstnTableEntryOne()
 	{
-		this.applicationProfile = RouterParameterRequestApplicationProfile.RouterWithRoutingTableEntry;
 		await this.EnsureApplicationStartedAsync();
 		await this.ConfigureLocalRouterPstnTableAsync(ParameterTable.Permanent);
 	}
@@ -174,7 +171,6 @@ public sealed class RouterParameterRequestSteps
 	[Given(@"the local Router has WAN Table entry 1 to next node 26.101.0, WAN address WAN, used, and switched virtual circuit")]
 	public async Task GivenTheLocalRouterHasWanTableEntryOne()
 	{
-		this.applicationProfile = RouterParameterRequestApplicationProfile.RouterWithRoutingTableEntry;
 		await this.EnsureApplicationStartedAsync();
 		await this.ConfigureLocalRouterWanTableAsync(ParameterTable.NonVolatile);
 	}
@@ -182,7 +178,6 @@ public sealed class RouterParameterRequestSteps
 	[Given(@"the local Router has Permanent WAN Table entry 1 to next node 26.101.0, WAN address WAN, used, and switched virtual circuit")]
 	public async Task GivenTheLocalRouterHasPermanentWanTableEntryOne()
 	{
-		this.applicationProfile = RouterParameterRequestApplicationProfile.RouterWithRoutingTableEntry;
 		await this.EnsureApplicationStartedAsync();
 		await this.ConfigureLocalRouterWanTableAsync(ParameterTable.Permanent);
 	}
@@ -207,7 +202,6 @@ public sealed class RouterParameterRequestSteps
 	[Given(@"the local Router has LAN Table entry 1 to next node 26.101.0, LAN address LAN, and used")]
 	public async Task GivenTheLocalRouterHasLanTableEntryOne()
 	{
-		this.applicationProfile = RouterParameterRequestApplicationProfile.RouterWithRoutingTableEntry;
 		await this.EnsureApplicationStartedAsync();
 		await this.ConfigureLocalRouterLanTableAsync(ParameterTable.NonVolatile);
 	}
@@ -215,7 +209,6 @@ public sealed class RouterParameterRequestSteps
 	[Given(@"the local Router has Permanent LAN Table entry 1 to next node 26.101.0, LAN address LAN, and used")]
 	public async Task GivenTheLocalRouterHasPermanentLanTableEntryOne()
 	{
-		this.applicationProfile = RouterParameterRequestApplicationProfile.RouterWithRoutingTableEntry;
 		await this.EnsureApplicationStartedAsync();
 		await this.ConfigureLocalRouterLanTableAsync(ParameterTable.Permanent);
 	}
@@ -239,7 +232,6 @@ public sealed class RouterParameterRequestSteps
 	[Given(@"the local Router has ISDN Table entry 1 to next node 26.101.0, telephone number 34, hold time 20, used, and available")]
 	public async Task GivenTheLocalRouterHasIsdnTableEntryOne()
 	{
-		this.applicationProfile = RouterParameterRequestApplicationProfile.RouterWithRoutingTableEntry;
 		await this.EnsureApplicationStartedAsync();
 		await this.ConfigureLocalRouterIsdnTableAsync(ParameterTable.NonVolatile);
 	}
@@ -247,7 +239,6 @@ public sealed class RouterParameterRequestSteps
 	[Given(@"the local Router has Permanent ISDN Table entry 1 to next node 26.101.0, telephone number 34, hold time 20, used, and available")]
 	public async Task GivenTheLocalRouterHasPermanentIsdnTableEntryOne()
 	{
-		this.applicationProfile = RouterParameterRequestApplicationProfile.RouterWithRoutingTableEntry;
 		await this.EnsureApplicationStartedAsync();
 		await this.ConfigureLocalRouterIsdnTableAsync(ParameterTable.Permanent);
 	}
@@ -272,7 +263,6 @@ public sealed class RouterParameterRequestSteps
 	[Given(@"the local Router has MDT Table entry 1 to next node 26.101.0, network user address MDT, hold time 10, used, and available")]
 	public async Task GivenTheLocalRouterHasMdtTableEntryOne()
 	{
-		this.applicationProfile = RouterParameterRequestApplicationProfile.RouterWithRoutingTableEntry;
 		await this.EnsureApplicationStartedAsync();
 		await this.ConfigureLocalRouterMdtTableAsync(ParameterTable.NonVolatile);
 	}
@@ -280,7 +270,6 @@ public sealed class RouterParameterRequestSteps
 	[Given(@"the local Router has Permanent MDT Table entry 1 to next node 26.101.0, network user address MDT, hold time 10, used, and available")]
 	public async Task GivenTheLocalRouterHasPermanentMdtTableEntryOne()
 	{
-		this.applicationProfile = RouterParameterRequestApplicationProfile.RouterWithRoutingTableEntry;
 		await this.EnsureApplicationStartedAsync();
 		await this.ConfigureLocalRouterMdtTableAsync(ParameterTable.Permanent);
 	}
@@ -1319,7 +1308,6 @@ public sealed class RouterParameterRequestSteps
 	[Given(@"the Router persistent Parameter Tables are empty")]
 	public async Task GivenTheRouterPersistentParameterTablesAreEmpty()
 	{
-		this.applicationProfile = RouterParameterRequestApplicationProfile.FreshParameterTables;
 		await this.EnsureApplicationStartedAsync();
 	}
 
@@ -2659,7 +2647,18 @@ public sealed class RouterParameterRequestSteps
 	[AfterScenario]
 	public void DisposeClient()
 	{
-		this.client?.Dispose();
+		try
+		{
+			this.client?.Dispose();
+		}
+		finally
+		{
+			if (this.holdsScenarioGate)
+			{
+				scenarioGate.Release();
+				this.holdsScenarioGate = false;
+			}
+		}
 	}
 
 	[AfterFeature]
@@ -2678,7 +2677,18 @@ public sealed class RouterParameterRequestSteps
 		this.application = await applications.GetAsync(
 			this.applicationProfile,
 			StartApplicationAsync);
+		await this.ResetRouterStateAsync();
 		this.client = CreateClient(this.application);
+	}
+
+	private async Task ResetRouterStateAsync()
+	{
+		using var routerClient = new HttpClient
+		{
+			BaseAddress = this.application!.GetEndpoint("Router")
+		};
+		using var response = await routerClient.PostAsync("/testing/reset-state", null);
+		response.EnsureSuccessStatusCode();
 	}
 
 	private static async Task<DistributedApplication> StartApplicationAsync(
@@ -2686,13 +2696,12 @@ public sealed class RouterParameterRequestSteps
 	{
 		var localRouterDoesNotRespond =
 			applicationProfile == RouterParameterRequestApplicationProfile.NonrespondingRouter;
-		var isHighConcurrencyInventoryScanProfile =
-			applicationProfile == RouterParameterRequestApplicationProfile.HighConcurrencyInventoryScan;
 		var appHost = await DistributedApplicationTestingBuilder
 			.CreateAsync<Projects.GD92_StationEnd_AppHost>(
 				[
 					"--Persistence:UsePersistentPostgres=false",
 					"--StationEnd:IncludeBusMTAAndIOUA=false",
+					"--Testing:EnableRouterStateReset=true",
 					localRouterDoesNotRespond
 						? "--RouterParameterRequest:LocalRouter:Port=63"
 						: "--RouterParameterRequest:LocalRouter:Port=0",
@@ -2702,9 +2711,7 @@ public sealed class RouterParameterRequestSteps
 					localRouterDoesNotRespond
 						? "--GD92:retries=1"
 						: "--GD92:retries=3",
-					isHighConcurrencyInventoryScanProfile
-						? "--InventoryScan:MaximumConcurrentProbes=12"
-						: "--InventoryScan:MaximumConcurrentProbes=8",
+					"--InventoryScan:MaximumConcurrentProbes=12",
 					"--Parameters:router-level1-password=FIRE1"
 					, "--Parameters:router-level2-password=TESTL2",
 					"--Parameters:router-level3-password=TESTL3",
@@ -2866,10 +2873,7 @@ public sealed class RouterParameterRequestSteps
 	private enum RouterParameterRequestApplicationProfile
 	{
 		Default,
-		NonrespondingRouter,
-		HighConcurrencyInventoryScan,
-		FreshParameterTables,
-		RouterWithRoutingTableEntry
+		NonrespondingRouter
 	}
 
 	private sealed class RouterParameterRequestApplicationPool : IAsyncDisposable
@@ -2888,13 +2892,6 @@ public sealed class RouterParameterRequestSteps
 				if (this.applications.TryGetValue(applicationProfile, out var application))
 				{
 					return application;
-				}
-
-				foreach (var existingApplication in this.applications.ToArray())
-				{
-					await existingApplication.Value.StopAsync();
-					await existingApplication.Value.DisposeAsync();
-					this.applications.Remove(existingApplication.Key);
 				}
 
 				application = await createApplication(applicationProfile);
