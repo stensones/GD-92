@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using NodeManager.Persistence;
+using NodeManager.RealTime;
 using NodeManager.Router.Parameters;
 using NodeManager.Router.Participants;
 using ParticipantParameters;
@@ -20,6 +21,7 @@ builder.Services
 		options.ViewLocationFormats.Add("/{1}/{0}.cshtml");
 		options.ViewLocationFormats.Add("/SharedViews/{0}.cshtml"); // For shared views
 	});
+builder.Services.AddSignalR();
 
 var requestSettings = RouterParameterRequestSettings.FromConfiguration(builder.Configuration);
 var inventoryScanSettings = InventoryScanSettings.FromConfiguration(builder.Configuration);
@@ -40,6 +42,7 @@ builder.Services.AddScoped<NodeManagerParameterBootstrapper>();
 builder.Services.AddSingleton<NodeManagerCurrentParameterProjectionSource>();
 builder.Services.AddSingleton<InventoryScan>();
 builder.Services.AddSingleton<ManagementTransactions>();
+builder.Services.AddSingleton<IManagementTransactionUiNotifier, SignalRManagementTransactionUiNotifier>();
 builder.Services.AddSingleton<IManagementTransactionService>(serviceProvider =>
 	serviceProvider.GetRequiredService<ManagementTransactions>());
 builder.Services.AddSingleton<IUserAgentIngressReceiver>(serviceProvider =>
@@ -64,6 +67,7 @@ await using (var scope = app.Services.CreateAsyncScope())
 }
 
 app.UseStaticFiles(); // Enables serving static files from wwwroot
+app.UseMiddleware<BrowserSessionMiddleware>();
 if (!app.Environment.IsDevelopment())
 {
 	app.MapHealthChecks("/health");
@@ -71,6 +75,7 @@ if (!app.Environment.IsDevelopment())
 
 app.MapDefaultEndpoints();
 app.MapControllers();
+app.MapHub<ManagementTransactionHub>("/hubs/management-transactions");
 
 app.MapControllerRoute(
 	name: "default",

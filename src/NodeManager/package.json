@@ -1,0 +1,10 @@
+{
+  "name": "gd92-node-manager-ui",
+  "private": true,
+  "scripts": {
+    "postinstall": "node scripts/copy-signalr-client.mjs"
+  },
+  "devDependencies": {
+    "@microsoft/signalr": "10.0.11"
+  }
+}

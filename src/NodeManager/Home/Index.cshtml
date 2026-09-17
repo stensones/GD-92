@@ -170,6 +170,8 @@
     </div>
 </div>
 
+<script src="~/lib/signalr/signalr.min.js"></script>
+<script src="~/js/management-transactions.js"></script>
 <script>
     const requestForm = document.getElementById("router-brigade-request");
     const status = document.getElementById("router-brigade-status");
@@ -291,46 +293,19 @@
         return parameter.parameterValue;
     };
 
-    const pollParticipantParameter = async (participant, statusUrl, valueCell) => {
-        const response = await fetch(statusUrl);
-
-        if (!response.ok) {
-            valueCell.textContent = "The Parameter Request could not be completed.";
-            return;
-        }
-
-        const parameter = await response.json();
-
-        if (parameter.state === "received") {
-            valueCell.textContent = displayParameterValue(participant, parameter)
-                ?? "The Parameter Request did not return a value.";
-            return;
-        }
-
-        if (parameter.state === "pending") {
-            window.setTimeout(() => pollParticipantParameter(participant, statusUrl, valueCell), 1000);
-            return;
-        }
-
-        valueCell.textContent = `Parameter Request ${parameter.state}.`;
-    };
-
     const requestParticipantParameter = async (participant, parameterTable, parameter, valueCell) => {
         try {
             const requestUrl = participant.kind === "router"
                 ? `/router/parameters/${parameterTable}/${parameter.number}`
                 : `/participants/${participant.port}/parameters/${parameterTable}/${parameter.number}`;
-            const response = await fetch(requestUrl, {
+            const result = await managementTransactions.submit(requestUrl, {
                 method: "POST"
             });
-            const statusUrl = response.url;
 
-            if (!response.ok || !statusUrl) {
-                valueCell.textContent = "The Parameter Request could not be submitted.";
-                return;
-            }
-
-            pollParticipantParameter(participant, statusUrl, valueCell);
+            valueCell.textContent = result.state === "received"
+                ? displayParameterValue(participant, result)
+                    ?? "The Parameter Request did not return a value."
+                : `Parameter Request ${result.state}.`;
         } catch {
             valueCell.textContent = "The Parameter Request could not be submitted.";
         }
@@ -363,7 +338,7 @@
                     valueCells.get(parameter.number))));
 
             routerParameterListStatus.textContent =
-                `${participantName(participant)} ${formattedParameterTable} Parameters requested.`;
+                `${participantName(participant)} ${formattedParameterTable} Parameters completed.`;
         } finally {
             button.disabled = false;
         }
@@ -374,33 +349,14 @@
         status.hidden = false;
         status.textContent = "Requesting Brigade or Agency number...";
 
-        const response = await fetch(requestForm.action, { method: "POST" });
-        const statusUrl = response.url;
-
-        if (!response.ok || !statusUrl) {
+        try {
+            const request = await managementTransactions.submit(requestForm.action, { method: "POST" });
+            status.textContent = request.state === "received"
+                ? `Brigade or Agency number: ${request.brigadeOrAgencyNumber}`
+                : `The Router Parameter Request ${request.state}.`;
+        } catch {
             status.textContent = "The Router Parameter Request could not be submitted.";
-            return;
         }
-
-        const poll = async () => {
-            const result = await fetch(statusUrl);
-
-            if (!result.ok) {
-                status.textContent = "The Router Parameter Request could not be completed.";
-                return;
-            }
-
-            const request = await result.json();
-
-            if (request.state === "received") {
-                status.textContent = `Brigade or Agency number: ${request.brigadeOrAgencyNumber}`;
-                return;
-            }
-
-            window.setTimeout(poll, 1000);
-        };
-
-        poll();
     });
 
     const requestRoutingTableEntries = async (firstEntry, lastEntry) => {
@@ -411,59 +367,43 @@
         routerRoutingTableEntryResults.hidden = true;
         routerRoutingTableEntryResults.replaceChildren();
         routerRoutingTableEntrySelectionStatus.textContent = "Requesting Routing Table entries...";
-        const response = await fetch(
+        let request;
+        try {
+            request = await managementTransactions.submit(
             `/router/parameters/${participantParameterTable.value}/13/entries/${firstEntry}-${lastEntry}`,
             { method: "POST" });
-        const statusUrl = response.url;
-        if (!response.ok || !statusUrl) {
+        } catch {
             routerRoutingTableEntrySelectionStatus.textContent =
                 "The Routing Table request could not be submitted.";
             return;
         }
 
-        const poll = async () => {
-            const result = await fetch(statusUrl);
-            if (!result.ok) {
-                routerRoutingTableEntrySelectionStatus.textContent =
-                    "The Routing Table request could not be completed.";
-                return;
-            }
+        if (request.state !== "received") {
+            routerRoutingTableEntrySelectionStatus.textContent =
+                request.rejectionReason
+                    ? `Routing Table request ${request.state}: ${request.rejectionReason}.`
+                    : `Routing Table request ${request.state}.`;
+            return;
+        }
 
-            const request = await result.json();
-            if (request.state === "pending") {
-                window.setTimeout(poll, 1000);
-                return;
-            }
+        const entries = request.routingTableEntries ?? [];
+        const hasMoreValues = request.moreValues === true;
+        for (const entry of entries) {
+            const item = document.createElement("li");
+            item.textContent = `Routing Table entry ${entry.index}: next node ${entry.nextNode}`;
+            routerRoutingTableEntryResults.append(item);
+        }
 
-            if (request.state !== "received") {
-                routerRoutingTableEntrySelectionStatus.textContent =
-                    request.rejectionReason
-                        ? `Routing Table request ${request.state}: ${request.rejectionReason}.`
-                        : `Routing Table request ${request.state}.`;
-                return;
-            }
-
-            const entries = request.routingTableEntries ?? [];
-            const hasMoreValues = request.moreValues === true;
-            for (const entry of entries) {
-                const item = document.createElement("li");
-                item.textContent = `Routing Table entry ${entry.index}: next node ${entry.nextNode}`;
-                routerRoutingTableEntryResults.append(item);
-            }
-
-            routerRoutingTableEntryResults.hidden = false;
-            nextRoutingTableEntryRange = hasMoreValues && entries.length > 0
-                ? { firstEntry: entries.at(-1).index + 1, lastEntry }
-                : null;
-            const hasNextPage = nextRoutingTableEntryRange !== null;
-            routerRoutingTableNextPage.hidden = !hasNextPage;
-            routerRoutingTableNextPage.disabled = !hasNextPage;
-            routerRoutingTableEntrySelectionStatus.textContent = entries.length === 0
-                ? "No Routing Table entries were returned."
-                : "Routing Table entries received.";
-        };
-
-        poll();
+        routerRoutingTableEntryResults.hidden = false;
+        nextRoutingTableEntryRange = hasMoreValues && entries.length > 0
+            ? { firstEntry: entries.at(-1).index + 1, lastEntry }
+            : null;
+        const hasNextPage = nextRoutingTableEntryRange !== null;
+        routerRoutingTableNextPage.hidden = !hasNextPage;
+        routerRoutingTableNextPage.disabled = !hasNextPage;
+        routerRoutingTableEntrySelectionStatus.textContent = entries.length === 0
+            ? "No Routing Table entries were returned."
+            : "Routing Table entries received.";
     };
 
     routerRoutingTableEntrySelection.addEventListener("submit", async event => {
@@ -489,205 +429,22 @@
         }
     });
 
-    const requestPstnTableEntries = async (firstEntry, lastEntry) => {
-        routerPstnTableEntrySelectionStatus.hidden = false;
-        routerPstnTableEntryResults.hidden = true;
-        routerPstnTableEntryResults.replaceChildren();
-        routerPstnTableEntrySelectionStatus.textContent = "Requesting PSTN Table entries...";
-        const response = await fetch(
-            `/router/parameters/${participantParameterTable.value}/14/entries/${firstEntry}-${lastEntry}`,
-            { method: "POST" });
-        const statusUrl = response.url;
-        if (!response.ok || !statusUrl) {
-            routerPstnTableEntrySelectionStatus.textContent =
-                "The PSTN Table request could not be submitted.";
-            return;
-        }
-
-        const poll = async () => {
-            const result = await fetch(statusUrl);
-            if (!result.ok) {
-                routerPstnTableEntrySelectionStatus.textContent =
-                    "The PSTN Table request could not be completed.";
-                return;
-            }
-
-            const request = await result.json();
-            if (request.state === "pending") {
-                window.setTimeout(poll, 1000);
-                return;
-            }
-
-            if (request.state !== "received") {
-                routerPstnTableEntrySelectionStatus.textContent =
-                    request.rejectionReason
-                        ? `PSTN Table request ${request.state}: ${request.rejectionReason}.`
-                        : `PSTN Table request ${request.state}.`;
-                return;
-            }
-
-            const entries = request.pstnTableEntries ?? [];
-            for (const entry of entries) {
-                const item = document.createElement("li");
-                item.textContent = `PSTN Table entry ${entry.index}: ${entry.used ? "used" : "unused"}, ` +
-                    `${entry.available ? "available" : "unavailable"}, next node ${entry.nextNode}, ` +
-                    `telephone number ${entry.telephoneNumber}, hold time ${entry.holdTime}`;
-                routerPstnTableEntryResults.append(item);
-            }
-
-            routerPstnTableEntryResults.hidden = false;
-            routerPstnTableEntrySelectionStatus.textContent = entries.length === 0
-                ? "No PSTN Table entries were returned."
-                : "PSTN Table entries received.";
-        };
-
-        poll();
-    };
-
-    const requestWanTableEntries = async (firstEntry, lastEntry) => {
-        routerWanTableEntrySelectionStatus.hidden = false;
-        routerWanTableEntryResults.hidden = true;
-        routerWanTableEntryResults.replaceChildren();
-        routerWanTableEntrySelectionStatus.textContent = "Requesting WAN Table entries...";
-        const response = await fetch(
-            `/router/parameters/${participantParameterTable.value}/15/entries/${firstEntry}-${lastEntry}`,
-            { method: "POST" });
-        const statusUrl = response.url;
-        if (!response.ok || !statusUrl) {
-            routerWanTableEntrySelectionStatus.textContent =
-                "The WAN Table request could not be submitted.";
-            return;
-        }
-
-        const poll = async () => {
-            const result = await fetch(statusUrl);
-            if (!result.ok) {
-                routerWanTableEntrySelectionStatus.textContent =
-                    "The WAN Table request could not be completed.";
-                return;
-            }
-
-            const request = await result.json();
-            if (request.state === "pending") {
-                window.setTimeout(poll, 1000);
-                return;
-            }
-
-            if (request.state !== "received") {
-                routerWanTableEntrySelectionStatus.textContent =
-                    request.rejectionReason
-                        ? `WAN Table request ${request.state}: ${request.rejectionReason}.`
-                        : `WAN Table request ${request.state}.`;
-                return;
-            }
-
-            const entries = request.wanTableEntries ?? [];
-            for (const entry of entries) {
-                const item = document.createElement("li");
-                item.textContent = `WAN Table entry ${entry.index}: ${entry.used ? "used" : "unused"}, ` +
-                    `next node ${entry.nextNode}, WAN address ${entry.wanAddress}, ` +
-                    `connect type ${entry.connectType}`;
-                routerWanTableEntryResults.append(item);
-            }
-
-            routerWanTableEntryResults.hidden = false;
-            routerWanTableEntrySelectionStatus.textContent = entries.length === 0
-                ? "No WAN Table entries were returned."
-                : "WAN Table entries received.";
-        };
-
-        poll();
-    };
-
-    const requestLanTableEntries = async (firstEntry, lastEntry) => {
-        routerLanTableEntrySelectionStatus.hidden = false;
-        routerLanTableEntryResults.hidden = true;
-        routerLanTableEntryResults.replaceChildren();
-        routerLanTableEntrySelectionStatus.textContent = "Requesting LAN Table entries...";
-        const response = await fetch(
-            `/router/parameters/${participantParameterTable.value}/16/entries/${firstEntry}-${lastEntry}`,
-            { method: "POST" });
-        const statusUrl = response.url;
-        if (!response.ok || !statusUrl) {
-            routerLanTableEntrySelectionStatus.textContent =
-                "The LAN Table request could not be submitted.";
-            return;
-        }
-
-        const poll = async () => {
-            const result = await fetch(statusUrl);
-            if (!result.ok) {
-                routerLanTableEntrySelectionStatus.textContent =
-                    "The LAN Table request could not be completed.";
-                return;
-            }
-
-            const request = await result.json();
-            if (request.state === "pending") {
-                window.setTimeout(poll, 1000);
-                return;
-            }
-
-            if (request.state !== "received") {
-                routerLanTableEntrySelectionStatus.textContent =
-                    request.rejectionReason
-                        ? `LAN Table request ${request.state}: ${request.rejectionReason}.`
-                        : `LAN Table request ${request.state}.`;
-                return;
-            }
-
-            const entries = request.lanTableEntries ?? [];
-            for (const entry of entries) {
-                const item = document.createElement("li");
-                item.textContent = `LAN Table entry ${entry.index}: ${entry.used ? "used" : "unused"}, ` +
-                    `next node ${entry.nextNode}, LAN address ${entry.lanAddress}`;
-                routerLanTableEntryResults.append(item);
-            }
-
-            routerLanTableEntryResults.hidden = false;
-            routerLanTableEntrySelectionStatus.textContent = entries.length === 0
-                ? "No LAN Table entries were returned."
-                : "LAN Table entries received.";
-        };
-
-        poll();
-    };
-
     logonForm.addEventListener("submit", async event => {
         event.preventDefault();
         logonStatus.hidden = false;
         logonStatus.textContent = "Logging on...";
 
-        const response = await fetch(logonForm.action, {
-            method: "POST",
-            body: new FormData(logonForm)
-        });
-        const statusUrl = response.url;
-
-        if (!response.ok || !statusUrl) {
-            logonStatus.textContent = "The Node Login could not be submitted.";
-            return;
-        }
-
-        const poll = async () => {
-            const result = await fetch(statusUrl);
-
-            if (!result.ok) {
-                logonStatus.textContent = "The Node Login could not be completed.";
-                return;
-            }
-
-            const login = await result.json();
+        try {
+            const login = await managementTransactions.submit(logonForm.action, {
+                method: "POST",
+                body: new FormData(logonForm)
+            });
             logonStatus.textContent = login.userAgentAddress
                 ? `Node Login ${login.state} for User-Agent address ${login.userAgentAddress}.`
                 : `Node Login ${login.state}.`;
-
-            if (login.state === "pending") {
-                window.setTimeout(poll, 1000);
-            }
-        };
-
-        poll();
+        } catch {
+            logonStatus.textContent = "The Node Login could not be submitted.";
+        }
     });
 
     const renderInventoryScan = scan => {

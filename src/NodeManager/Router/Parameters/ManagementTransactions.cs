@@ -11,7 +11,8 @@ public sealed class ManagementTransactions(
 	IServiceScopeFactory serviceScopeFactory,
 	IManagementTransactionRetryDelay retryDelay,
 	IHostApplicationLifetime applicationLifetime,
-	ILogger<ManagementTransactions> logger) :
+	ILogger<ManagementTransactions> logger,
+	IManagementTransactionUiNotifier? uiNotifier = null) :
 	IManagementTransactionService,
 	IUserAgentIngressReceiver
 {
@@ -26,10 +27,15 @@ public sealed class ManagementTransactions(
 		throw new ArgumentNullException(nameof(applicationLifetime));
 	private readonly ILogger<ManagementTransactions> logger = logger ??
 		throw new ArgumentNullException(nameof(logger));
+	private readonly IManagementTransactionUiNotifier uiNotifier =
+		uiNotifier ?? new NullManagementTransactionUiNotifier();
 	private readonly object synchronizationLock = new();
 	private readonly Dictionary<UniqueSystemWideReference, RouterParameterRequestStatus> statuses = [];
 	private readonly Dictionary<CommunicationsAddress, HashSet<ushort>> activeSequencesByDestination = [];
 	private readonly Dictionary<CommunicationsAddress, ushort> nextSequenceByDestination = [];
+	private readonly Dictionary<UniqueSystemWideReference, ManagementTransactionUiRecipient>
+		uiRecipients = [];
+	private readonly HashSet<UniqueSystemWideReference> notifiedUiTransactions = [];
 
 	public async Task<RouterParameterRequestStatusIdentifier> SubmitAsync(
 		ManagementTransactionRequest request,
@@ -55,7 +61,11 @@ public sealed class ManagementTransactions(
 				exception,
 				"Router Ingress failed to submit Management Transaction {StatusIdentifier}.",
 				statusIdentifier);
-			this.TryRecordDeliveryFailure(statusIdentifier);
+			if (this.TryRecordDeliveryFailure(statusIdentifier))
+			{
+				await this.NotifyTerminalStatusAsync(statusIdentifier);
+			}
+
 			return statusIdentifier;
 		}
 
@@ -71,6 +81,33 @@ public sealed class ManagementTransactions(
 		lock (this.synchronizationLock)
 		{
 			return this.statuses.GetValueOrDefault(statusIdentifier.USWR);
+		}
+	}
+
+	public async Task RegisterUiRecipientAsync(
+		RouterParameterRequestStatusIdentifier statusIdentifier,
+		ManagementTransactionUiRecipient recipient,
+		CancellationToken cancellationToken)
+	{
+		ArgumentNullException.ThrowIfNull(statusIdentifier);
+		ArgumentNullException.ThrowIfNull(recipient);
+		cancellationToken.ThrowIfCancellationRequested();
+
+		ManagementTransactionCompletion? completion;
+		lock (this.synchronizationLock)
+		{
+			if (!this.statuses.TryGetValue(statusIdentifier.USWR, out var status))
+			{
+				throw new InvalidOperationException("The Management Transaction is unknown.");
+			}
+
+			this.uiRecipients[statusIdentifier.USWR] = recipient;
+			completion = this.CreateTerminalNotification(statusIdentifier.USWR, status);
+		}
+
+		if (completion is not null)
+		{
+			await this.NotifyUiAsync(completion);
 		}
 	}
 
@@ -94,15 +131,20 @@ public sealed class ManagementTransactions(
 		ArgumentNullException.ThrowIfNull(envelope);
 		cancellationToken.ThrowIfCancellationRequested();
 
-		if (!this.TryCompleteParameterResponse(envelope))
+		var handled = this.TryCompleteParameterResponse(envelope);
+		if (!handled)
 		{
-			if (!this.TryCompleteAcknowledgement(envelope))
+			handled = this.TryCompleteAcknowledgement(envelope);
+			if (!handled)
 			{
-				this.TryCompleteNegativeAcknowledgement(envelope);
+				handled = this.TryCompleteNegativeAcknowledgement(envelope);
 			}
 		}
 
-		return Task.CompletedTask;
+		return handled
+			? this.NotifyTerminalStatusAsync(new RouterParameterRequestStatusIdentifier(
+				ReferenceFromResponse(envelope)))
+			: Task.CompletedTask;
 	}
 
 	private RouterParameterRequestStatusIdentifier Reserve(ManagementTransactionRequest request)
@@ -196,7 +238,11 @@ public sealed class ManagementTransactions(
 
 				if (this.IsAwaitingFinalResponse(statusIdentifier))
 				{
-					this.TryTimeout(statusIdentifier);
+					if (this.TryTimeout(statusIdentifier))
+					{
+						await this.NotifyTerminalStatusAsync(statusIdentifier);
+					}
+
 					return;
 				}
 
@@ -214,7 +260,11 @@ public sealed class ManagementTransactions(
 						exception,
 						"Router Ingress failed to retry Management Transaction {StatusIdentifier}.",
 						statusIdentifier);
-					this.TryRecordDeliveryFailure(statusIdentifier);
+					if (this.TryRecordDeliveryFailure(statusIdentifier))
+					{
+						await this.NotifyTerminalStatusAsync(statusIdentifier);
+					}
+
 					return;
 				}
 			}
@@ -225,7 +275,10 @@ public sealed class ManagementTransactions(
 
 			if (this.IsActive(statusIdentifier))
 			{
-				this.TryTimeout(statusIdentifier);
+				if (this.TryTimeout(statusIdentifier))
+				{
+					await this.NotifyTerminalStatusAsync(statusIdentifier);
+				}
 			}
 		}
 		catch (OperationCanceledException) when (this.applicationStopping.IsCancellationRequested)
@@ -427,6 +480,56 @@ public sealed class ManagementTransactions(
 	private void ReleaseSequence(UniqueSystemWideReference uswr)
 	{
 		this.GetActiveSequences(uswr.Destination).Remove(uswr.SequenceNumber.Value);
+	}
+
+	private async Task NotifyTerminalStatusAsync(
+		RouterParameterRequestStatusIdentifier statusIdentifier)
+	{
+		ManagementTransactionCompletion? completion;
+		lock (this.synchronizationLock)
+		{
+			completion = this.statuses.TryGetValue(statusIdentifier.USWR, out var status)
+				? this.CreateTerminalNotification(statusIdentifier.USWR, status)
+				: null;
+		}
+
+		if (completion is not null)
+		{
+			await this.NotifyUiAsync(completion);
+		}
+	}
+
+	private ManagementTransactionCompletion? CreateTerminalNotification(
+		UniqueSystemWideReference uswr,
+		RouterParameterRequestStatus status)
+	{
+		if (status is PendingRouterParameterRequestStatus or DeferredRouterParameterRequestStatus or
+			PendingNodeLoginStatus or PendingNodeLogoffStatus or PendingParameterModificationStatus ||
+			!this.uiRecipients.TryGetValue(uswr, out var recipient) ||
+			!this.notifiedUiTransactions.Add(uswr))
+		{
+			return null;
+		}
+
+		return new ManagementTransactionCompletion(
+			recipient.BrowserSessionIdentifier,
+			recipient.RequestIdentifier,
+			status.Identifier.ToString());
+	}
+
+	private async Task NotifyUiAsync(ManagementTransactionCompletion completion)
+	{
+		try
+		{
+			await this.uiNotifier.NotifyAsync(completion, CancellationToken.None);
+		}
+		catch (Exception exception)
+		{
+			this.logger.LogWarning(
+				exception,
+				"Could not notify the browser that Management Transaction {StatusIdentifier} completed.",
+				completion.TransactionIdentifier);
+		}
 	}
 
 	private HashSet<ushort> GetActiveSequences(CommunicationsAddress destination)

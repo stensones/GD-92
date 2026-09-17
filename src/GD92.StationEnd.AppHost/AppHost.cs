@@ -79,7 +79,9 @@ if (useExternalPostgres)
 		.WithReference(printerUaDatabase)
 		.WaitFor(printerUaDatabase);
 
-	builder.AddProject<Projects.NodeManager>("Node-Manager-UA")
+	builder.AddProject<Projects.NodeManager>(
+			"Node-Manager-UA",
+			launchProfileName: null)
 		.WithReference(rabbitMq)
 		.WaitFor(rabbitMq)
 		.WithReference(nodeManagerDatabase)
@@ -145,7 +147,9 @@ else
 		.WithReference(printerUaDatabase)
 		.WaitFor(printerUaDatabase);
 
-	builder.AddProject<Projects.NodeManager>("Node-Manager-UA")
+	builder.AddProject<Projects.NodeManager>(
+			"Node-Manager-UA",
+			launchProfileName: null)
 		.WithReference(rabbitMq)
 		.WaitFor(rabbitMq)
 		.WithReference(nodeManagerDatabase)

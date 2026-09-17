@@ -29,6 +29,60 @@ public sealed class ManagementTransactionResponseCorrelationTests
 	}
 
 	[Fact]
+	public async Task Notifies_the_registered_browser_when_a_Parameter_Request_completes()
+	{
+		var notifier = new RecordingManagementTransactionUiNotifier();
+		using var transactions = new TestManagementTransactions(notifier);
+		var identifier = await transactions.Transactions.SubmitAsync(
+			ParameterRequest(Address(25), Address(0)),
+			CancellationToken.None);
+		var recipient = new ManagementTransactionUiRecipient(
+			"browser-session",
+			Guid.ParseExact("a9c7e65f8a0b4dd5b4b0d12c9a3332d8", "N"));
+
+		await transactions.Transactions.RegisterUiRecipientAsync(
+			identifier,
+			recipient,
+			CancellationToken.None);
+		await transactions.Transactions.ReceiveAsync(
+			ParameterResponse(Address(0), Address(25), identifier.USWR.SequenceNumber),
+			CancellationToken.None);
+
+		notifier.Notifications.Should().ContainSingle().Which.Should().Be(
+			new ManagementTransactionCompletion(
+				"browser-session",
+				recipient.RequestIdentifier,
+				identifier.ToString()));
+	}
+
+	[Fact]
+	public async Task Notifies_a_browser_when_it_registers_after_a_Parameter_Request_completed()
+	{
+		var notifier = new RecordingManagementTransactionUiNotifier();
+		using var transactions = new TestManagementTransactions(notifier);
+		var identifier = await transactions.Transactions.SubmitAsync(
+			ParameterRequest(Address(25), Address(0)),
+			CancellationToken.None);
+		await transactions.Transactions.ReceiveAsync(
+			ParameterResponse(Address(0), Address(25), identifier.USWR.SequenceNumber),
+			CancellationToken.None);
+		var recipient = new ManagementTransactionUiRecipient(
+			"browser-session",
+			Guid.ParseExact("0ac2e7652e824dfaab2b021d0851e6bd", "N"));
+
+		await transactions.Transactions.RegisterUiRecipientAsync(
+			identifier,
+			recipient,
+			CancellationToken.None);
+
+		notifier.Notifications.Should().ContainSingle().Which.Should().Be(
+			new ManagementTransactionCompletion(
+				"browser-session",
+				recipient.RequestIdentifier,
+				identifier.ToString()));
+	}
+
+	[Fact]
 	public async Task Completes_a_Node_Login_with_an_Acknowledgement()
 	{
 		var userAgent = Address(25);
@@ -293,7 +347,7 @@ public sealed class ManagementTransactionResponseCorrelationTests
 		private readonly ServiceProvider serviceProvider;
 		private readonly CancellationTokenSource applicationStopping = new();
 
-		public TestManagementTransactions()
+		public TestManagementTransactions(IManagementTransactionUiNotifier? uiNotifier = null)
 		{
 			var services = new ServiceCollection();
 			services.AddScoped<IRouterIngress, NoOpRouterIngress>();
@@ -305,7 +359,8 @@ public sealed class ManagementTransactionResponseCorrelationTests
 				this.serviceProvider.GetRequiredService<IServiceScopeFactory>(),
 				new BlockingRetryDelay(),
 				new TestApplicationLifetime(this.applicationStopping.Token),
-				NullLogger<ManagementTransactions>.Instance);
+				NullLogger<ManagementTransactions>.Instance,
+				uiNotifier);
 		}
 
 		public ManagementTransactions Transactions { get; }
@@ -315,6 +370,21 @@ public sealed class ManagementTransactionResponseCorrelationTests
 			this.applicationStopping.Cancel();
 			this.serviceProvider.Dispose();
 			this.applicationStopping.Dispose();
+		}
+	}
+
+	private sealed class RecordingManagementTransactionUiNotifier :
+		IManagementTransactionUiNotifier
+	{
+		public List<ManagementTransactionCompletion> Notifications { get; } = [];
+
+		public Task NotifyAsync(
+			ManagementTransactionCompletion notification,
+			CancellationToken cancellationToken)
+		{
+			cancellationToken.ThrowIfCancellationRequested();
+			this.Notifications.Add(notification);
+			return Task.CompletedTask;
 		}
 	}
 

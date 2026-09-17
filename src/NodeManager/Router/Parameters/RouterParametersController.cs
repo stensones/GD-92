@@ -24,25 +24,24 @@ public sealed class RouterParametersController(
 		ParameterNumber.FromValue(21);
 
 	[HttpPost("brigade-or-agency-number")]
-	public async Task<IActionResult> RequestBrigadeOrAgencyNumber(CancellationToken cancellationToken)
-	{
-		var statusIdentifier = await routerParameterRequests
-			.RequestLocalRouterBrigadeOrAgencyNumber(cancellationToken);
-
-		return new SeeOtherRedirectResult($"/router/parameters/status/{statusIdentifier}");
-	}
+	public Task<IActionResult> RequestBrigadeOrAgencyNumber(CancellationToken cancellationToken) =>
+		this.SubmitAndRedirectAsync(
+			() => routerParameterRequests.RequestLocalRouterBrigadeOrAgencyNumber(cancellationToken),
+			statusIdentifier => $"/router/parameters/status/{statusIdentifier}",
+			cancellationToken);
 
 	[HttpPost("current/{parameterNumber}")]
-	public async Task<IActionResult> RequestCurrentParameter(
+	public Task<IActionResult> RequestCurrentParameter(
 		byte parameterNumber,
 		CancellationToken cancellationToken)
 	{
-		var statusIdentifier = await routerParameterRequests.RequestLocalRouterCurrentParameter(
-			ParameterNumber.FromValue(parameterNumber),
+		return this.SubmitAndRedirectAsync(
+			() => routerParameterRequests.RequestLocalRouterCurrentParameter(
+				ParameterNumber.FromValue(parameterNumber),
+				cancellationToken),
+			statusIdentifier =>
+				$"/router/parameters/current/{parameterNumber}/status/{statusIdentifier}",
 			cancellationToken);
-
-		return new SeeOtherRedirectResult(
-			$"/router/parameters/current/{parameterNumber}/status/{statusIdentifier}");
 	}
 
 	[HttpPost("{parameterTable}/{parameterNumber}")]
@@ -56,13 +55,14 @@ public sealed class RouterParametersController(
 			return this.BadRequest("Parameter Table must be permanent, non-volatile, or current.");
 		}
 
-		var statusIdentifier = await routerParameterRequests.RequestLocalRouterParameter(
-			table,
-			ParameterNumber.FromValue(parameterNumber),
+		return await this.SubmitAndRedirectAsync(
+			() => routerParameterRequests.RequestLocalRouterParameter(
+				table,
+				ParameterNumber.FromValue(parameterNumber),
+				cancellationToken),
+			statusIdentifier =>
+				$"/router/parameters/{parameterTable}/{parameterNumber}/status/{statusIdentifier}",
 			cancellationToken);
-
-		return new SeeOtherRedirectResult(
-			$"/router/parameters/{parameterTable}/{parameterNumber}/status/{statusIdentifier}");
 	}
 
 	[HttpPost("{parameterTable}/{parameterNumber}/value")]
@@ -87,13 +87,14 @@ public sealed class RouterParametersController(
 			}
 		}
 
-		var statusIdentifier = await routerParameterRequests.ModifyLocalRouterParameter(
-			table,
-			ParameterNumber.FromValue(parameterNumber),
-			ParameterValue.FromWireValue(wireValue),
+		return await this.SubmitAndRedirectAsync(
+			() => routerParameterRequests.ModifyLocalRouterParameter(
+				table,
+				ParameterNumber.FromValue(parameterNumber),
+				ParameterValue.FromWireValue(wireValue),
+				cancellationToken),
+			statusIdentifier => $"/router/parameters/status/{statusIdentifier}",
 			cancellationToken);
-
-		return new SeeOtherRedirectResult($"/router/parameters/status/{statusIdentifier}");
 	}
 
 	[HttpPost("{parameterTable}/{parameterNumber}/entries/{firstEntry}-{lastEntry}")]
@@ -112,15 +113,16 @@ public sealed class RouterParametersController(
 		var entrySelection = ParameterEntrySelection.Range(
 			ParameterEntryIndex.FromValue(firstEntry),
 			ParameterEntryIndex.FromValue(lastEntry));
-		var statusIdentifier = await routerParameterRequests.RequestLocalRouterParameterEntries(
-			table,
-			ParameterNumber.FromValue(parameterNumber),
-			entrySelection,
+		return await this.SubmitAndRedirectAsync(
+			() => routerParameterRequests.RequestLocalRouterParameterEntries(
+				table,
+				ParameterNumber.FromValue(parameterNumber),
+				entrySelection,
+				cancellationToken),
+			statusIdentifier =>
+				$"/router/parameters/{parameterTable}/{parameterNumber}/entries/" +
+				$"{firstEntry}-{lastEntry}/status/{statusIdentifier}",
 			cancellationToken);
-
-		return new SeeOtherRedirectResult(
-			$"/router/parameters/{parameterTable}/{parameterNumber}/entries/" +
-			$"{firstEntry}-{lastEntry}/status/{statusIdentifier}");
 	}
 
 	[HttpGet("tables")]
@@ -151,17 +153,18 @@ public sealed class RouterParametersController(
 			return this.View("TableSelection", selection);
 		}
 
-		var statusIdentifier = await routerParameterRequests.RequestLocalRouterParameterEntries(
-			parameterTableValue,
-			table.ParameterNumber,
-			ParameterEntrySelection.Range(
-				ParameterEntryIndex.FromValue(firstEntry),
-				ParameterEntryIndex.FromValue(lastEntry)),
+		return await this.SubmitAndRedirectAsync(
+			() => routerParameterRequests.RequestLocalRouterParameterEntries(
+				parameterTableValue,
+				table.ParameterNumber,
+				ParameterEntrySelection.Range(
+					ParameterEntryIndex.FromValue(firstEntry),
+					ParameterEntryIndex.FromValue(lastEntry)),
+				cancellationToken),
+			statusIdentifier =>
+				$"/router/parameters/tables/{parameterTable}/{parameterNumber}/entries/" +
+				$"{firstEntry}-{lastEntry}/status/{statusIdentifier}",
 			cancellationToken);
-
-		return new SeeOtherRedirectResult(
-			$"/router/parameters/tables/{parameterTable}/{parameterNumber}/entries/" +
-			$"{firstEntry}-{lastEntry}/status/{statusIdentifier}");
 	}
 
 	[HttpPost("logon")]
@@ -184,24 +187,23 @@ public sealed class RouterParametersController(
 			Brigade.FromValue(BrigadeOrAgencyIdentifier.FromValue(brigade)),
 			Node.FromValue(NodeIdentifier.FromValue(node)),
 			Port.FromValue(PortIdentifier.FromValue(port)));
-		var statusIdentifier = await routerParameterRequests.RequestLocalRouterLogon(
-			communicationsAddress,
-			PasswordLevel.FromValue((PasswordLevelNumber)passwordLevel),
-			PasswordValue.FromValue(SevenBitAsciiString.FromValue(password)),
+		return await this.SubmitAndRedirectAsync(
+			() => routerParameterRequests.RequestLocalRouterLogon(
+				communicationsAddress,
+				PasswordLevel.FromValue((PasswordLevelNumber)passwordLevel),
+				PasswordValue.FromValue(SevenBitAsciiString.FromValue(password)),
+				cancellationToken),
+			statusIdentifier => $"/router/parameters/logon/status/{statusIdentifier}",
 			cancellationToken);
-
-		return new SeeOtherRedirectResult($"/router/parameters/logon/status/{statusIdentifier}");
 	}
 
 	[HttpPost("logoff")]
 	[RequireHttps]
-	public async Task<IActionResult> LogOff(CancellationToken cancellationToken)
-	{
-		var statusIdentifier = await routerParameterRequests
-			.RequestLocalRouterLogoff(cancellationToken);
-
-		return new SeeOtherRedirectResult($"/router/parameters/logoff/status/{statusIdentifier}");
-	}
+	public Task<IActionResult> LogOff(CancellationToken cancellationToken) =>
+		this.SubmitAndRedirectAsync(
+			() => routerParameterRequests.RequestLocalRouterLogoff(cancellationToken),
+			statusIdentifier => $"/router/parameters/logoff/status/{statusIdentifier}",
+			cancellationToken);
 
 	[HttpGet("status/{identifier}")]
 	[HttpGet("logon/status/{identifier}")]
@@ -287,6 +289,33 @@ public sealed class RouterParametersController(
 		}
 
 		return this.Ok(ToResponse(status, parameterNumber));
+	}
+
+	private async Task<IActionResult> SubmitAndRedirectAsync(
+		Func<Task<RouterParameterRequestStatusIdentifier>> submit,
+		Func<RouterParameterRequestStatusIdentifier, string> statusLocation,
+		CancellationToken cancellationToken)
+	{
+		ManagementTransactionUiRecipient? recipient = null;
+		if (this.ControllerContext.HttpContext is { } httpContext &&
+			!ManagementTransactionUiRecipient.TryCreate(
+				httpContext,
+				out recipient,
+				out var validationError))
+		{
+			return this.BadRequest(validationError);
+		}
+
+		var statusIdentifier = await submit();
+		if (recipient is not null)
+		{
+			await managementTransactions.RegisterUiRecipientAsync(
+				statusIdentifier,
+				recipient,
+				cancellationToken);
+		}
+
+		return new SeeOtherRedirectResult(statusLocation(statusIdentifier));
 	}
 
 	private static RouterParameterTableSelection CreateTableSelection(

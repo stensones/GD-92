@@ -23,6 +23,14 @@ public sealed class ParticipantParametersController(
 			return this.BadRequest("Parameter Table must be permanent, non-volatile, or current.");
 		}
 
+		if (!ManagementTransactionUiRecipient.TryCreate(
+			this.HttpContext,
+			out var recipient,
+			out var validationError))
+		{
+			return this.BadRequest(validationError);
+		}
+
 		var destination = CommunicationsAddress.FromValues(
 			settings.MessageOriginator.Brigade,
 			settings.MessageOriginator.Node,
@@ -32,6 +40,13 @@ public sealed class ParticipantParametersController(
 			table,
 			ParameterNumber.FromValue(parameterNumber),
 			cancellationToken);
+		if (recipient is not null)
+		{
+			await managementTransactions.RegisterUiRecipientAsync(
+				statusIdentifier,
+				recipient,
+				cancellationToken);
+		}
 
 		return new SeeOtherRedirectResult(
 			$"/participants/{port}/parameters/{parameterTable}/{parameterNumber}/status/{statusIdentifier}");
