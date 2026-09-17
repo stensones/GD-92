@@ -9,8 +9,11 @@ var builder = DistributedApplication.CreateBuilder(args);
 var useExternalPostgres = builder.Configuration.GetValue(
 	"Persistence:UseExternalPostgres",
 	false);
+var usePersistentPostgres = builder.Configuration.GetValue(
+	"Persistence:UsePersistentPostgres",
+	true);
 var rabbitMq = builder.AddRabbitMQ("RabbitMQ");
-if (useExternalPostgres)
+if (useExternalPostgres || !usePersistentPostgres)
 {
 	rabbitMq.WithLifetime(ContainerLifetime.Session);
 }
@@ -99,9 +102,6 @@ if (useExternalPostgres)
 }
 else
 {
-	var usePersistentPostgres = builder.Configuration.GetValue(
-		"Persistence:UsePersistentPostgres",
-		true);
 	var postgres = builder.AddPostgres("postgres");
 	if (usePersistentPostgres)
 	{
