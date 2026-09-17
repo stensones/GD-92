@@ -118,6 +118,25 @@
                     <option value="current" selected>Current</option>
                 </select>
             </label>
+            <form class="inline-action" id="router-routing-table-entry-selection"
+                  aria-describedby="router-routing-table-entry-selection-status">
+                <fieldset>
+                    <legend>Router Routing Table entries</legend>
+                    <label>
+                        First entry
+                        <input name="first-entry" type="number" min="1" value="1" required />
+                    </label>
+                    <label>
+                        Last entry
+                        <input name="last-entry" type="number" min="1" value="1" required />
+                    </label>
+                    <button type="submit">Request entries</button>
+                </fieldset>
+            </form>
+            <p id="router-routing-table-entry-selection-status" role="status" hidden></p>
+            <ul id="router-routing-table-entry-results" hidden></ul>
+            <button id="router-routing-table-next-page" hidden type="button" disabled
+                    aria-controls="router-routing-table-entry-results">Next entries</button>
             <p>
                 <a href="/router/parameters/tables">Browse Router Parameter Tables</a>
             </p>
@@ -166,6 +185,12 @@
     const routerParameterListStatus = document.getElementById("router-parameter-list-status");
     const routerParameterListRows = routerParameterList.querySelector("tbody");
     const participantParameterTable = document.getElementById("participant-parameter-table");
+    const routerRoutingTableEntrySelection = document.getElementById("router-routing-table-entry-selection");
+    const routerRoutingTableEntrySelectionStatus =
+        document.getElementById("router-routing-table-entry-selection-status");
+    const routerRoutingTableEntryResults = document.getElementById("router-routing-table-entry-results");
+    const routerRoutingTableNextPage = document.getElementById("router-routing-table-next-page");
+    let nextRoutingTableEntryRange = null;
     const redactedPasswordMarker = "PASSWORD";
     const participantCurrentParameterCatalogues = {
         router: [
@@ -440,6 +465,29 @@
 
         poll();
     };
+
+    routerRoutingTableEntrySelection.addEventListener("submit", async event => {
+        event.preventDefault();
+        const formData = new FormData(routerRoutingTableEntrySelection);
+        const firstEntry = Number(formData.get("first-entry"));
+        const lastEntry = Number(formData.get("last-entry"));
+
+        if (!Number.isInteger(firstEntry) || !Number.isInteger(lastEntry) ||
+            firstEntry < 1 || lastEntry < firstEntry) {
+            routerRoutingTableEntrySelectionStatus.hidden = false;
+            routerRoutingTableEntrySelectionStatus.textContent =
+                "Last entry must be greater than or equal to first entry.";
+            return;
+        }
+
+        requestRoutingTableEntries(firstEntry, lastEntry);
+    });
+
+    routerRoutingTableNextPage.addEventListener("click", () => {
+        if (nextRoutingTableEntryRange !== null) {
+            requestRoutingTableEntries(nextRoutingTableEntryRange.firstEntry, nextRoutingTableEntryRange.lastEntry);
+        }
+    });
 
     const requestPstnTableEntries = async (firstEntry, lastEntry) => {
         routerPstnTableEntrySelectionStatus.hidden = false;

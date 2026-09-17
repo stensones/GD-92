@@ -2645,10 +2645,15 @@ public sealed class RouterParameterRequestSteps
 	}
 
 	[AfterScenario]
-	public void DisposeClient()
+	public async Task ResetApplicationStateAndDisposeClientAsync()
 	{
 		try
 		{
+			if (this.application is not null)
+			{
+				await this.ResetRouterStateAsync();
+			}
+
 			this.client?.Dispose();
 		}
 		finally

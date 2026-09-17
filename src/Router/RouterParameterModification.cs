@@ -244,13 +244,6 @@ internal sealed class RouterParameterModification(
 		SetParameter setParameter,
 		CancellationToken cancellationToken)
 	{
-		if (!this.CanModifyRetries(setParameter.ParameterTable, envelope.Source))
-		{
-			return this.CreateNegativeAcknowledgement(
-				envelope,
-				ParameterReasonCode.NoModificationAccess);
-		}
-
 		Retries retries;
 		try
 		{
@@ -261,6 +254,13 @@ internal sealed class RouterParameterModification(
 			return this.CreateNegativeAcknowledgement(
 				envelope,
 				ParameterReasonCode.InvalidSyntax);
+		}
+
+		if (!this.CanModifyRetries(setParameter.ParameterTable, envelope.Source))
+		{
+			return this.CreateNegativeAcknowledgement(
+				envelope,
+				ParameterReasonCode.NoModificationAccess);
 		}
 
 		if (setParameter.ParameterTable != ParameterTable.Current)
@@ -345,7 +345,7 @@ internal sealed class RouterParameterModification(
 		ParameterTable table,
 		CommunicationsAddress sourceAddress)
 	{
-		return table == ParameterTable.NonVolatile &&
+		return (table == ParameterTable.Current || table == ParameterTable.NonVolatile) &&
 			currentParameterSource.HasActiveNodeLoginAtOrAbove(LevelTwo, sourceAddress);
 	}
 
