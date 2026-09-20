@@ -43,6 +43,7 @@
                     <tr>
                         <th scope="col">Port</th>
                         <th scope="col">Agent Type</th>
+                        <th scope="col">Parameters</th>
                     </tr>
                 </thead>
                 <tbody></tbody>
@@ -87,6 +88,7 @@
     const timedOutOutcome = document.getElementById("network-inventory-scan-timed-out");
     const deliveryFailedOutcome = document.getElementById("network-inventory-scan-delivery-failed");
     const selectedCommunicationsAddress = inventoryScanForm.dataset.communicationsAddress;
+    const participantCommunicationsAddress = port => `${selectedCommunicationsAddress.substring(0, selectedCommunicationsAddress.lastIndexOf(".") + 1)}${port}`;
 
     const renderInventoryScan = scan => {
         inventoryScanStatus.textContent =
@@ -102,6 +104,16 @@
                 row.append(cell);
             }
 
+            const parametersCell = document.createElement("td");
+            if (participant.agentType) {
+                const parametersLink = document.createElement("a");
+                parametersLink.href =
+                    `/parameters?address=${encodeURIComponent(participantCommunicationsAddress(participant.port))}&agentType=${encodeURIComponent(participant.agentType)}`;
+                parametersLink.textContent = "View Parameters";
+                parametersCell.append(parametersLink);
+            }
+
+            row.append(parametersCell);
             inventoryScanRows.append(row);
         }
 

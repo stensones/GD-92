@@ -35,3 +35,17 @@ Feature: Node Manager Parameters workspace
     Then Permanent is the selected Parameter Table
     And the Permanent Router Parameter Table is identified
     And Brigade or Agency and Routing Table requests target the Permanent Parameter Table
+
+  Scenario: Navigating to Network from Parameters
+    Given an operator opens the default Parameters workspace for Router address 26.100.0
+    When the Parameters workspace is displayed
+    Then Network navigation retains Communications Address 26.100.0
+    And Parameters is the active navigation workspace
+
+  Scenario: Viewing Parameters for a discovered LAN MTA
+    Given an operator opens the Parameters workspace for LAN MTA (10) address 26.100.3
+    When the Parameters workspace is displayed
+    Then the Current LAN MTA (10) Parameter Table is identified
+    And the LAN MTA catalogue includes Port Number and Agent Type
+    And Port Number requests target participant port 3
+    And the Router-only Routing Table browser is unavailable

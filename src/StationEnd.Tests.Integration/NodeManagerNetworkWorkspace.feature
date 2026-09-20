@@ -13,3 +13,9 @@ Feature: Node Manager Network workspace
     Then Inventory Scan progress is announced in a labelled status region
     And discovered Participants are presented in a results table
     And Inventory Scan outcomes identify received, rejected, timed out, and delivery failed states
+
+  Scenario: Opening Parameters for a discovered Participant
+    Given an operator opens the Network workspace for local Router address 26.100.0
+    When the Network workspace is displayed
+    Then discovered Participants offer a View Parameters action
+    And the Parameters action retains the local node address and Agent Type

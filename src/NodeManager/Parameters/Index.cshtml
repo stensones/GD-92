@@ -1,3 +1,4 @@
+@using NodeManager.Parameters
 @{
     Layout = "_Layout";
     ViewData["Title"] = "Parameters";
@@ -10,6 +11,12 @@
         "non-volatile" => "Non-Volatile",
         _ => "Current"
     };
+    var isRouter = ViewData["IsRouter"] as bool? ?? false;
+    var participantParameters =
+        ViewData["ParticipantParameters"] as IReadOnlyList<ParameterCatalogueEntry> ?? [];
+    var participantPort = ViewData["ParticipantPort"] as byte?;
+    var participantParametersAvailable =
+        ViewData["ParticipantParametersAvailable"] as bool? ?? false;
 }
 
 <div class="workspace">
@@ -58,6 +65,8 @@
                 <option>Current</option>
             }
         </select>
+        @if (isRouter)
+        {
         <table>
             <caption>@parameterTableName Router Parameter Table</caption>
             <thead>
@@ -89,8 +98,60 @@
            aria-label="Brigade or Agency Parameter read status">
             Pending, Received, Rejected, Timed out, Delivery failed.
         </p>
+        }
+        else if (participantParametersAvailable)
+        {
+        <table>
+            <caption>@parameterTableName @agentType Parameter Table</caption>
+            <thead>
+                <tr>
+                    <th scope="col">Number</th>
+                    <th scope="col">Name</th>
+                    <th scope="col">Value</th>
+                    <th scope="col">Read State</th>
+                    <th scope="col">Last Read</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var parameter in participantParameters)
+                {
+                <tr>
+                    <td>@parameter.Number</td>
+                    <th scope="row">@parameter.Name</th>
+                    <td id="participant-parameter-@parameter.Number-value">
+                        No Parameter values have been read.
+                    </td>
+                    <td id="participant-parameter-@parameter.Number-read-state">Not read</td>
+                    <td id="participant-parameter-@parameter.Number-last-read"></td>
+                </tr>
+                }
+            </tbody>
+        </table>
+        @foreach (var parameter in participantParameters)
+        {
+        <form class="inline-action participant-parameter-request"
+              data-parameter-number="@parameter.Number"
+              action="/participants/@participantPort/parameters/@parameterTable/@parameter.Number"
+              method="post">
+            <button type="submit">Request @parameter.Name</button>
+        </form>
+        <p id="participant-parameter-@parameter.Number-request-status" role="status"
+           aria-label="@parameter.Name Parameter read status">
+            Pending, Received, Rejected, Timed out, Delivery failed.
+        </p>
+        }
+        }
+        else
+        {
+        <p role="status">
+            This Agent Type's Parameter catalogue and read workflow are unavailable for the
+            selected Communications Address.
+        </p>
+        }
     </section>
 
+    @if (isRouter)
+    {
     <section class="panel" aria-labelledby="routing-table-heading">
         <p class="panel-kicker">@parameterTableName parameter values</p>
         <h2 id="routing-table-heading">@parameterTableName Routing Table entries</h2>
@@ -126,12 +187,49 @@
             Next entries
         </button>
     </section>
+    }
 </div>
 
+@if (isRouter || participantParametersAvailable)
+{
 <script src="~/lib/signalr/signalr.min.js"></script>
 <script src="~/js/management-transactions.js"></script>
 <script>
     const parameterTableSelector = document.getElementById("parameter-table");
+    const formatParameterReadState = state =>
+        `${state.charAt(0).toUpperCase()}${state.slice(1).replaceAll("-", " ")}`;
+
+    const submitScalarParameterRequest = async (
+        parameterRequestForm,
+        parameterRequestButton,
+        renderPending,
+        renderResult,
+        renderFailure) => {
+        parameterRequestButton.disabled = true;
+        renderPending();
+
+        try {
+            const result = await managementTransactions.submit(parameterRequestForm.action, { method: "POST" });
+            renderResult(result);
+        } catch {
+            renderFailure();
+        } finally {
+            parameterRequestButton.disabled = false;
+        }
+    };
+
+    parameterTableSelector.addEventListener("change", () => {
+        const url = new URL(window.location.href);
+        url.searchParams.set("parameterTable",
+            parameterTableSelector.value.toLowerCase().replaceAll(" ", "-"));
+        window.location.assign(url);
+    });
+</script>
+}
+
+@if (isRouter)
+{
+<script>
     const selectedParameterTable = "@parameterTable";
     const parameterRequestForm = document.getElementById("brigade-or-agency-parameter-request");
     const parameterRequestButton = document.getElementById(
@@ -152,42 +250,35 @@
     const routingTableNextEntries = document.getElementById("routing-table-next-entries");
     let nextRoutingTableEntryRange = null;
 
-    const formatParameterReadState = state =>
-        `${state.charAt(0).toUpperCase()}${state.slice(1).replaceAll("-", " ")}`;
-
-    parameterTableSelector.addEventListener("change", () => {
-        const url = new URL(window.location.href);
-        url.searchParams.set("parameterTable", parameterTableSelector.value.toLowerCase().replaceAll(" ", "-"));
-        window.location.assign(url);
-    });
-
     parameterRequestForm.addEventListener("submit", async event => {
         event.preventDefault();
-        parameterRequestButton.disabled = true;
-        brigadeOrAgencyReadState.textContent = "Pending";
-        parameterRequestStatus.textContent = "Pending.";
+        await submitScalarParameterRequest(
+            parameterRequestForm,
+            parameterRequestButton,
+            () => {
+                brigadeOrAgencyReadState.textContent = "Pending";
+                parameterRequestStatus.textContent = "Pending.";
+            },
+            result => {
+                const state = formatParameterReadState(result.state);
+                brigadeOrAgencyReadState.textContent = state;
+                brigadeOrAgencyLastRead.textContent = new Date().toLocaleString();
 
-        try {
-            const result = await managementTransactions.submit(parameterRequestForm.action, { method: "POST" });
-            const state = formatParameterReadState(result.state);
-            brigadeOrAgencyReadState.textContent = state;
-            brigadeOrAgencyLastRead.textContent = new Date().toLocaleString();
-
-            if (result.state === "received") {
-                brigadeOrAgencyValue.textContent = result.parameterValue ?? "No value returned.";
-                parameterRequestStatus.textContent = `Received: ${brigadeOrAgencyValue.textContent}`;
-            } else if (result.state === "rejected" && result.rejectionReason) {
-                brigadeOrAgencyValue.textContent = "Rejected";
-                parameterRequestStatus.textContent = `Rejected: ${result.rejectionReason}`;
-            } else {
-                brigadeOrAgencyValue.textContent = state;
-                parameterRequestStatus.textContent = `${state}.`;
-            }
-        } catch {
-            parameterRequestStatus.textContent = "The Parameter Request could not be submitted.";
-        } finally {
-            parameterRequestButton.disabled = false;
-        }
+                if (result.state === "received") {
+                    brigadeOrAgencyValue.textContent = result.parameterValue ?? "No value returned.";
+                    parameterRequestStatus.textContent =
+                        `Received: ${brigadeOrAgencyValue.textContent}`;
+                } else if (result.state === "rejected" && result.rejectionReason) {
+                    brigadeOrAgencyValue.textContent = "Rejected";
+                    parameterRequestStatus.textContent = `Rejected: ${result.rejectionReason}`;
+                } else {
+                    brigadeOrAgencyValue.textContent = state;
+                    parameterRequestStatus.textContent = `${state}.`;
+                }
+            },
+            () => {
+                parameterRequestStatus.textContent = "The Parameter Request could not be submitted.";
+            });
     });
 
     const updateRoutingTableRequest = (firstEntry, lastEntry) => {
@@ -288,3 +379,51 @@
             routingTableNextEntries);
     });
 </script>
+}
+else if (participantParametersAvailable)
+{
+<script>
+    for (const parameterRequestForm of document.querySelectorAll(
+        ".participant-parameter-request")) {
+        parameterRequestForm.addEventListener("submit", async event => {
+            event.preventDefault();
+            const parameterNumber = parameterRequestForm.dataset.parameterNumber;
+            const requestButton = parameterRequestForm.querySelector("button");
+            const value = document.getElementById(`participant-parameter-${parameterNumber}-value`);
+            const readState = document.getElementById(
+                `participant-parameter-${parameterNumber}-read-state`);
+            const lastRead = document.getElementById(
+                `participant-parameter-${parameterNumber}-last-read`);
+            const status = document.getElementById(
+                `participant-parameter-${parameterNumber}-request-status`);
+
+            await submitScalarParameterRequest(
+                parameterRequestForm,
+                requestButton,
+                () => {
+                    readState.textContent = "Pending";
+                    status.textContent = "Pending.";
+                },
+                result => {
+                    const state = formatParameterReadState(result.state);
+                    readState.textContent = state;
+                    lastRead.textContent = new Date().toLocaleString();
+
+                    if (result.state === "received") {
+                        value.textContent = result.parameterValue ?? "No value returned.";
+                        status.textContent = `Received: ${value.textContent}`;
+                    } else if (result.state === "rejected" && result.rejectionReason) {
+                        value.textContent = "Rejected";
+                        status.textContent = `Rejected: ${result.rejectionReason}`;
+                    } else {
+                        value.textContent = state;
+                        status.textContent = `${state}.`;
+                    }
+                },
+                () => {
+                    status.textContent = "The Parameter Request could not be submitted.";
+                });
+        });
+    }
+</script>
+}

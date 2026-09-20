@@ -72,6 +72,20 @@ public sealed class NodeManagerNetworkWorkspaceSteps : IDisposable
 		this.responseContent.Should().Contain("Delivery failed");
 	}
 
+	[Then(@"discovered Participants offer a View Parameters action")]
+	public void ThenDiscoveredParticipantsOfferAViewParametersAction()
+	{
+		this.responseContent.Should().Contain("<th scope=\"col\">Parameters</th>");
+		this.responseContent.Should().Contain("View Parameters");
+	}
+
+	[Then(@"the Parameters action retains the local node address and Agent Type")]
+	public void ThenTheParametersActionRetainsTheLocalNodeAddressAndAgentType()
+	{
+		this.responseContent.Should().Contain("/parameters?address=");
+		this.responseContent.Should().Contain("agentType");
+	}
+
 	public void Dispose()
 	{
 		this.response?.Dispose();

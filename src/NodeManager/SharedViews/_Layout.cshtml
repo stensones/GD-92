@@ -1,4 +1,14 @@
-﻿<!DOCTYPE html>
+﻿@{
+	var address = Context.Request.Query["address"].ToString();
+	var addressQuery = string.IsNullOrWhiteSpace(address)
+		? string.Empty
+		: $"?address={Uri.EscapeDataString(address)}";
+	var path = Context.Request.Path;
+	var isOverview = path == "/";
+	var isNetwork = path.StartsWithSegments("/network");
+	var isParameters = path.StartsWithSegments("/parameters");
+}
+<!DOCTYPE html>
 <html>
 	<head>
 		<meta charset="utf-8" />
@@ -25,9 +35,9 @@
 		<div class="app-shell">
 			<nav class="app-navigation" aria-label="Node Manager">
 				<p class="navigation-label">Workspace</p>
-				<a class="navigation-link is-active" href="#overview">Overview</a>
-				<a class="navigation-link" href="#network">Network</a>
-				<a class="navigation-link" href="#parameters">Parameters</a>
+				<a class="navigation-link@(isOverview ? " is-active" : "")" href="/" aria-current="@(isOverview ? "page" : null)">Overview</a>
+				<a class="navigation-link@(isNetwork ? " is-active" : "")" href="@($"/network{addressQuery}")" aria-current="@(isNetwork ? "page" : null)">Network</a>
+				<a class="navigation-link@(isParameters ? " is-active" : "")" href="@($"/parameters{addressQuery}")" aria-current="@(isParameters ? "page" : null)">Parameters</a>
 				<a class="navigation-link" href="#router-access">Router access</a>
 			</nav>
 			<main id="main-content" class="app-content">

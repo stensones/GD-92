@@ -33,6 +33,16 @@ public sealed class NodeManagerParametersWorkspaceSteps : IDisposable
 			.GetResult();
 	}
 
+	[Given(@"an operator opens the Parameters workspace for LAN MTA \(10\) address (.*)")]
+	public void GivenAnOperatorOpensTheParametersWorkspaceForLanMta(string address)
+	{
+		this.application = new NodeManagerApplicationFactory();
+		this.response = this.application.CreateClient()
+			.GetAsync($"/parameters?address={address}&agentType=LAN%20MTA%20%2810%29")
+			.GetAwaiter()
+			.GetResult();
+	}
+
 	[When(@"the Parameters workspace is displayed")]
 	public async Task WhenTheParametersWorkspaceIsDisplayed()
 	{
@@ -164,6 +174,46 @@ public sealed class NodeManagerParametersWorkspaceSteps : IDisposable
 		this.responseContent.Should().Contain("action=\"/router/parameters/permanent/1\"");
 		this.responseContent.Should().Contain(
 			"action=\"/router/parameters/permanent/13/entries/1-1\"");
+	}
+
+	[Then(@"Network navigation retains Communications Address (.*)")]
+	public void ThenNetworkNavigationRetainsCommunicationsAddress(string address)
+	{
+		this.responseContent.Should().Contain($"href=\"/network?address={address}\"");
+	}
+
+	[Then(@"Parameters is the active navigation workspace")]
+	public void ThenParametersIsTheActiveNavigationWorkspace()
+	{
+		this.responseContent.Should().Contain(
+			"<a class=\"navigation-link is-active\" href=\"/parameters");
+	}
+
+	[Then(@"the Current LAN MTA \(10\) Parameter Table is identified")]
+	public void ThenTheCurrentLanMtaParameterTableIsIdentified()
+	{
+		this.responseContent.Should().Contain(
+			"<caption>Current LAN MTA (10) Parameter Table</caption>");
+	}
+
+	[Then(@"the LAN MTA catalogue includes Port Number and Agent Type")]
+	public void ThenTheLanMtaCatalogueIncludesPortNumberAndAgentType()
+	{
+		this.responseContent.Should().Contain("<th scope=\"row\">Port Number</th>");
+		this.responseContent.Should().Contain("<th scope=\"row\">Agent Type</th>");
+	}
+
+	[Then(@"Port Number requests target participant port (.*)")]
+	public void ThenPortNumberRequestsTargetParticipantPort(int port)
+	{
+		this.responseContent.Should().Contain(
+			$"action=\"/participants/{port}/parameters/current/1\"");
+	}
+
+	[Then(@"the Router-only Routing Table browser is unavailable")]
+	public void ThenTheRouterOnlyRoutingTableBrowserIsUnavailable()
+	{
+		this.responseContent.Should().NotContain("Routing Table entries");
 	}
 
 	public void Dispose()

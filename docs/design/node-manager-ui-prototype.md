@@ -71,5 +71,19 @@ The workspace also provides a selected Routing Table range browser, initially
 for entries `1` through `1`. It sends the existing `Param_req_multiple`
 workflow, displays returned entry numbers and next nodes, and enables **Next
 entries** only when the response signals `more_values`.
+The persistent Network and Parameters navigation links retain the selected
+Communications Address, and the active workspace is identified through the
+navigation state as well as its page heading.
+Each discovered local Participant offers **View Parameters**, carrying its
+port-derived Communications Address and Agent Type into the Parameters
+workspace. The local Router row does not present an unsupported Participant
+Parameters action.
+Recognized Participant Agent Types render their own Parameter catalogue rather
+than Router content. The LAN MTA, Printer, and Network Management UA
+catalogues use the selected Communications Address to validate and derive the
+Participant port for their existing scalar Parameter request endpoint. A
+missing, malformed, or unsupported Participant selection has an explicit
+unavailable state; Router-only Routing Table controls remain exclusive to the
+Router workspace.
 
 The original `Home/Index.cshtml` test page remains unchanged.
