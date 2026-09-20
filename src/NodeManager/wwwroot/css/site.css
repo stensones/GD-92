@@ -246,6 +246,10 @@ h2 {
     overflow-y: auto;
 }
 
+.parameters-workspace {
+    grid-template-columns: 1fr;
+}
+
 .panel {
     padding: 1.5rem;
     border: 1px solid var(--border);

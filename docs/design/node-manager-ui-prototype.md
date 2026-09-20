@@ -41,8 +41,10 @@ Address—rather than replacing it with generic UI terms.
 ## Implemented prototype surface
 
 The Network workspace is available at `/network?address={communications-address}`.
-It retains the selected Communications Address in the workspace context, exposes
-the existing local Router Inventory Scan, and states explicitly that remote
+Without an address query it defaults to the configured local Router address,
+retains that address in the workspace context, and exposes a **Local Router
+Parameters** action for the Router-specific Parameters workflow. It also exposes
+the existing local Router Inventory Scan and states explicitly that remote
 catalogue discovery is unavailable until GD-92 provides a supporting workflow.
 An active Inventory Scan announces progress in a labelled status region,
 disables only its own action, displays discovered local Participants in a
@@ -58,19 +60,21 @@ implemented. The optional `parameterTable` query selects the matching table;
 an invalid or absent selection defaults to `Current`. Selecting a table in the
 browser preserves the selected Communications Address and Agent Type while
 navigating to that query state.
-For a selected local Router, the workspace can request the selected table's
-Brigade or Agency Parameter through the existing GD-92 request workflow. Its labelled
-status remains visible as Pending, Received, Rejected, Timed out, or Delivery
-failed; it shows a returned value or rejection reason only when the Router
-returns one.
-The selected Router catalogue presently contains that Parameter as its first
-typed row: Number, Name, Value, Read State, and Last Read. Its initial Read
-State is `Not read`; a Last Read value appears only after a final request
-outcome.
-The workspace also provides a selected Routing Table range browser, initially
-for entries `1` through `1`. It sends the existing `Param_req_multiple`
-workflow, displays returned entry numbers and next nodes, and enables **Next
-entries** only when the response signals `more_values`.
+For a selected local Router, the workspace presents the complete known Router
+catalogue: scalar Parameters 1-12 and 18-20, plus Routing, PSTN, WAN, LAN,
+ISDN, and MDT Tables. Safe scalar Parameters are selectable from their typed
+catalogue rows and use the existing GD-92 request workflow. Each selected
+detail retains the address, Agent Type, and Parameter Table in the URL, and
+shows its own value, Read State, Last Read, and labelled Pending, Received,
+Rejected, Timed out, or Delivery failed outcome. This includes Brigade or
+Agency (Parameter 1). Password Parameters 4-8 remain visible but permanently
+redacted, with no value-read control.
+Each Router Parameter Table has a selected range browser, initially for
+entries `1` through `1`. It sends the existing `Param_req_multiple` workflow,
+displays the returned type-specific columns, and enables **Next entries** only
+when the response signals `more_values`. The Router catalogue and selected
+table browser stack in one independently scrollable workspace region, so all
+Parameter rows remain reachable.
 The persistent Network and Parameters navigation links retain the selected
 Communications Address, and the active workspace is identified through the
 navigation state as well as its page heading.

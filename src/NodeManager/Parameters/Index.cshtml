@@ -1,4 +1,5 @@
 @using NodeManager.Parameters
+@using NodeManager.Router.Parameters
 @{
     Layout = "_Layout";
     ViewData["Title"] = "Parameters";
@@ -17,6 +18,62 @@
     var participantPort = ViewData["ParticipantPort"] as byte?;
     var participantParametersAvailable =
         ViewData["ParticipantParametersAvailable"] as bool? ?? false;
+    var selectedRouterParameter =
+        ViewData["SelectedRouterParameter"] as ParameterCatalogueEntry;
+    var routerParameters =
+        ViewData["RouterParameters"] as IReadOnlyList<ParameterCatalogueEntry> ?? [];
+    var selectedRouterTable =
+        ViewData["SelectedRouterTable"] as RouterParameterTableDefinition;
+    var selectedRouterTableResponseField = selectedRouterTable?.ParameterNumber.Value switch
+    {
+        13 => "routingTableEntries",
+        14 => "pstnTableEntries",
+        15 => "wanTableEntries",
+        16 => "lanTableEntries",
+        17 => "isdnTableEntries",
+        21 => "mdtTableEntries",
+        _ => null
+    };
+    var selectedRouterTableColumns = selectedRouterTable?.ParameterNumber.Value switch
+    {
+        13 => new[] { (Header: "Entry index", Property: "index"), (Header: "Next node", Property: "nextNode") },
+        14 or 17 => new[]
+        {
+            (Header: "Entry index", Property: "index"),
+            (Header: "Used", Property: "used"),
+            (Header: "Next node", Property: "nextNode"),
+            (Header: "Telephone number", Property: "telephoneNumber"),
+            (Header: "Hold time", Property: "holdTime"),
+            (Header: "Available", Property: "available")
+        },
+        15 => new[]
+        {
+            (Header: "Entry index", Property: "index"),
+            (Header: "Used", Property: "used"),
+            (Header: "Next node", Property: "nextNode"),
+            (Header: "WAN address", Property: "wanAddress"),
+            (Header: "Connect type", Property: "connectType")
+        },
+        16 => new[]
+        {
+            (Header: "Entry index", Property: "index"),
+            (Header: "Used", Property: "used"),
+            (Header: "Next node", Property: "nextNode"),
+            (Header: "LAN address", Property: "lanAddress")
+        },
+        21 => new[]
+        {
+            (Header: "Entry index", Property: "index"),
+            (Header: "Used", Property: "used"),
+            (Header: "Next node", Property: "nextNode"),
+            (Header: "Network user address", Property: "networkUserAddress"),
+            (Header: "Hold time", Property: "holdTime"),
+            (Header: "Available", Property: "available")
+        },
+        _ => []
+    };
+    var brigadeOrAgencyParameter = routerParameters.Single(
+        parameter => parameter.Number == 1);
 }
 
 <div class="workspace">
@@ -35,7 +92,8 @@
         </div>
     </header>
 
-    <section class="panel" aria-labelledby="parameter-table-heading">
+    <div class="dashboard-grid parameters-workspace">
+        <section class="panel" aria-labelledby="parameter-table-heading">
         <p class="panel-kicker">@parameterTableName parameter values</p>
         <h2 id="parameter-table-heading">Parameter Table</h2>
         <label for="parameter-table">Parameter Table</label>
@@ -67,6 +125,26 @@
         </select>
         @if (isRouter)
         {
+        @if (selectedRouterParameter is not null)
+        {
+        <section class="parameter-detail" aria-labelledby="current-router-parameter-detail-heading">
+            <p class="panel-kicker">Current Router Parameter detail</p>
+            <h3 id="current-router-parameter-detail-heading">
+                Parameter @selectedRouterParameter.Number: @selectedRouterParameter.Name
+            </h3>
+            <p id="selected-router-parameter-value">No Parameter values have been read.</p>
+            <form class="inline-action" id="selected-router-parameter-request"
+                  action="/router/parameters/@parameterTable/@selectedRouterParameter.Number" method="post">
+                <button id="selected-router-parameter-request-submit" type="submit">
+                    Request @selectedRouterParameter.Name
+                </button>
+            </form>
+            <p id="selected-router-parameter-request-status" role="status"
+               aria-label="@selectedRouterParameter.Name Parameter read status">
+                Pending, Received, Rejected, Timed out, Delivery failed.
+            </p>
+        </section>
+        }
         <table>
             <caption>@parameterTableName Router Parameter Table</caption>
             <thead>
@@ -79,13 +157,59 @@
                 </tr>
             </thead>
             <tbody>
+                @foreach (var parameter in routerParameters)
+                {
+                @if (parameter.Number == brigadeOrAgencyParameter.Number)
+                {
                 <tr>
-                    <td>1</td>
-                    <th scope="row">Brigade or Agency</th>
+                    <td>@parameter.Number</td>
+                    <th scope="row">@parameter.Name</th>
                     <td id="brigade-or-agency-value">No Parameter values have been read.</td>
                     <td id="brigade-or-agency-read-state">Not read</td>
                     <td id="brigade-or-agency-last-read"></td>
                 </tr>
+                }
+                else if (parameter.Kind == ParameterCatalogueEntryKind.ReadableScalar)
+                {
+                <tr>
+                    <td>@parameter.Number</td>
+                    <th scope="row">
+                        <a href="@Url.Action("Index", "Parameters", new { address = communicationsAddress, agentType, parameterTable, selectedParameter = parameter.Number })">
+                            @parameter.Name
+                        </a>
+                    </th>
+                    <td id="router-parameter-@parameter.Number-value">
+                        No Parameter values have been read.
+                    </td>
+                    <td id="router-parameter-@parameter.Number-read-state">Not read</td>
+                    <td id="router-parameter-@parameter.Number-last-read"></td>
+                </tr>
+                }
+                else if (parameter.Kind == ParameterCatalogueEntryKind.ProtectedScalar)
+                {
+                <tr>
+                    <td>@parameter.Number</td>
+                    <th scope="row">@parameter.Name</th>
+                    <td>Protected; value redacted.</td>
+                    <td>Protected</td>
+                    <td></td>
+                </tr>
+                }
+                else
+                {
+                <tr>
+                    <td>@parameter.Number</td>
+                    <th scope="row">
+                        <a href="@Url.Action("Index", "Parameters", new { address = communicationsAddress, agentType, parameterTable, selectedTableParameter = parameter.Number })">
+                            @parameter.Name
+                        </a>
+                    </th>
+                    <td>No Parameter values have been read.</td>
+                    <td>Not read</td>
+                    <td></td>
+                </tr>
+                }
+                }
             </tbody>
         </table>
         <form class="inline-action" id="brigade-or-agency-parameter-request"
@@ -98,6 +222,9 @@
            aria-label="Brigade or Agency Parameter read status">
             Pending, Received, Rejected, Timed out, Delivery failed.
         </p>
+        <a href="@Url.Action("Index", "Parameters", new { address = communicationsAddress, agentType, parameterTable, selectedParameter = brigadeOrAgencyParameter.Number })">
+            View @brigadeOrAgencyParameter.Name
+        </a>
         }
         else if (participantParametersAvailable)
         {
@@ -148,15 +275,15 @@
             selected Communications Address.
         </p>
         }
-    </section>
+        </section>
 
-    @if (isRouter)
-    {
-    <section class="panel" aria-labelledby="routing-table-heading">
+        @if (isRouter)
+        {
+        <section class="panel" aria-labelledby="routing-table-heading">
         <p class="panel-kicker">@parameterTableName parameter values</p>
-        <h2 id="routing-table-heading">@parameterTableName Routing Table entries</h2>
+        <h2 id="routing-table-heading">@parameterTableName Router @selectedRouterTable!.Name entries</h2>
         <form class="inline-action" id="routing-table-request"
-              action="/router/parameters/@parameterTable/13/entries/1-1" method="post">
+              action="/router/parameters/@parameterTable/@selectedRouterTable.ParameterNumber.Value/entries/1-1" method="post">
             <label for="routing-table-first-entry">First entry</label>
             <input id="routing-table-first-entry" name="first-entry" type="number"
                    min="1" step="1" value="1" required />
@@ -169,15 +296,17 @@
         </form>
         <p id="routing-table-request-range">Requested entries: 1 through 1.</p>
         <p id="routing-table-request-status" role="status"
-           aria-label="Routing Table request status">
+           aria-label="@selectedRouterTable.Name request status">
             Pending, Received, Rejected, Timed out, Delivery failed.
         </p>
         <table id="routing-table-results" hidden>
-            <caption>Received @parameterTableName Routing Table entries</caption>
+            <caption>@parameterTableName Router @selectedRouterTable.Name entries</caption>
             <thead>
                 <tr>
-                    <th scope="col">Entry index</th>
-                    <th scope="col">Next node</th>
+                    @foreach (var column in selectedRouterTableColumns)
+                    {
+                    <th scope="col">@column.Header</th>
+                    }
                 </tr>
             </thead>
             <tbody></tbody>
@@ -186,8 +315,9 @@
                 aria-controls="routing-table-results">
             Next entries
         </button>
-    </section>
-    }
+        </section>
+        }
+    </div>
 </div>
 
 @if (isRouter || participantParametersAvailable)
@@ -231,6 +361,7 @@
 {
 <script>
     const selectedParameterTable = "@parameterTable";
+    const selectedRouterTableParameterNumber = @selectedRouterTable!.ParameterNumber.Value;
     const parameterRequestForm = document.getElementById("brigade-or-agency-parameter-request");
     const parameterRequestButton = document.getElementById(
         "brigade-or-agency-parameter-request-submit");
@@ -239,6 +370,24 @@
     const brigadeOrAgencyValue = document.getElementById("brigade-or-agency-value");
     const brigadeOrAgencyReadState = document.getElementById("brigade-or-agency-read-state");
     const brigadeOrAgencyLastRead = document.getElementById("brigade-or-agency-last-read");
+    const selectedRouterParameterRequestForm = document.getElementById(
+        "selected-router-parameter-request");
+    const selectedRouterParameterRequestButton = document.getElementById(
+        "selected-router-parameter-request-submit");
+    const selectedRouterParameterRequestStatus = document.getElementById(
+        "selected-router-parameter-request-status");
+    const selectedRouterParameterDetailValue = document.getElementById(
+        "selected-router-parameter-value");
+    const selectedRouterParameterNumber = @(selectedRouterParameter?.Number ?? 0);
+    const selectedRouterParameterRowValue = selectedRouterParameterNumber === 1
+        ? brigadeOrAgencyValue
+        : document.getElementById(`router-parameter-${selectedRouterParameterNumber}-value`);
+    const selectedRouterParameterRowReadState = selectedRouterParameterNumber === 1
+        ? brigadeOrAgencyReadState
+        : document.getElementById(`router-parameter-${selectedRouterParameterNumber}-read-state`);
+    const selectedRouterParameterRowLastRead = selectedRouterParameterNumber === 1
+        ? brigadeOrAgencyLastRead
+        : document.getElementById(`router-parameter-${selectedRouterParameterNumber}-last-read`);
     const routingTableRequestForm = document.getElementById("routing-table-request");
     const routingTableRequestButton = document.getElementById("routing-table-request-submit");
     const routingTableFirstEntry = document.getElementById("routing-table-first-entry");
@@ -281,9 +430,52 @@
             });
     });
 
+    if (selectedRouterParameterRequestForm) {
+        selectedRouterParameterRequestForm.addEventListener("submit", async event => {
+            event.preventDefault();
+            await submitScalarParameterRequest(
+                selectedRouterParameterRequestForm,
+                selectedRouterParameterRequestButton,
+                () => {
+                    selectedRouterParameterRowReadState.textContent = "Pending";
+                    selectedRouterParameterRequestStatus.textContent = "Pending.";
+                },
+                result => {
+                    const state = formatParameterReadState(result.state);
+                    selectedRouterParameterRowReadState.textContent = state;
+                    selectedRouterParameterRowLastRead.textContent = new Date().toLocaleString();
+
+                    if (result.state === "received") {
+                        selectedRouterParameterDetailValue.textContent =
+                            result.parameterValue ?? "No value returned.";
+                        selectedRouterParameterRowValue.textContent =
+                            selectedRouterParameterDetailValue.textContent;
+                        selectedRouterParameterRequestStatus.textContent =
+                            `Received: ${selectedRouterParameterDetailValue.textContent}`;
+                    } else if (result.state === "rejected" && result.rejectionReason) {
+                        selectedRouterParameterDetailValue.textContent = "Rejected";
+                        selectedRouterParameterRowValue.textContent = "Rejected";
+                        selectedRouterParameterRequestStatus.textContent =
+                            `Rejected: ${result.rejectionReason}`;
+                    } else {
+                        selectedRouterParameterDetailValue.textContent = state;
+                        selectedRouterParameterRowValue.textContent = state;
+                        selectedRouterParameterRequestStatus.textContent = `${state}.`;
+                    }
+                },
+                () => {
+                    selectedRouterParameterRowReadState.textContent = "Delivery failed";
+                    selectedRouterParameterRowLastRead.textContent = new Date().toLocaleString();
+                    selectedRouterParameterRowValue.textContent = "Delivery failed";
+                    selectedRouterParameterDetailValue.textContent = "Delivery failed";
+                    selectedRouterParameterRequestStatus.textContent = "Delivery failed.";
+                });
+        });
+    }
+
     const updateRoutingTableRequest = (firstEntry, lastEntry) => {
         routingTableRequestForm.action =
-            `/router/parameters/${selectedParameterTable}/13/entries/${firstEntry}-${lastEntry}`;
+            `/router/parameters/${selectedParameterTable}/${selectedRouterTableParameterNumber}/entries/${firstEntry}-${lastEntry}`;
         routingTableRequestRange.textContent =
             `Requested entries: ${firstEntry} through ${lastEntry}.`;
     };
@@ -297,12 +489,18 @@
         routingTableResultRows.replaceChildren();
         for (const entry of entries) {
             const row = document.createElement("tr");
-            const index = document.createElement("th");
-            index.scope = "row";
-            index.textContent = entry.index;
-            const nextNode = document.createElement("td");
-            nextNode.textContent = entry.nextNode;
-            row.append(index, nextNode);
+            @foreach (var column in selectedRouterTableColumns)
+            {
+            <text>
+            const @Html.Raw(column.Property) = document.createElement("@(column.Property == "index" ? "th" : "td")");
+            @if (column.Property == "index")
+            {
+            <text>@Html.Raw($"{column.Property}.scope = \"row\";")</text>
+            }
+            @Html.Raw($"{column.Property}.textContent = entry.{column.Property};")
+            @Html.Raw($"row.append({column.Property});")
+            </text>
+            }
             routingTableResultRows.append(row);
         }
 
@@ -330,17 +528,17 @@
                 return;
             }
 
-            const entries = result.routingTableEntries ?? [];
+            const tableEntries = result.@selectedRouterTableResponseField ?? [];
             const hasMoreValues = result.moreValues === true;
-            renderRoutingTableEntries(entries);
-            setNextRoutingTableEntryRange(hasMoreValues && entries.length > 0
-                ? { firstEntry: entries.at(-1).index + 1, lastEntry }
+            renderRoutingTableEntries(tableEntries);
+            setNextRoutingTableEntryRange(hasMoreValues && tableEntries.length > 0
+                ? { firstEntry: tableEntries.at(-1).index + 1, lastEntry }
                 : null);
             const hasNextEntries = nextRoutingTableEntryRange !== null;
             routingTableNextEntries.disabled = !hasNextEntries;
-            routingTableRequestStatus.textContent = entries.length === 0
-                ? "Received: No Routing Table entries were returned."
-                : `Received: ${entries.length} Routing Table entries.`;
+            routingTableRequestStatus.textContent = tableEntries.length === 0
+                ? "Received: No @selectedRouterTable.Name entries were returned."
+                : `Received: ${tableEntries.length} @selectedRouterTable.Name entries.`;
         } catch {
             routingTableRequestStatus.textContent = "Delivery failed.";
         } finally {

@@ -21,6 +21,15 @@ public sealed class NodeManagerNetworkWorkspaceSteps : IDisposable
 			.GetResult();
 	}
 
+	[Given(@"an operator opens the default Network workspace")]
+	public void GivenAnOperatorOpensTheDefaultNetworkWorkspace()
+	{
+		this.application = new NodeManagerApplicationFactory();
+		this.response = this.application.CreateClient().GetAsync("/network")
+			.GetAwaiter()
+			.GetResult();
+	}
+
 	[When(@"the Network workspace is displayed")]
 	public async Task WhenTheNetworkWorkspaceIsDisplayed()
 	{
@@ -84,6 +93,19 @@ public sealed class NodeManagerNetworkWorkspaceSteps : IDisposable
 	{
 		this.responseContent.Should().Contain("/parameters?address=");
 		this.responseContent.Should().Contain("agentType");
+	}
+
+	[Then(@"Local Router Parameters are available")]
+	public void ThenLocalRouterParametersAreAvailable()
+	{
+		this.responseContent.Should().Contain("Local Router Parameters");
+	}
+
+	[Then(@"Local Router Parameters retain the selected address and Router Agent Type")]
+	public void ThenLocalRouterParametersRetainTheSelectedAddressAndRouterAgentType()
+	{
+		this.responseContent.Should().Contain(
+			"href=\"/parameters?address=26.100.0&amp;agentType=Router\"");
 	}
 
 	public void Dispose()

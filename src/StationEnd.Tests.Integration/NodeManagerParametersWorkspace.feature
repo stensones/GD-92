@@ -49,3 +49,42 @@ Feature: Node Manager Parameters workspace
     And the LAN MTA catalogue includes Port Number and Agent Type
     And Port Number requests target participant port 3
     And the Router-only Routing Table browser is unavailable
+
+  Scenario: Reading a selected Router Node Number Parameter
+    Given an operator opens the Router Parameters workspace for address 26.100.0 with Node Number selected
+    When the Parameters workspace is displayed
+    Then the Current Router Node Number detail identifies Parameter 2
+    And Node Number requests target the local Router Current Parameter Table
+    And the Node Number read status identifies Pending, Received, Rejected, Timed out, and Delivery failed
+
+  Scenario: Selecting Router Node Number from the catalogue
+    Given an operator opens the default Parameters workspace for Router address 26.100.0
+    When the Parameters workspace is displayed
+    Then the Node Number catalogue row has Parameter Number 2
+    And Node Number selection retains Router Parameters context
+
+  Scenario: Viewing the complete Router Parameter catalogue
+    Given an operator opens the default Parameters workspace for Router address 26.100.0
+    When the Parameters workspace is displayed
+    Then the Router catalogue lists every supported scalar and table Parameter
+    And every readable Router scalar Parameter has a context-preserving selection
+    And Router Password Parameters are identified as protected
+
+  Scenario: Reading a selected safe Router scalar Parameter
+    Given an operator opens the Router Parameters workspace for address 26.100.0 with Brigade or Agency selected
+    When the Parameters workspace is displayed
+    Then the Current Router Brigade or Agency detail identifies Parameter 1
+    And Brigade or Agency requests target the local Router Current Parameter Table
+    And every readable Router scalar detail offers its own Current Parameter request
+
+  Scenario: Browsing a selected Router Parameter Table
+    Given an operator opens the Router Parameters workspace for address 26.100.0 with PSTN Table selected
+    When the Parameters workspace is displayed
+    Then the Current Router PSTN Table entries 1 through 1 can be requested
+    And every Router Parameter Table selection retains context and targets its own Current entry range
+    And the PSTN Table request status identifies Pending, Received, Rejected, Timed out, and Delivery failed
+
+  Scenario: Viewing the full Router catalogue without overlapping panels
+    Given an operator opens the default Parameters workspace for Router address 26.100.0
+    When the Parameters workspace is displayed
+    Then Router Parameter panels are contained in one scrollable workspace region

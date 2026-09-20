@@ -28,6 +28,9 @@
                 Scan the 63 Participant ports on this local Communications Node for the Router,
                 Message Transfer Agents, and User Agents.
             </p>
+            <a href="@($"/parameters?address={communicationsAddress}&agentType=Router")">
+                Local Router Parameters
+            </a>
             <form class="inline-action" id="network-inventory-scan"
                   action="/router/participants/discovery" method="post"
                   data-communications-address="@communicationsAddress">

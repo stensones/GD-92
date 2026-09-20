@@ -19,3 +19,10 @@ Feature: Node Manager Network workspace
     When the Network workspace is displayed
     Then discovered Participants offer a View Parameters action
     And the Parameters action retains the local node address and Agent Type
+
+  Scenario: Opening Router Parameters from the default Network workspace
+    Given an operator opens the default Network workspace
+    When the Network workspace is displayed
+    Then the selected Communications Address 26.100.0 is visible
+    And Local Router Parameters are available
+    And Local Router Parameters retain the selected address and Router Agent Type
