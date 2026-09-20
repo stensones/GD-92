@@ -13,6 +13,7 @@
     <PackageReference Include="AwesomeAssertions" />
     <PackageReference Include="coverlet.collector" />
     <PackageReference Include="Microsoft.NET.Test.Sdk" />
+    <PackageReference Include="Microsoft.AspNetCore.Mvc.Testing" />
     <PackageReference Include="Npgsql" />
     <PackageReference Include="RabbitMQ.Client" />
     <PackageReference Include="Reqnroll.Tools.MsBuild.Generation" />

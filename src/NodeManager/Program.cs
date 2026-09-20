@@ -26,12 +26,15 @@ builder.Services.AddSignalR();
 var requestSettings = RouterParameterRequestSettings.FromConfiguration(builder.Configuration);
 var inventoryScanSettings = InventoryScanSettings.FromConfiguration(builder.Configuration);
 
-builder.Services.AddWolverine(options =>
+if (!builder.Environment.IsEnvironment("Testing"))
 {
-	options.UseRabbitMqUsingNamedConnection("RabbitMQ").AutoProvision();
-	options.ListenForUserAgentIngress(requestSettings.MessageOriginator);
-	options.ListenForLocalParticipantIngress(requestSettings.MessageOriginator);
-});
+	builder.Services.AddWolverine(options =>
+	{
+		options.UseRabbitMqUsingNamedConnection("RabbitMQ").AutoProvision();
+		options.ListenForUserAgentIngress(requestSettings.MessageOriginator);
+		options.ListenForLocalParticipantIngress(requestSettings.MessageOriginator);
+	});
+}
 
 builder.Services.AddSingleton(requestSettings);
 builder.Services.AddSingleton(requestSettings.ManagementTransactionRetryPolicy);
@@ -56,8 +59,9 @@ builder.Services.AddScoped<IRouterParameterRequestService, RouterParameterReques
 
 var app = builder.Build();
 
-await using (var scope = app.Services.CreateAsyncScope())
+if (!app.Environment.IsEnvironment("Testing"))
 {
+	await using var scope = app.Services.CreateAsyncScope();
 	var database = scope.ServiceProvider.GetRequiredService<NodeManagerDbContext>();
 	await database.Database.MigrateAsync();
 
@@ -83,3 +87,5 @@ app.MapControllerRoute(
 	pattern: "{controller=Home}/{action=Index}/{id?}");
 
 app.Run();
+
+public sealed class NodeManagerApplication;

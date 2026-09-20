@@ -1,0 +1,133 @@
+@{
+    Layout = "_Layout";
+    ViewData["Title"] = "Network";
+    var communicationsAddress = ViewData["SelectedCommunicationsAddress"] as string;
+}
+
+<div class="workspace">
+    <header class="workspace-header">
+        <div>
+            <p class="eyebrow">Network</p>
+            <h1>Network workspace</h1>
+            <p class="workspace-introduction">
+                Inspect the selected local Communications Address and discover its Participants.
+            </p>
+        </div>
+        <div class="workspace-context" aria-label="Selected Communications Address">
+            <span>Selected Communications Address</span>
+            <strong>@communicationsAddress</strong>
+            <small>Local Communications Node</small>
+        </div>
+    </header>
+
+    <div class="dashboard-grid">
+        <section class="panel" aria-labelledby="local-participant-discovery-heading">
+            <p class="panel-kicker">Local capability</p>
+            <h2 id="local-participant-discovery-heading">Local Participant discovery</h2>
+            <p>
+                Scan the 63 Participant ports on this local Communications Node for the Router,
+                Message Transfer Agents, and User Agents.
+            </p>
+            <form class="inline-action" id="network-inventory-scan"
+                  action="/router/participants/discovery" method="post"
+                  data-communications-address="@communicationsAddress">
+                <button id="network-inventory-scan-submit" type="submit">Inventory Scan</button>
+            </form>
+            <p id="network-inventory-scan-status" role="status"
+               aria-label="Inventory Scan progress">
+                Inventory Scan for @communicationsAddress: 0 of 63 probes completed.
+            </p>
+            <table id="network-inventory-scan-results">
+                <caption>Discovered local Participants</caption>
+                <thead>
+                    <tr>
+                        <th scope="col">Port</th>
+                        <th scope="col">Agent Type</th>
+                    </tr>
+                </thead>
+                <tbody></tbody>
+            </table>
+            <dl id="network-inventory-scan-outcomes" aria-label="Inventory Scan outcomes">
+                <div>
+                    <dt>Received</dt>
+                    <dd id="network-inventory-scan-received">0</dd>
+                </div>
+                <div>
+                    <dt>Rejected</dt>
+                    <dd id="network-inventory-scan-rejected">0</dd>
+                </div>
+                <div>
+                    <dt>Timed out</dt>
+                    <dd id="network-inventory-scan-timed-out">0</dd>
+                </div>
+                <div>
+                    <dt>Delivery failed</dt>
+                    <dd id="network-inventory-scan-delivery-failed">0</dd>
+                </div>
+            </dl>
+        </section>
+
+        <section class="panel" aria-labelledby="remote-catalogue-heading">
+            <p class="panel-kicker">Remote capability</p>
+            <h2 id="remote-catalogue-heading">Remote catalogue discovery</h2>
+            <p role="status">Remote catalogue discovery is unavailable</p>
+        </section>
+    </div>
+</div>
+
+<script src="~/lib/signalr/signalr.min.js"></script>
+<script src="~/js/management-transactions.js"></script>
+<script>
+    const inventoryScanForm = document.getElementById("network-inventory-scan");
+    const inventoryScanButton = document.getElementById("network-inventory-scan-submit");
+    const inventoryScanStatus = document.getElementById("network-inventory-scan-status");
+    const inventoryScanRows = document.querySelector("#network-inventory-scan-results tbody");
+    const receivedOutcome = document.getElementById("network-inventory-scan-received");
+    const rejectedOutcome = document.getElementById("network-inventory-scan-rejected");
+    const timedOutOutcome = document.getElementById("network-inventory-scan-timed-out");
+    const deliveryFailedOutcome = document.getElementById("network-inventory-scan-delivery-failed");
+    const selectedCommunicationsAddress = inventoryScanForm.dataset.communicationsAddress;
+
+    const renderInventoryScan = scan => {
+        inventoryScanStatus.textContent =
+            `Inventory Scan for ${selectedCommunicationsAddress}: ` +
+            `${scan.completedProbeCount} of 63 probes completed.`;
+        inventoryScanRows.replaceChildren();
+
+        for (const participant of scan.participants) {
+            const row = document.createElement("tr");
+            for (const value of [participant.port, participant.agentType ?? ""]) {
+                const cell = document.createElement("td");
+                cell.textContent = value;
+                row.append(cell);
+            }
+
+            inventoryScanRows.append(row);
+        }
+
+        receivedOutcome.textContent = scan.summary.discoveredParticipantCount;
+        rejectedOutcome.textContent = Object.values(scan.summary.negativeAcknowledgements)
+            .reduce((total, count) => total + count, 0);
+        timedOutOutcome.textContent = scan.summary.timeoutCount;
+        deliveryFailedOutcome.textContent = scan.summary.deliveryFailureCount;
+    };
+
+    inventoryScanForm.addEventListener("submit", async event => {
+        event.preventDefault();
+        inventoryScanButton.disabled = true;
+        inventoryScanStatus.textContent =
+            `Inventory Scan for ${selectedCommunicationsAddress} is starting.`;
+
+        try {
+            await managementTransactions.observe(inventoryScanForm.action, {
+                method: "POST",
+                onStatus: renderInventoryScan,
+                isComplete: scan => scan.completedProbeCount === 63
+            });
+        } catch {
+            inventoryScanStatus.textContent = "The Inventory Scan could not be submitted.";
+        } finally {
+            inventoryScanButton.disabled = false;
+        }
+    });
+</script>
