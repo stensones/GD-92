@@ -1,11 +1,14 @@
 using Microsoft.AspNetCore.SignalR;
 using NodeManager.Router.Parameters;
+using NodeManager.Router.Participants;
 
 namespace NodeManager.RealTime;
 
 public interface IManagementTransactionClient
 {
 	Task TransactionCompleted(ManagementTransactionCompletion notification);
+
+	Task InventoryScanUpdated(InventoryScanProgressUpdate update);
 }
 
 public sealed class ManagementTransactionHub :
@@ -41,5 +44,25 @@ public sealed class SignalRManagementTransactionUiNotifier(
 		return this.hubContext.Clients
 			.Group(BrowserSessionIdentifier.GroupName(notification.BrowserSessionIdentifier))
 			.TransactionCompleted(notification);
+	}
+}
+
+public sealed class SignalRInventoryScanUiNotifier(
+	IHubContext<ManagementTransactionHub, IManagementTransactionClient> hubContext) :
+	IInventoryScanUiNotifier
+{
+	private readonly IHubContext<ManagementTransactionHub, IManagementTransactionClient> hubContext =
+		hubContext ?? throw new ArgumentNullException(nameof(hubContext));
+
+	public Task NotifyAsync(
+		InventoryScanProgressUpdate update,
+		CancellationToken cancellationToken)
+	{
+		ArgumentNullException.ThrowIfNull(update);
+		cancellationToken.ThrowIfCancellationRequested();
+
+		return this.hubContext.Clients
+			.Group(BrowserSessionIdentifier.GroupName(update.BrowserSessionIdentifier))
+			.InventoryScanUpdated(update);
 	}
 }

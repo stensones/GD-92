@@ -1,6 +1,8 @@
 window.managementTransactions = (() => {
     const requestIdentifierHeader = "X-GD92-Management-Request-Id";
     const pendingRequests = new Map();
+    const pendingObservations = new Map();
+    const normalizeRequestIdentifier = identifier => identifier.replaceAll("-", "");
     let startingConnection;
 
     const connection = new signalR.HubConnectionBuilder()
@@ -51,7 +53,7 @@ window.managementTransactions = (() => {
     };
 
     connection.on("TransactionCompleted", notification => {
-        const request = pendingRequests.get(notification.requestIdentifier.replaceAll("-", ""));
+        const request = pendingRequests.get(normalizeRequestIdentifier(notification.requestIdentifier));
         if (request === undefined) {
             return;
         }
@@ -60,9 +62,62 @@ window.managementTransactions = (() => {
         void complete(request);
     });
 
+    const updateObservation = (observation, status) => {
+        try {
+            observation.onStatus(status);
+            if (observation.isComplete(status)) {
+                pendingObservations.delete(observation.identifier);
+                observation.resolve(status);
+            }
+        } catch (error) {
+            pendingObservations.delete(observation.identifier);
+            observation.reject(error);
+        }
+    };
+
+    const refreshObservation = async observation => {
+        if (observation.statusUrl === undefined || observation.refreshing) {
+            observation.refreshPending = true;
+            return;
+        }
+
+        observation.refreshing = true;
+        observation.refreshPending = false;
+        try {
+            const response = await fetch(observation.statusUrl);
+            if (!response.ok) {
+                throw new Error("The Inventory Scan status could not be retrieved.");
+            }
+
+            const status = await response.json();
+            updateObservation(observation, status);
+        } catch (error) {
+            pendingObservations.delete(observation.identifier);
+            observation.reject(error);
+        } finally {
+            observation.refreshing = false;
+            if (observation.refreshPending &&
+                pendingObservations.has(observation.identifier)) {
+                void refreshObservation(observation);
+            }
+        }
+    };
+
+    connection.on("InventoryScanUpdated", notification => {
+        const observation = pendingObservations.get(
+            normalizeRequestIdentifier(notification.requestIdentifier));
+        if (observation !== undefined) {
+            updateObservation(observation, notification.status);
+        }
+    });
+
     const reconcileOutstandingRequests = () => {
         for (const request of pendingRequests.values()) {
             void complete(request);
+        }
+
+        for (const observation of pendingObservations.values()) {
+            void refreshObservation(observation);
         }
     };
 
@@ -121,6 +176,51 @@ window.managementTransactions = (() => {
                 }
             } catch (error) {
                 pendingRequests.delete(identifier);
+                reject(error);
+            }
+
+            return completion;
+        },
+
+        async observe(url, { onStatus, isComplete, ...options }) {
+            await startConnection();
+
+            const identifier = crypto.randomUUID().replaceAll("-", "");
+            let resolve;
+            let reject;
+            const completion = new Promise((resolvePromise, rejectPromise) => {
+                resolve = resolvePromise;
+                reject = rejectPromise;
+            });
+            const observation = {
+                identifier,
+                resolve,
+                reject,
+                statusUrl: undefined,
+                refreshing: false,
+                refreshPending: false,
+                onStatus,
+                isComplete
+            };
+            pendingObservations.set(identifier, observation);
+
+            try {
+                const headers = new Headers(options.headers);
+                headers.set(requestIdentifierHeader, identifier);
+                const response = await fetch(url, { ...options, headers });
+                if (!response.ok || !response.url) {
+                    throw new Error("The Inventory Scan could not be submitted.");
+                }
+
+                observation.statusUrl = response.url;
+                const status = await response.json();
+                updateObservation(observation, status);
+                if (observation.refreshPending &&
+                    pendingObservations.has(identifier)) {
+                    void refreshObservation(observation);
+                }
+            } catch (error) {
+                pendingObservations.delete(identifier);
                 reject(error);
             }
 

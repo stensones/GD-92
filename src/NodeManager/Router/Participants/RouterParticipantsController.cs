@@ -8,9 +8,24 @@ public sealed class RouterParticipantsController(
 	InventoryScan inventoryScan) : Controller
 {
 	[HttpPost("discovery")]
-	public IActionResult StartDiscovery()
+	public async Task<IActionResult> StartDiscovery()
 	{
+		if (!ManagementTransactionUiRecipient.TryCreate(
+			this.HttpContext,
+			out var recipient,
+			out var validationError))
+		{
+			return this.BadRequest(validationError);
+		}
+
 		var identifier = inventoryScan.Start();
+		if (recipient is not null)
+		{
+			await inventoryScan.RegisterUiRecipientAsync(
+				identifier,
+				recipient,
+				this.HttpContext.RequestAborted);
+		}
 
 		return new SeeOtherRedirectResult($"/router/participants/discovery/status/{identifier}");
 	}

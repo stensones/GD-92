@@ -497,35 +497,16 @@
         discoveryResults.hidden = true;
         discoverySummary.hidden = true;
 
-        const response = await fetch(discoveryForm.action, { method: "POST" });
-        const statusUrl = response.url;
-
-        if (!response.ok || !statusUrl) {
+        try {
+            await managementTransactions.observe(discoveryForm.action, {
+                method: "POST",
+                onStatus: renderInventoryScan,
+                isComplete: scan => scan.completedProbeCount === 63
+            });
+            discoveryButton.disabled = false;
+        } catch {
             discoveryStatus.textContent = "The Inventory Scan could not be submitted.";
             discoveryButton.disabled = false;
-            return;
         }
-
-        const poll = async () => {
-            const result = await fetch(statusUrl);
-
-            if (!result.ok) {
-                discoveryStatus.textContent = "The Inventory Scan could not be completed.";
-                discoveryButton.disabled = false;
-                return;
-            }
-
-            const scan = await result.json();
-            renderInventoryScan(scan);
-
-            if (scan.completedProbeCount < 63) {
-                window.setTimeout(poll, 1000);
-                return;
-            }
-
-            discoveryButton.disabled = false;
-        };
-
-        poll();
     });
 </script>

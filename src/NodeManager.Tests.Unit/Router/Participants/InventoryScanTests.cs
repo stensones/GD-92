@@ -120,6 +120,35 @@ public sealed class InventoryScanTests
 		secondStatus.CompletedProbeCount.Should().Be(63);
 	}
 
+	[Fact]
+	public async Task Notifies_the_registered_browser_as_an_Inventory_Scan_progresses()
+	{
+		var notifier = new RecordingInventoryScanUiNotifier();
+		var transactions = new BlockingTransactionService();
+		var inventoryScan = new InventoryScan(
+			new RouterParameterRequestSettings(Address(25), Address(0)),
+			InventoryScanSettings.FromConfiguration(new ConfigurationBuilder().Build()),
+			transactions,
+			new NonStoppingApplicationLifetime(),
+			notifier);
+		var identifier = inventoryScan.Start();
+		var recipient = new ManagementTransactionUiRecipient(
+			"browser-session",
+			Guid.ParseExact("4f621c699d7e4bd595ce062cff9b1cdc", "N"));
+
+		await inventoryScan.RegisterUiRecipientAsync(identifier, recipient, CancellationToken.None);
+		transactions.Complete();
+		await WaitForCompletionAsync(inventoryScan, identifier);
+
+		notifier.Updates.Should().HaveCount(64);
+		notifier.Updates.Should().OnlyContain(update =>
+			update.BrowserSessionIdentifier == "browser-session" &&
+			update.RequestIdentifier == recipient.RequestIdentifier &&
+			update.ScanIdentifier == identifier.ToString());
+		notifier.Updates.Should().Contain(update => update.Status.CompletedProbeCount == 0);
+		notifier.Updates.Should().Contain(update => update.Status.CompletedProbeCount == 63);
+	}
+
 	private static async Task<InventoryScanStatus> WaitForCompletionAsync(
 		InventoryScan inventoryScan,
 		InventoryScanStatusIdentifier identifier)
@@ -218,6 +247,23 @@ public sealed class InventoryScanTests
 				3 => new DeliveryFailedRouterParameterRequestStatus(statusIdentifier),
 				_ => new TimedOutRouterParameterRequestStatus(statusIdentifier)
 			});
+		}
+	}
+
+	private sealed class RecordingInventoryScanUiNotifier : IInventoryScanUiNotifier
+	{
+		public List<InventoryScanProgressUpdate> Updates { get; } = [];
+
+		public Task NotifyAsync(
+			InventoryScanProgressUpdate update,
+			CancellationToken cancellationToken)
+		{
+			lock (this.Updates)
+			{
+				this.Updates.Add(update);
+			}
+
+			return Task.CompletedTask;
 		}
 	}
 

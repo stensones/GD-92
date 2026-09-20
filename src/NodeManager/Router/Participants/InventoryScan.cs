@@ -1,3 +1,5 @@
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging.Abstractions;
 using NodeManager.Router.Parameters;
 using Stensones.GD92.Fields;
 using Stensones.GD92.Messages;
@@ -9,7 +11,9 @@ public sealed class InventoryScan(
 	RouterParameterRequestSettings settings,
 	InventoryScanSettings inventoryScanSettings,
 	IManagementTransactionService managementTransactions,
-	IHostApplicationLifetime applicationLifetime)
+	IHostApplicationLifetime applicationLifetime,
+	IInventoryScanUiNotifier? uiNotifier = null,
+	ILogger<InventoryScan>? logger = null)
 {
 	private const int FirstParticipantPort = 1;
 	private const int LastParticipantPort = 63;
@@ -21,8 +25,11 @@ public sealed class InventoryScan(
 		throw new ArgumentNullException(nameof(managementTransactions));
 	private readonly CancellationToken applicationStopping = applicationLifetime?.ApplicationStopping ??
 		throw new ArgumentNullException(nameof(applicationLifetime));
+	private readonly IInventoryScanUiNotifier uiNotifier = uiNotifier ?? new NullInventoryScanUiNotifier();
+	private readonly ILogger<InventoryScan> logger = logger ?? NullLogger<InventoryScan>.Instance;
 	private readonly object synchronizationLock = new();
 	private readonly Dictionary<Guid, InventoryScanStatus> statuses = [];
+	private readonly Dictionary<Guid, ManagementTransactionUiRecipient> uiRecipients = [];
 
 	public InventoryScanStatusIdentifier Start()
 	{
@@ -53,6 +60,30 @@ public sealed class InventoryScan(
 		{
 			return this.statuses.GetValueOrDefault(identifier.Value);
 		}
+	}
+
+	public async Task RegisterUiRecipientAsync(
+		InventoryScanStatusIdentifier identifier,
+		ManagementTransactionUiRecipient recipient,
+		CancellationToken cancellationToken)
+	{
+		ArgumentNullException.ThrowIfNull(identifier);
+		ArgumentNullException.ThrowIfNull(recipient);
+		cancellationToken.ThrowIfCancellationRequested();
+
+		InventoryScanProgressUpdate update;
+		lock (this.synchronizationLock)
+		{
+			if (!this.statuses.TryGetValue(identifier.Value, out var status))
+			{
+				throw new InvalidOperationException("The Inventory Scan does not exist.");
+			}
+
+			this.uiRecipients[identifier.Value] = recipient;
+			update = CreateProgressUpdate(identifier, recipient, status);
+		}
+
+		await this.NotifyUiAsync(update);
 	}
 
 	private async Task RunAsync(InventoryScanStatusIdentifier identifier)
@@ -110,23 +141,28 @@ public sealed class InventoryScan(
 		switch (status)
 		{
 			case ReceivedRouterParameterRequestStatus receivedResponse:
-				this.RecordParticipant(inventoryScanIdentifier, port, receivedResponse.ParameterValue);
+				await this.RecordParticipantAsync(
+					inventoryScanIdentifier,
+					port,
+					receivedResponse.ParameterValue);
 				break;
 			case RejectedRouterParameterRequestStatus rejectedResponse:
-				this.RecordNegativeAcknowledgement(inventoryScanIdentifier, rejectedResponse.ReasonCode);
+				await this.RecordNegativeAcknowledgementAsync(
+					inventoryScanIdentifier,
+					rejectedResponse.ReasonCode);
 				break;
 			case TimedOutRouterParameterRequestStatus:
-				this.RecordTimeout(inventoryScanIdentifier);
+				await this.RecordTimeoutAsync(inventoryScanIdentifier);
 				break;
 			case DeliveryFailedRouterParameterRequestStatus:
-				this.RecordDeliveryFailure(inventoryScanIdentifier);
+				await this.RecordDeliveryFailureAsync(inventoryScanIdentifier);
 				break;
 		}
 	}
 
-	private void RecordTimeout(InventoryScanStatusIdentifier identifier)
+	private Task RecordTimeoutAsync(InventoryScanStatusIdentifier identifier)
 	{
-		this.UpdateStatus(identifier, status =>
+		return this.UpdateStatusAsync(identifier, status =>
 		{
 			var summary = status.Summary;
 			return status with
@@ -137,9 +173,9 @@ public sealed class InventoryScan(
 		});
 	}
 
-	private void RecordDeliveryFailure(InventoryScanStatusIdentifier identifier)
+	private Task RecordDeliveryFailureAsync(InventoryScanStatusIdentifier identifier)
 	{
-		this.UpdateStatus(identifier, status =>
+		return this.UpdateStatusAsync(identifier, status =>
 		{
 			var summary = status.Summary;
 			return status with
@@ -150,13 +186,13 @@ public sealed class InventoryScan(
 		});
 	}
 
-	private void RecordNegativeAcknowledgement(
+	private Task RecordNegativeAcknowledgementAsync(
 		InventoryScanStatusIdentifier identifier,
 		ReasonCode reasonCode)
 	{
 		ArgumentNullException.ThrowIfNull(reasonCode);
 
-		this.UpdateStatus(identifier, status =>
+		return this.UpdateStatusAsync(identifier, status =>
 		{
 			var summary = status.Summary;
 			var reasonCodeKey = FormatReasonCode(reasonCode);
@@ -173,7 +209,7 @@ public sealed class InventoryScan(
 		});
 	}
 
-	private void RecordParticipant(
+	private Task RecordParticipantAsync(
 		InventoryScanStatusIdentifier identifier,
 		byte port,
 		ParameterValue agentType)
@@ -181,7 +217,7 @@ public sealed class InventoryScan(
 		ArgumentNullException.ThrowIfNull(agentType);
 
 		var participant = AgentTypeInventoryParticipant.FromParameterValue(port, agentType);
-		this.UpdateStatus(identifier, status =>
+		return this.UpdateStatusAsync(identifier, status =>
 		{
 			var summary = status.Summary;
 			return status with
@@ -196,15 +232,52 @@ public sealed class InventoryScan(
 		});
 	}
 
-	private void UpdateStatus(
+	private async Task UpdateStatusAsync(
 		InventoryScanStatusIdentifier identifier,
 		Func<InventoryScanStatus, InventoryScanStatus> update)
 	{
+		InventoryScanProgressUpdate? progressUpdate;
 		lock (this.synchronizationLock)
 		{
 			var status = this.statuses.GetValueOrDefault(identifier.Value) ??
 				throw new InvalidOperationException("The Inventory Scan does not exist.");
-			this.statuses[identifier.Value] = update(status);
+			var updatedStatus = update(status);
+			this.statuses[identifier.Value] = updatedStatus;
+			progressUpdate = this.uiRecipients.TryGetValue(identifier.Value, out var recipient)
+				? CreateProgressUpdate(identifier, recipient, updatedStatus)
+				: null;
+		}
+
+		if (progressUpdate is not null)
+		{
+			await this.NotifyUiAsync(progressUpdate);
+		}
+	}
+
+	private static InventoryScanProgressUpdate CreateProgressUpdate(
+		InventoryScanStatusIdentifier identifier,
+		ManagementTransactionUiRecipient recipient,
+		InventoryScanStatus status)
+	{
+		return new InventoryScanProgressUpdate(
+			recipient.BrowserSessionIdentifier,
+			recipient.RequestIdentifier,
+			identifier.ToString(),
+			status);
+	}
+
+	private async Task NotifyUiAsync(InventoryScanProgressUpdate update)
+	{
+		try
+		{
+			await this.uiNotifier.NotifyAsync(update, CancellationToken.None);
+		}
+		catch (Exception exception)
+		{
+			this.logger.LogWarning(
+				exception,
+				"Could not notify the browser that Inventory Scan {ScanIdentifier} progressed.",
+				update.ScanIdentifier);
 		}
 	}
 

@@ -1,6 +1,7 @@
 using AwesomeAssertions;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Hosting;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using NodeManager.Router.Parameters;
 using NodeManager.Router.Participants;
@@ -12,16 +13,19 @@ namespace NodeManager.Tests.Unit.Router.Participants;
 public sealed class RouterParticipantsControllerTests
 {
 	[Fact]
-	public void Redirects_a_new_Inventory_Scan_to_its_status()
+	public async Task Redirects_a_new_Inventory_Scan_to_its_status()
 	{
 		var inventoryScan = new InventoryScan(
 			new RouterParameterRequestSettings(Address(25), Address(0)),
 			InventoryScanSettings.FromConfiguration(new ConfigurationBuilder().Build()),
 			new TimedOutTransactionService(),
 			new NonStoppingApplicationLifetime());
-		var controller = new RouterParticipantsController(inventoryScan);
+		var controller = new RouterParticipantsController(inventoryScan)
+		{
+			ControllerContext = new ControllerContext { HttpContext = new DefaultHttpContext() }
+		};
 
-		var result = controller.StartDiscovery();
+		var result = await controller.StartDiscovery();
 
 		result.Should().BeOfType<SeeOtherRedirectResult>().Which.Location
 			.Should().MatchRegex("^/router/participants/discovery/status/[0-9a-f-]{36}$");
