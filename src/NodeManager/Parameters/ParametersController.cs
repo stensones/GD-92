@@ -1,10 +1,12 @@
 using Microsoft.AspNetCore.Mvc;
+using NodeManager.RealTime;
 using NodeManager.Router.Parameters;
 
 namespace NodeManager.Parameters;
 
 [Route("parameters")]
-public sealed class ParametersController : Controller
+public sealed class ParametersController(
+	IRouterSessionAuthorization routerSessionAuthorization) : Controller
 {
 	private static readonly IReadOnlyList<ParameterCatalogueEntry>
 		RouterParameterCatalogue =
@@ -106,6 +108,9 @@ public sealed class ParametersController : Controller
 		this.ViewData["ParticipantParametersAvailable"] =
 			hasParticipantCatalogue && this.ViewData["ParticipantPort"] is not null;
 		this.ViewData["RouterParameters"] = RouterParameterCatalogue;
+		this.ViewData["RouterParameterModificationAuthorized"] =
+			isRouter && routerSessionAuthorization.IsAuthorized(
+				BrowserSessionIdentifier.Get(this.HttpContext));
 		this.ViewData["SelectedRouterTable"] = selectedRouterTable;
 		this.ViewData["SelectedRouterParameter"] = isRouter
 			? RouterParameterCatalogue.SingleOrDefault(

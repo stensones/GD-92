@@ -75,6 +75,16 @@ displays the returned type-specific columns, and enables **Next entries** only
 when the response signals `more_values`. The Router catalogue and selected
 table browser stack in one independently scrollable workspace region, so all
 Parameter rows remain reachable.
+Router Parameter modification is browser-session scoped: only a confirmed
+Router Log On authorizes it, and a confirmed Log Off clears that authorization.
+The first editable Parameter is No Acknowledgement Timeout (Parameter 12).
+An authorized operator must explicitly read its current value, then enter a
+canonical value from 1 through 255 seconds and review the destination,
+Parameter Table, prior value, and proposed value before sending. The server
+rejects unauthorised or malformed modifications before GD-92 dispatch; the UI
+then retains the prior value while displaying Acknowledged, Rejected with
+reason, Timed out, or Delivery failed. Other Router Parameter edits remain
+unavailable, and Password values stay redacted.
 The persistent Network and Parameters navigation links retain the selected
 Communications Address, and the active workspace is identified through the
 navigation state as well as its page heading.

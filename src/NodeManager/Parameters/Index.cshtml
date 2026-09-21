@@ -13,6 +13,8 @@
         _ => "Current"
     };
     var isRouter = ViewData["IsRouter"] as bool? ?? false;
+    var routerParameterModificationAuthorized =
+        ViewData["RouterParameterModificationAuthorized"] as bool? ?? false;
     var participantParameters =
         ViewData["ParticipantParameters"] as IReadOnlyList<ParameterCatalogueEntry> ?? [];
     var participantPort = ViewData["ParticipantPort"] as byte?;
@@ -143,6 +145,63 @@
                aria-label="@selectedRouterParameter.Name Parameter read status">
                 Pending, Received, Rejected, Timed out, Delivery failed.
             </p>
+            @if (!routerParameterModificationAuthorized)
+            {
+            <section class="parameter-edit-unavailable" aria-label="Parameter editing unavailable">
+                <p>Edit mode is unavailable</p>
+                <p>Router logon authorizes Parameter modifications</p>
+            </section>
+            }
+            else
+            {
+            <p>Edit mode requires a current read</p>
+            @if (selectedRouterParameter?.Number == 12)
+            {
+            <form id="no-acknowledgement-timeout-edit" hidden>
+                <label for="no-acknowledgement-timeout-current-value">Current value</label>
+                <input id="no-acknowledgement-timeout-current-value" type="text" readonly />
+                <label for="no-acknowledgement-timeout-new-value">New value (seconds)</label>
+                <input id="no-acknowledgement-timeout-new-value" type="number" min="1" max="255"
+                       step="1" required
+                       aria-describedby="no-acknowledgement-timeout-edit-status" />
+                <button id="no-acknowledgement-timeout-review-submit" type="submit">Review change</button>
+            </form>
+            <p id="no-acknowledgement-timeout-edit-status" role="status"></p>
+            <section id="no-acknowledgement-timeout-review" hidden
+                     aria-labelledby="no-acknowledgement-timeout-review-heading">
+                <h4 id="no-acknowledgement-timeout-review-heading">Review Parameter change</h4>
+                <dl>
+                    <div>
+                        <dt>Selected Communications Address</dt>
+                        <dd id="no-acknowledgement-timeout-review-selected-communications-address"></dd>
+                    </div>
+                    <div>
+                        <dt>Parameter Table</dt>
+                        <dd id="no-acknowledgement-timeout-review-parameter-table"></dd>
+                    </div>
+                    <div>
+                        <dt>Prior value</dt>
+                        <dd id="no-acknowledgement-timeout-review-prior-value"></dd>
+                    </div>
+                    <div>
+                        <dt>New value</dt>
+                        <dd id="no-acknowledgement-timeout-review-new-value"></dd>
+                    </div>
+                </dl>
+                <form id="no-acknowledgement-timeout-modification" action="/router/parameters/@parameterTable/12/value" method="post" hidden>
+                    <input id="no-acknowledgement-timeout-reviewed-value" name="value" type="hidden" />
+                    <button id="no-acknowledgement-timeout-modification-submit" type="submit">
+                        Send reviewed change
+                    </button>
+                </form>
+                <button id="no-acknowledgement-timeout-edit-change" type="button">Edit change</button>
+            </section>
+            <p id="no-acknowledgement-timeout-modification-status" role="status"
+               aria-label="No Acknowledgement Timeout modification status">
+                Pending, Acknowledged, Rejected, Timed out, Delivery failed.
+            </p>
+            }
+            }
         </section>
         }
         <table>
@@ -388,6 +447,158 @@
     const selectedRouterParameterRowLastRead = selectedRouterParameterNumber === 1
         ? brigadeOrAgencyLastRead
         : document.getElementById(`router-parameter-${selectedRouterParameterNumber}-last-read`);
+    @if (routerParameterModificationAuthorized && selectedRouterParameter?.Number == 12)
+    {
+    <text>
+    const noAcknowledgementTimeoutEdit = document.getElementById(
+        "no-acknowledgement-timeout-edit");
+    const noAcknowledgementTimeoutCurrentValue = document.getElementById(
+        "no-acknowledgement-timeout-current-value");
+    const noAcknowledgementTimeoutNewValue = document.getElementById(
+        "no-acknowledgement-timeout-new-value");
+    const noAcknowledgementTimeoutEditStatus = document.getElementById(
+        "no-acknowledgement-timeout-edit-status");
+    const noAcknowledgementTimeoutReview = document.getElementById(
+        "no-acknowledgement-timeout-review");
+    const noAcknowledgementTimeoutReviewSelectedCommunicationsAddress = document.getElementById(
+        "no-acknowledgement-timeout-review-selected-communications-address");
+    const noAcknowledgementTimeoutReviewParameterTable = document.getElementById(
+        "no-acknowledgement-timeout-review-parameter-table");
+    const noAcknowledgementTimeoutReviewPriorValue = document.getElementById(
+        "no-acknowledgement-timeout-review-prior-value");
+    const noAcknowledgementTimeoutReviewNewValue = document.getElementById(
+        "no-acknowledgement-timeout-review-new-value");
+    const noAcknowledgementTimeoutModification = document.getElementById(
+        "no-acknowledgement-timeout-modification");
+    const noAcknowledgementTimeoutReviewedValue = document.getElementById(
+        "no-acknowledgement-timeout-reviewed-value");
+    const noAcknowledgementTimeoutModificationSubmit = document.getElementById(
+        "no-acknowledgement-timeout-modification-submit");
+    const noAcknowledgementTimeoutModificationStatus = document.getElementById(
+        "no-acknowledgement-timeout-modification-status");
+    const noAcknowledgementTimeoutEditChange = document.getElementById(
+        "no-acknowledgement-timeout-edit-change");
+    const isCanonicalNoAcknowledgementTimeoutValue = value =>
+        typeof value === "string" &&
+        /^(?:[1-9]|[1-9]\d|1\d{2}|2[0-4]\d|25[0-5])$/.test(value);
+    let receivedNoAcknowledgementTimeoutValue = null;
+
+    const validateNoAcknowledgementTimeoutNewValue = () => {
+        const value = noAcknowledgementTimeoutNewValue.value;
+        const validationMessage = value.length === 0
+            ? "Enter a new No Acknowledgement Timeout value."
+            : !isCanonicalNoAcknowledgementTimeoutValue(value)
+                ? "Enter a whole number from 1 through 255 without leading zeroes."
+                : "";
+
+        noAcknowledgementTimeoutNewValue.setCustomValidity(validationMessage);
+        return validationMessage;
+    };
+
+    const updateNoAcknowledgementTimeoutEdit = result => {
+        if (result.state === "received" && result.parameterValue !== null) {
+            if (!isCanonicalNoAcknowledgementTimeoutValue.test(result.parameterValue)) {
+                receivedNoAcknowledgementTimeoutValue = null;
+                noAcknowledgementTimeoutEdit.hidden = true;
+                noAcknowledgementTimeoutReview.hidden = true;
+                noAcknowledgementTimeoutModification.hidden = true;
+                noAcknowledgementTimeoutEditStatus.textContent =
+                    "Received an invalid No Acknowledgement Timeout value.";
+                return;
+            }
+
+            receivedNoAcknowledgementTimeoutValue = result.parameterValue;
+            noAcknowledgementTimeoutCurrentValue.value = result.parameterValue;
+            noAcknowledgementTimeoutEdit.hidden = false;
+            noAcknowledgementTimeoutReview.hidden = true;
+            noAcknowledgementTimeoutModification.hidden = true;
+        }
+    };
+
+    noAcknowledgementTimeoutNewValue.addEventListener("input", () => {
+        noAcknowledgementTimeoutEditStatus.textContent =
+            validateNoAcknowledgementTimeoutNewValue();
+    });
+
+    noAcknowledgementTimeoutEdit.addEventListener("invalid", event => {
+        if (event.target !== noAcknowledgementTimeoutNewValue) {
+            return;
+        }
+
+        noAcknowledgementTimeoutEditStatus.textContent =
+            validateNoAcknowledgementTimeoutNewValue();
+    }, true);
+
+    noAcknowledgementTimeoutEdit.addEventListener("submit", event => {
+        event.preventDefault();
+        const validationMessage = validateNoAcknowledgementTimeoutNewValue();
+        if (validationMessage) {
+            noAcknowledgementTimeoutEditStatus.textContent = validationMessage;
+            noAcknowledgementTimeoutNewValue.reportValidity();
+            return;
+        }
+
+        noAcknowledgementTimeoutReviewSelectedCommunicationsAddress.textContent =
+            document.querySelector(".workspace-context strong").textContent;
+        noAcknowledgementTimeoutReviewParameterTable.textContent =
+            document.querySelector("#parameter-table option:checked").textContent;
+        noAcknowledgementTimeoutReviewPriorValue.textContent =
+            receivedNoAcknowledgementTimeoutValue;
+        noAcknowledgementTimeoutReviewNewValue.textContent =
+            noAcknowledgementTimeoutNewValue.value;
+        noAcknowledgementTimeoutReviewedValue.value =
+            noAcknowledgementTimeoutNewValue.value;
+        noAcknowledgementTimeoutEdit.hidden = true;
+        noAcknowledgementTimeoutReview.hidden = false;
+        noAcknowledgementTimeoutModification.hidden = false;
+        noAcknowledgementTimeoutEditStatus.textContent =
+            "Review ready. Check the proposed Parameter change.";
+    });
+
+    noAcknowledgementTimeoutEditChange.addEventListener("click", () => {
+        noAcknowledgementTimeoutReview.hidden = true;
+        noAcknowledgementTimeoutModification.hidden = true;
+        noAcknowledgementTimeoutEdit.hidden = false;
+        noAcknowledgementTimeoutNewValue.focus();
+        noAcknowledgementTimeoutEditStatus.textContent =
+            "Editing the proposed Parameter change.";
+    });
+
+    noAcknowledgementTimeoutModification.addEventListener("submit", async event => {
+        event.preventDefault();
+        const reviewedValue = noAcknowledgementTimeoutReviewedValue.value;
+        if (!isCanonicalNoAcknowledgementTimeoutValue(reviewedValue)) {
+            noAcknowledgementTimeoutModificationStatus.textContent =
+                "Rejected: reviewed value must be a whole number from 1 through 255.";
+            return;
+        }
+
+        noAcknowledgementTimeoutModificationSubmit.disabled = true;
+        noAcknowledgementTimeoutModificationStatus.textContent = "Pending.";
+        try {
+            const result = await managementTransactions.submit(noAcknowledgementTimeoutModification.action, { method: "POST", body: new FormData(noAcknowledgementTimeoutModification) });
+            if (result.state === "acknowledged") {
+                noAcknowledgementTimeoutModificationStatus.textContent = "Acknowledged.";
+            } else if (result.state === "rejected") {
+                noAcknowledgementTimeoutModificationStatus.textContent =
+                    result.rejectionReason
+                        ? `Rejected: ${result.rejectionReason}`
+                        : "Rejected.";
+            } else if (result.state === "timed-out") {
+                noAcknowledgementTimeoutModificationStatus.textContent = "Timed out.";
+            } else if (result.state === "delivery-failed") {
+                noAcknowledgementTimeoutModificationStatus.textContent = "Delivery failed.";
+            } else {
+                noAcknowledgementTimeoutModificationStatus.textContent = "Delivery failed.";
+            }
+        } catch {
+            noAcknowledgementTimeoutModificationStatus.textContent = "Delivery failed.";
+        } finally {
+            noAcknowledgementTimeoutModificationSubmit.disabled = false;
+        }
+    });
+    </text>
+    }
     const routingTableRequestForm = document.getElementById("routing-table-request");
     const routingTableRequestButton = document.getElementById("routing-table-request-submit");
     const routingTableFirstEntry = document.getElementById("routing-table-first-entry");
@@ -439,6 +650,16 @@
                 () => {
                     selectedRouterParameterRowReadState.textContent = "Pending";
                     selectedRouterParameterRequestStatus.textContent = "Pending.";
+                    @if (routerParameterModificationAuthorized && selectedRouterParameter?.Number == 12)
+                    {
+                    <text>
+                    noAcknowledgementTimeoutEdit.hidden = true;
+                    noAcknowledgementTimeoutReview.hidden = true;
+                    noAcknowledgementTimeoutModification.hidden = true;
+                    receivedNoAcknowledgementTimeoutValue = null;
+                    noAcknowledgementTimeoutEditStatus.textContent = "";
+                    </text>
+                    }
                 },
                 result => {
                     const state = formatParameterReadState(result.state);
@@ -461,6 +682,12 @@
                         selectedRouterParameterDetailValue.textContent = state;
                         selectedRouterParameterRowValue.textContent = state;
                         selectedRouterParameterRequestStatus.textContent = `${state}.`;
+                    }
+                    @if (routerParameterModificationAuthorized && selectedRouterParameter?.Number == 12)
+                    {
+                    <text>
+                    updateNoAcknowledgementTimeoutEdit(result);
+                    </text>
                     }
                 },
                 () => {

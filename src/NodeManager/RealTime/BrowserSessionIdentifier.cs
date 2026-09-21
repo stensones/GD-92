@@ -10,10 +10,24 @@ public static class BrowserSessionIdentifier
 	{
 		ArgumentNullException.ThrowIfNull(context);
 
-		return context.Items.TryGetValue(ContextItemKey, out var value) && value is string identifier
+		return TryGet(context, out var identifier)
 			? identifier
 			: throw new InvalidOperationException(
 				"A browser session identifier was not established for the request.");
+	}
+
+	public static bool TryGet(HttpContext context, out string identifier)
+	{
+		ArgumentNullException.ThrowIfNull(context);
+
+		if (context.Items.TryGetValue(ContextItemKey, out var value) && value is string valueIdentifier)
+		{
+			identifier = valueIdentifier;
+			return true;
+		}
+
+		identifier = string.Empty;
+		return false;
 	}
 
 	public static string GroupName(string identifier)
@@ -51,7 +65,7 @@ public sealed class BrowserSessionMiddleware(RequestDelegate next)
 					IsEssential = true,
 					Path = "/",
 					SameSite = SameSiteMode.Strict,
-					Secure = context.Request.IsHttps
+					Secure = true
 				});
 		}
 

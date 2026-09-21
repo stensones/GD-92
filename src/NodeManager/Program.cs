@@ -45,6 +45,7 @@ builder.Services.AddScoped<NodeManagerParameterBootstrapper>();
 builder.Services.AddSingleton<NodeManagerCurrentParameterProjectionSource>();
 builder.Services.AddSingleton<InventoryScan>();
 builder.Services.AddSingleton<ManagementTransactions>();
+builder.Services.AddSingleton<IRouterSessionAuthorization, RouterSessionAuthorization>();
 builder.Services.AddSingleton<IManagementTransactionUiNotifier, SignalRManagementTransactionUiNotifier>();
 builder.Services.AddSingleton<IInventoryScanUiNotifier, SignalRInventoryScanUiNotifier>();
 builder.Services.AddSingleton<IManagementTransactionService>(serviceProvider =>

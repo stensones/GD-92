@@ -1,5 +1,6 @@
 using System.Globalization;
 using Microsoft.AspNetCore.Mvc;
+using NodeManager.RealTime;
 using Stensones.GD92.Fields;
 using Stensones.GD92.Messages;
 
@@ -8,8 +9,11 @@ namespace NodeManager.Router.Parameters;
 [Route("router/parameters")]
 public sealed class RouterParametersController(
 	IRouterParameterRequestService routerParameterRequests,
-	ManagementTransactions managementTransactions) : Controller
+	ManagementTransactions managementTransactions,
+	IRouterSessionAuthorization? sessionAuthorization = null) : Controller
 {
+	private readonly IRouterSessionAuthorization routerSessionAuthorization =
+		sessionAuthorization ?? new RouterSessionAuthorization();
 	private static readonly ParameterNumber RoutingTableParameterNumber =
 		ParameterNumber.FromValue(13);
 	private static readonly ParameterNumber PstnTableParameterNumber =
@@ -73,9 +77,33 @@ public sealed class RouterParametersController(
 		[FromForm] string[] value,
 		CancellationToken cancellationToken)
 	{
+		if (this.ControllerContext.HttpContext is not { } httpContext ||
+			!BrowserSessionIdentifier.TryGet(httpContext, out var browserSessionIdentifier) ||
+			!this.routerSessionAuthorization.IsAuthorized(browserSessionIdentifier))
+		{
+			return this.StatusCode(StatusCodes.Status403Forbidden);
+		}
+
 		if (!ParameterTableRoute.TryParse(parameterTable, out var table))
 		{
 			return this.BadRequest("Parameter Table must be permanent, non-volatile, or current.");
+		}
+
+		if (parameterNumber == 12 &&
+			(value is not [var timeoutValue] ||
+			 !byte.TryParse(
+				 timeoutValue,
+				 NumberStyles.None,
+				 CultureInfo.InvariantCulture,
+				 out var timeout) ||
+			 timeout == 0 ||
+			 !string.Equals(
+				 timeoutValue,
+				 timeout.ToString(CultureInfo.InvariantCulture),
+				 StringComparison.Ordinal)))
+		{
+			return this.BadRequest(
+				"No Acknowledgement Timeout must be exactly one canonical byte from 1 through 255.");
 		}
 
 		var wireValue = new byte[value.Length];
@@ -194,7 +222,8 @@ public sealed class RouterParametersController(
 				PasswordValue.FromValue(SevenBitAsciiString.FromValue(password)),
 				cancellationToken),
 			statusIdentifier => $"/router/parameters/logon/status/{statusIdentifier}",
-			cancellationToken);
+			cancellationToken,
+			this.routerSessionAuthorization.TrackLogOn);
 	}
 
 	[HttpPost("logoff")]
@@ -203,7 +232,8 @@ public sealed class RouterParametersController(
 		this.SubmitAndRedirectAsync(
 			() => routerParameterRequests.RequestLocalRouterLogoff(cancellationToken),
 			statusIdentifier => $"/router/parameters/logoff/status/{statusIdentifier}",
-			cancellationToken);
+			cancellationToken,
+			this.routerSessionAuthorization.TrackLogOff);
 
 	[HttpGet("status/{identifier}")]
 	[HttpGet("logon/status/{identifier}")]
@@ -288,13 +318,23 @@ public sealed class RouterParametersController(
 			return this.NotFound();
 		}
 
+		if (this.ControllerContext.HttpContext is { } httpContext &&
+			BrowserSessionIdentifier.TryGet(httpContext, out var browserSessionIdentifier))
+		{
+			this.routerSessionAuthorization.Observe(
+				browserSessionIdentifier,
+				statusIdentifier,
+				status);
+		}
+
 		return this.Ok(ToResponse(status, parameterNumber));
 	}
 
 	private async Task<IActionResult> SubmitAndRedirectAsync(
 		Func<Task<RouterParameterRequestStatusIdentifier>> submit,
 		Func<RouterParameterRequestStatusIdentifier, string> statusLocation,
-		CancellationToken cancellationToken)
+		CancellationToken cancellationToken,
+		Action<string, RouterParameterRequestStatusIdentifier>? trackTransaction = null)
 	{
 		ManagementTransactionUiRecipient? recipient = null;
 		if (this.ControllerContext.HttpContext is { } httpContext &&
@@ -307,6 +347,15 @@ public sealed class RouterParametersController(
 		}
 
 		var statusIdentifier = await submit();
+		if (trackTransaction is not null &&
+			this.ControllerContext.HttpContext is { } browserHttpContext &&
+			BrowserSessionIdentifier.TryGet(browserHttpContext, out var browserSessionIdentifier))
+		{
+			trackTransaction(
+				browserSessionIdentifier,
+				statusIdentifier);
+		}
+
 		if (recipient is not null)
 		{
 			await managementTransactions.RegisterUiRecipientAsync(

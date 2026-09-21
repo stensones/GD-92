@@ -3,6 +3,8 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Http;
+using NodeManager.RealTime;
 using NodeManager.Router.Parameters;
 using Stensones.GD92.Fields;
 using Stensones.GD92.Messages;
@@ -19,7 +21,11 @@ public sealed class RouterParametersControllerTests
 
 		constructor.GetParameters().Select(parameter => parameter.ParameterType.Name)
 			.Should().BeEquivalentTo(
-				["IRouterParameterRequestService", "ManagementTransactions"]);
+				[
+					"IRouterParameterRequestService",
+					"ManagementTransactions",
+					"IRouterSessionAuthorization"
+				]);
 	}
 
 	[Fact]
@@ -127,9 +133,19 @@ public sealed class RouterParametersControllerTests
 		var identifier = Identifier();
 		using var managementTransactions = new TestManagementTransactions();
 		var requests = new ReturningRouterParameterRequestService(identifier);
+		var sessionAuthorization = new RouterSessionAuthorization();
 		var controller = new RouterParametersController(
 			requests,
-			managementTransactions.Transactions);
+			managementTransactions.Transactions,
+			sessionAuthorization)
+		{
+			ControllerContext = new ControllerContext
+			{
+				HttpContext = await CreateAuthorizedBrowserSessionContextAsync(
+					sessionAuthorization,
+					identifier)
+			}
+		};
 
 		var result = await controller.ModifyParameter(
 			"non-volatile",
@@ -140,6 +156,141 @@ public sealed class RouterParametersControllerTests
 		requests.ModificationValue!.ToWireValue().Should().Equal([5, 0]);
 		result.Should().BeOfType<SeeOtherRedirectResult>().Which.Location
 			.Should().Be($"/router/parameters/status/{identifier}");
+	}
+
+	[Fact]
+	public async Task Rejects_an_unauthorized_Router_parameter_change_without_submitting_it()
+	{
+		var identifier = Identifier();
+		using var managementTransactions = new TestManagementTransactions();
+		var requests = new ReturningRouterParameterRequestService(identifier);
+		var controller = new RouterParametersController(
+			requests,
+			managementTransactions.Transactions,
+			new RouterSessionAuthorization())
+		{
+			ControllerContext = new ControllerContext
+			{
+				HttpContext = await CreateBrowserSessionContextAsync()
+			}
+		};
+
+		var result = await controller.ModifyParameter(
+			"current",
+			12,
+			["30"],
+			CancellationToken.None);
+
+		result.Should().BeOfType<StatusCodeResult>().Which.StatusCode.Should().Be(403);
+		requests.ModificationValue.Should().BeNull();
+	}
+
+	[Fact]
+	public void Authorizes_only_the_confirmed_browser_session_and_clears_it_after_logoff()
+	{
+		var authorization = new RouterSessionAuthorization();
+		var logonIdentifier = Identifier();
+		var logoffIdentifier = Identifier();
+
+		authorization.TrackLogOn("browser-session-one", logonIdentifier);
+		authorization.Observe(
+			"browser-session-two",
+			logonIdentifier,
+			new LoggedOnNodeLoginStatus(logonIdentifier, Address(0)));
+		authorization.IsAuthorized("browser-session-one").Should().BeFalse();
+
+		authorization.Observe(
+			"browser-session-one",
+			logonIdentifier,
+			new LoggedOnNodeLoginStatus(logonIdentifier, Address(0)));
+		authorization.IsAuthorized("browser-session-one").Should().BeTrue();
+		authorization.IsAuthorized("browser-session-two").Should().BeFalse();
+
+		authorization.TrackLogOff("browser-session-one", logoffIdentifier);
+		authorization.Observe(
+			"browser-session-one",
+			logoffIdentifier,
+			new LoggedOffNodeLoginStatus(logoffIdentifier));
+		authorization.IsAuthorized("browser-session-one").Should().BeFalse();
+	}
+
+	[Fact]
+	public async Task Issues_a_secure_HttpOnly_Strict_browser_session_cookie()
+	{
+		var context = await CreateBrowserSessionContextAsync();
+		var cookie = context.Response.Headers.SetCookie.ToString();
+		var normalizedCookie = cookie.ToLowerInvariant();
+
+		cookie.Should().Contain(BrowserSessionIdentifier.CookieName);
+		normalizedCookie.Should().Contain("secure");
+		normalizedCookie.Should().Contain("httponly");
+		normalizedCookie.Should().Contain("samesite=strict");
+	}
+
+	[Theory]
+	[InlineData("0")]
+	[InlineData("256")]
+	[InlineData("01")]
+	public async Task Rejects_an_invalid_No_Acknowledgement_Timeout_value_without_submitting_it(
+		string value)
+	{
+		var identifier = Identifier();
+		using var managementTransactions = new TestManagementTransactions();
+		var requests = new ReturningRouterParameterRequestService(identifier);
+		var sessionAuthorization = new RouterSessionAuthorization();
+		var controller = new RouterParametersController(
+			requests,
+			managementTransactions.Transactions,
+			sessionAuthorization)
+		{
+			ControllerContext = new ControllerContext
+			{
+				HttpContext = await CreateAuthorizedBrowserSessionContextAsync(
+					sessionAuthorization,
+					identifier)
+			}
+		};
+
+		var result = await controller.ModifyParameter(
+			"current",
+			12,
+			[value],
+			CancellationToken.None);
+
+		result.Should().BeOfType<BadRequestObjectResult>().Which.Value.Should().Be(
+			"No Acknowledgement Timeout must be exactly one canonical byte from 1 through 255.");
+		requests.ModificationValue.Should().BeNull();
+	}
+
+	[Fact]
+	public async Task Rejects_a_multi_byte_No_Acknowledgement_Timeout_value_without_submitting_it()
+	{
+		var identifier = Identifier();
+		using var managementTransactions = new TestManagementTransactions();
+		var requests = new ReturningRouterParameterRequestService(identifier);
+		var sessionAuthorization = new RouterSessionAuthorization();
+		var controller = new RouterParametersController(
+			requests,
+			managementTransactions.Transactions,
+			sessionAuthorization)
+		{
+			ControllerContext = new ControllerContext
+			{
+				HttpContext = await CreateAuthorizedBrowserSessionContextAsync(
+					sessionAuthorization,
+					identifier)
+			}
+		};
+
+		var result = await controller.ModifyParameter(
+			"current",
+			12,
+			["1", "2"],
+			CancellationToken.None);
+
+		result.Should().BeOfType<BadRequestObjectResult>().Which.Value.Should().Be(
+			"No Acknowledgement Timeout must be exactly one canonical byte from 1 through 255.");
+		requests.ModificationValue.Should().BeNull();
 	}
 
 	[Fact]
@@ -1040,6 +1191,27 @@ public sealed class RouterParametersControllerTests
 			Brigade.FromValue(BrigadeOrAgencyIdentifier.FromValue(26)),
 			Node.FromValue(NodeIdentifier.FromValue(100)),
 			Port.FromValue(PortIdentifier.FromValue(port)));
+
+	private static async Task<DefaultHttpContext> CreateBrowserSessionContextAsync()
+	{
+		var context = new DefaultHttpContext();
+		await new BrowserSessionMiddleware(_ => Task.CompletedTask).InvokeAsync(context);
+		return context;
+	}
+
+	private static async Task<DefaultHttpContext> CreateAuthorizedBrowserSessionContextAsync(
+		RouterSessionAuthorization sessionAuthorization,
+		RouterParameterRequestStatusIdentifier identifier)
+	{
+		var context = await CreateBrowserSessionContextAsync();
+		var browserSessionIdentifier = BrowserSessionIdentifier.Get(context);
+		sessionAuthorization.TrackLogOn(browserSessionIdentifier, identifier);
+		sessionAuthorization.Observe(
+			browserSessionIdentifier,
+			identifier,
+			new LoggedOnNodeLoginStatus(identifier, Address(0)));
+		return context;
+	}
 
 	private sealed class ReturningRouterParameterRequestService(
 		RouterParameterRequestStatusIdentifier statusIdentifier) : IRouterParameterRequestService

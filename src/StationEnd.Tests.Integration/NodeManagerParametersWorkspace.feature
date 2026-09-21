@@ -88,3 +88,30 @@ Feature: Node Manager Parameters workspace
     Given an operator opens the default Parameters workspace for Router address 26.100.0
     When the Parameters workspace is displayed
     Then Router Parameter panels are contained in one scrollable workspace region
+
+  Scenario: Preventing an unauthenticated Router timeout modification
+    Given an unauthenticated operator opens the Router Parameters workspace for address 26.100.0 with No Acknowledgement Timeout selected
+    When the Parameters workspace is displayed
+    Then No Acknowledgement Timeout Edit mode is unavailable
+    And the workspace explains that Router logon authorizes Parameter modifications
+    And the workspace does not offer a No Acknowledgement Timeout modification request
+
+  Scenario: Requiring a current read before editing Router timeout
+    Given an authenticated operator opens the Router Parameters workspace for address 26.100.0 with No Acknowledgement Timeout selected
+    When the Parameters workspace is displayed
+    Then No Acknowledgement Timeout Edit mode requires a current read
+    And the authenticated workspace does not offer a No Acknowledgement Timeout modification request before that read
+
+  Scenario: Preparing a reviewed Router timeout modification
+    Given an authenticated operator opens the Router Parameters workspace for address 26.100.0 with No Acknowledgement Timeout selected
+    When the Parameters workspace is displayed
+    Then No Acknowledgement Timeout has a hidden typed edit form for 1 through 255 seconds
+    And the timeout edit form reveals only after a received Current Parameter value
+    And the hidden timeout review identifies the destination, Parameter Table, prior value, and new value
+    And the workspace does not submit a modification from the edit form
+
+  Scenario: Sending a reviewed Router timeout modification
+    Given an authenticated operator opens the Router Parameters workspace for address 26.100.0 with No Acknowledgement Timeout selected
+    When the Parameters workspace is displayed
+    Then the timeout review sends the reviewed value to the Current Router Parameter Table
+    And the timeout modification status identifies Pending, Acknowledged, Rejected, Timed out, and Delivery failed

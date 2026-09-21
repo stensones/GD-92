@@ -1,6 +1,9 @@
 using AwesomeAssertions;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection.Extensions;
+using NodeManager.Router.Parameters;
 
 namespace Stensones.GD92.StationEnd.Tests.Integration;
 
@@ -61,6 +64,106 @@ public sealed class NodeManagerParametersWorkspaceClientTests
 		content.Should().Contain("window.location.assign(url);");
 	}
 
+	[Fact]
+	public async Task Renders_an_authorized_timeout_editor_that_reveals_only_for_a_valid_received_value()
+	{
+		using var application = new AuthorizedNodeManagerApplicationFactory();
+		using var response = await application.CreateClient()
+			.GetAsync("/parameters?address=26.100.0&agentType=Router&selectedParameter=12");
+		var content = await response.Content.ReadAsStringAsync();
+
+		response.EnsureSuccessStatusCode();
+		content.Should().Contain("<form id=\"no-acknowledgement-timeout-edit\" hidden>");
+		content.Should().Contain(
+			"id=\"no-acknowledgement-timeout-new-value\" type=\"number\" min=\"1\" max=\"255\"");
+		content.Should().Contain(
+			"if (result.state === \"received\" && result.parameterValue !== null)");
+		content.Should().Contain("typeof value === \"string\" &&");
+		content.Should().Contain(
+			"/^(?:[1-9]|[1-9]\\d|1\\d{2}|2[0-4]\\d|25[0-5])$/.test(value)");
+		content.Should().Contain(
+			"!isCanonicalNoAcknowledgementTimeoutValue.test(result.parameterValue)");
+		content.Should().Contain(
+			"noAcknowledgementTimeoutCurrentValue.value = result.parameterValue;");
+		content.Should().Contain("noAcknowledgementTimeoutEdit.hidden = false;");
+		content.Should().Contain(
+			"Received an invalid No Acknowledgement Timeout value.");
+		content.Should().NotContain(
+			"managementTransactions.submit(noAcknowledgementTimeoutEdit.action");
+	}
+
+	[Fact]
+	public async Task Renders_a_local_timeout_change_review_with_canonical_value_validation()
+	{
+		using var application = new AuthorizedNodeManagerApplicationFactory();
+		using var response = await application.CreateClient()
+			.GetAsync("/parameters?address=26.100.0&agentType=Router&selectedParameter=12");
+		var content = await response.Content.ReadAsStringAsync();
+
+		response.EnsureSuccessStatusCode();
+		content.Should().Contain(
+			"id=\"no-acknowledgement-timeout-new-value\" type=\"number\" min=\"1\" max=\"255\"");
+		content.Should().Contain(
+			"<button id=\"no-acknowledgement-timeout-review-submit\" type=\"submit\">Review change</button>");
+		content.Should().Contain(
+			"<section id=\"no-acknowledgement-timeout-review\" hidden");
+		content.Should().Contain(
+			"id=\"no-acknowledgement-timeout-review-selected-communications-address\"");
+		content.Should().Contain(
+			"id=\"no-acknowledgement-timeout-review-parameter-table\"");
+		content.Should().Contain(
+			"id=\"no-acknowledgement-timeout-review-prior-value\"");
+		content.Should().Contain(
+			"id=\"no-acknowledgement-timeout-review-new-value\"");
+		content.Should().Contain(
+			"<button id=\"no-acknowledgement-timeout-edit-change\" type=\"button\">Edit change</button>");
+		content.Should().Contain(
+			"noAcknowledgementTimeoutNewValue.setCustomValidity(");
+		content.Should().Contain(
+			"noAcknowledgementTimeoutNewValue.reportValidity();");
+		content.Should().Contain(
+			"noAcknowledgementTimeoutReview.hidden = false;");
+		content.Should().Contain(
+			"noAcknowledgementTimeoutEdit.hidden = false;");
+		content.Should().Contain(
+			"Review ready. Check the proposed Parameter change.");
+		content.Should().NotContain(
+			"managementTransactions.submit(noAcknowledgementTimeoutEdit.action");
+	}
+
+	[Fact]
+	public async Task Renders_a_reviewed_timeout_modification_submission()
+	{
+		using var application = new AuthorizedNodeManagerApplicationFactory();
+		using var response = await application.CreateClient()
+			.GetAsync("/parameters?address=26.100.0&agentType=Router&selectedParameter=12");
+		var content = await response.Content.ReadAsStringAsync();
+
+		response.EnsureSuccessStatusCode();
+		content.Should().Contain(
+			"<form id=\"no-acknowledgement-timeout-modification\" action=\"/router/parameters/current/12/value\" method=\"post\" hidden>");
+		content.Should().Contain(
+			"id=\"no-acknowledgement-timeout-reviewed-value\" name=\"value\" type=\"hidden\"");
+		content.Should().Contain(
+			"managementTransactions.submit(noAcknowledgementTimeoutModification.action, { method: \"POST\", body: new FormData(noAcknowledgementTimeoutModification) })");
+		content.Should().Contain(
+			"Pending, Acknowledged, Rejected, Timed out, Delivery failed.");
+	}
+
+	[Fact]
+	public async Task Renders_a_reviewed_timeout_modification_for_the_selected_Parameter_Table()
+	{
+		using var application = new AuthorizedNodeManagerApplicationFactory();
+		using var response = await application.CreateClient()
+			.GetAsync(
+				"/parameters?address=26.100.0&agentType=Router&parameterTable=non-volatile&selectedParameter=12");
+		var content = await response.Content.ReadAsStringAsync();
+
+		response.EnsureSuccessStatusCode();
+		content.Should().Contain(
+			"<form id=\"no-acknowledgement-timeout-modification\" action=\"/router/parameters/non-volatile/12/value\" method=\"post\" hidden>");
+	}
+
 	[Theory]
 	[InlineData(13, "Routing Table", "routingTableEntries", "Entry index|Next node", "index|nextNode")]
 	[InlineData(14, "PSTN Table", "pstnTableEntries", "Entry index|Used|Next node|Telephone number|Hold time|Available", "index|used|nextNode|telephoneNumber|holdTime|available")]
@@ -97,11 +200,49 @@ public sealed class NodeManagerParametersWorkspaceClientTests
 		}
 	}
 
-	private sealed class NodeManagerApplicationFactory : WebApplicationFactory<NodeManagerApplication>
+	private class NodeManagerApplicationFactory : WebApplicationFactory<NodeManagerApplication>
 	{
 		protected override void ConfigureWebHost(IWebHostBuilder builder)
 		{
 			builder.UseEnvironment("Testing");
+		}
+	}
+
+	private sealed class AuthorizedNodeManagerApplicationFactory : NodeManagerApplicationFactory
+	{
+		protected override void ConfigureWebHost(IWebHostBuilder builder)
+		{
+			base.ConfigureWebHost(builder);
+			builder.ConfigureServices(services =>
+			{
+				services.RemoveAll<IRouterSessionAuthorization>();
+				services.AddSingleton<IRouterSessionAuthorization>(
+					new AuthorizedRouterSessionAuthorization());
+			});
+		}
+	}
+
+	private sealed class AuthorizedRouterSessionAuthorization : IRouterSessionAuthorization
+	{
+		public bool IsAuthorized(string browserSessionIdentifier) => true;
+
+		public void TrackLogOn(
+			string browserSessionIdentifier,
+			RouterParameterRequestStatusIdentifier transactionIdentifier)
+		{
+		}
+
+		public void TrackLogOff(
+			string browserSessionIdentifier,
+			RouterParameterRequestStatusIdentifier transactionIdentifier)
+		{
+		}
+
+		public void Observe(
+			string browserSessionIdentifier,
+			RouterParameterRequestStatusIdentifier transactionIdentifier,
+			RouterParameterRequestStatus status)
+		{
 		}
 	}
 }

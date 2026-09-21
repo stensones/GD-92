@@ -1,6 +1,9 @@
 using AwesomeAssertions;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection.Extensions;
+using NodeManager.Router.Parameters;
 using Reqnroll;
 
 namespace Stensones.GD92.StationEnd.Tests.Integration;
@@ -70,6 +73,28 @@ public sealed class NodeManagerParametersWorkspaceSteps : IDisposable
 		this.application = new NodeManagerApplicationFactory();
 		this.response = this.application.CreateClient()
 			.GetAsync($"/parameters?address={address}&agentType=Router&selectedTableParameter=14")
+			.GetAwaiter()
+			.GetResult();
+	}
+
+	[Given(@"an unauthenticated operator opens the Router Parameters workspace for address (.*) with No Acknowledgement Timeout selected")]
+	public void GivenAnUnauthenticatedOperatorOpensTheRouterParametersWorkspaceWithTimeoutSelected(
+		string address)
+	{
+		this.application = new NodeManagerApplicationFactory();
+		this.response = this.application.CreateClient()
+			.GetAsync($"/parameters?address={address}&agentType=Router&selectedParameter=12")
+			.GetAwaiter()
+			.GetResult();
+	}
+
+	[Given(@"an authenticated operator opens the Router Parameters workspace for address (.*) with No Acknowledgement Timeout selected")]
+	public void GivenAnAuthenticatedOperatorOpensTheRouterParametersWorkspaceWithTimeoutSelected(
+		string address)
+	{
+		this.application = new AuthorizedNodeManagerApplicationFactory();
+		this.response = this.application.CreateClient()
+			.GetAsync($"/parameters?address={address}&agentType=Router&selectedParameter=12")
 			.GetAwaiter()
 			.GetResult();
 	}
@@ -417,17 +442,145 @@ public sealed class NodeManagerParametersWorkspaceSteps : IDisposable
 			"<div class=\"dashboard-grid parameters-workspace\">");
 	}
 
+	[Then(@"No Acknowledgement Timeout Edit mode is unavailable")]
+	public void ThenNoAcknowledgementTimeoutEditModeIsUnavailable()
+	{
+		this.responseContent.Should().Contain("Edit mode is unavailable");
+	}
+
+	[Then(@"the workspace explains that Router logon authorizes Parameter modifications")]
+	public void ThenTheWorkspaceExplainsThatRouterLogonAuthorizesParameterModifications()
+	{
+		this.responseContent.Should().Contain("Router logon authorizes Parameter modifications");
+	}
+
+	[Then(@"the workspace does not offer a No Acknowledgement Timeout modification request")]
+	public void ThenTheWorkspaceDoesNotOfferANoAcknowledgementTimeoutModificationRequest()
+	{
+		this.responseContent.Should().NotContain(
+			"action=\"/router/parameters/current/12/value\"");
+	}
+
+	[Then(@"No Acknowledgement Timeout Edit mode requires a current read")]
+	public void ThenNoAcknowledgementTimeoutEditModeRequiresACurrentRead()
+	{
+		this.responseContent.Should().Contain("Edit mode requires a current read");
+		this.responseContent.Should().Contain("Request No Acknowledgement Timeout");
+	}
+
+	[Then(@"the authenticated workspace does not offer a No Acknowledgement Timeout modification request before that read")]
+	public void ThenTheAuthenticatedWorkspaceDoesNotOfferAModificationRequestBeforeThatRead()
+	{
+		this.responseContent.Should().Contain(
+			"<form id=\"no-acknowledgement-timeout-modification\"");
+		this.responseContent.Should().Contain(
+			"action=\"/router/parameters/current/12/value\" method=\"post\" hidden");
+	}
+
+	[Then(@"No Acknowledgement Timeout has a hidden typed edit form for (.*) through (.*) seconds")]
+	public void ThenNoAcknowledgementTimeoutHasAHiddenTypedEditForm(
+		int minimumSeconds,
+		int maximumSeconds)
+	{
+		this.responseContent.Should().Contain(
+			"<form id=\"no-acknowledgement-timeout-edit\" hidden>");
+		this.responseContent.Should().Contain(
+			$"id=\"no-acknowledgement-timeout-new-value\" type=\"number\" min=\"{minimumSeconds}\" max=\"{maximumSeconds}\"");
+	}
+
+	[Then(@"the timeout edit form reveals only after a received Current Parameter value")]
+	public void ThenTheTimeoutEditFormRevealsOnlyAfterAReceivedCurrentParameterValue()
+	{
+		this.responseContent.Should().Contain(
+			"result.state === \"received\" && result.parameterValue !== null");
+		this.responseContent.Should().Contain("noAcknowledgementTimeoutEdit.hidden = false;");
+	}
+
+	[Then(@"the hidden timeout review identifies the destination, Parameter Table, prior value, and new value")]
+	public void ThenTheHiddenTimeoutReviewIdentifiesRequiredChangeContext()
+	{
+		this.responseContent.Should().Contain(
+			"<section id=\"no-acknowledgement-timeout-review\" hidden");
+		this.responseContent.Should().Contain("Selected Communications Address");
+		this.responseContent.Should().Contain("Parameter Table");
+		this.responseContent.Should().Contain("Prior value");
+		this.responseContent.Should().Contain("New value");
+	}
+
+	[Then(@"the workspace does not submit a modification from the edit form")]
+	public void ThenTheWorkspaceDoesNotSubmitAModificationFromTheEditForm()
+	{
+		this.responseContent.Should().NotContain(
+			"managementTransactions.submit(noAcknowledgementTimeoutEdit.action");
+	}
+
+	[Then(@"the timeout review sends the reviewed value to the Current Router Parameter Table")]
+	public void ThenTheTimeoutReviewSendsTheReviewedValueToTheCurrentRouterParameterTable()
+	{
+		this.responseContent.Should().Contain(
+			"action=\"/router/parameters/current/12/value\"");
+		this.responseContent.Should().Contain(
+			"managementTransactions.submit(noAcknowledgementTimeoutModification.action");
+		this.responseContent.Should().Contain(
+			"body: new FormData(noAcknowledgementTimeoutModification)");
+	}
+
+	[Then(@"the timeout modification status identifies Pending, Acknowledged, Rejected, Timed out, and Delivery failed")]
+	public void ThenTheTimeoutModificationStatusIdentifiesTerminalStates()
+	{
+		this.responseContent.Should().Contain(
+			"Pending, Acknowledged, Rejected, Timed out, Delivery failed.");
+	}
+
 	public void Dispose()
 	{
 		this.response?.Dispose();
 		this.application?.Dispose();
 	}
 
-	private sealed class NodeManagerApplicationFactory : WebApplicationFactory<NodeManagerApplication>
+	private class NodeManagerApplicationFactory : WebApplicationFactory<NodeManagerApplication>
 	{
 		protected override void ConfigureWebHost(IWebHostBuilder builder)
 		{
 			builder.UseEnvironment("Testing");
+		}
+	}
+
+	private sealed class AuthorizedNodeManagerApplicationFactory : NodeManagerApplicationFactory
+	{
+		protected override void ConfigureWebHost(IWebHostBuilder builder)
+		{
+			base.ConfigureWebHost(builder);
+			builder.ConfigureServices(services =>
+			{
+				services.RemoveAll<IRouterSessionAuthorization>();
+				services.AddSingleton<IRouterSessionAuthorization>(
+					new AuthorizedRouterSessionAuthorization());
+			});
+		}
+	}
+
+	private sealed class AuthorizedRouterSessionAuthorization : IRouterSessionAuthorization
+	{
+		public bool IsAuthorized(string browserSessionIdentifier) => true;
+
+		public void TrackLogOn(
+			string browserSessionIdentifier,
+			RouterParameterRequestStatusIdentifier transactionIdentifier)
+		{
+		}
+
+		public void TrackLogOff(
+			string browserSessionIdentifier,
+			RouterParameterRequestStatusIdentifier transactionIdentifier)
+		{
+		}
+
+		public void Observe(
+			string browserSessionIdentifier,
+			RouterParameterRequestStatusIdentifier transactionIdentifier,
+			RouterParameterRequestStatus status)
+		{
 		}
 	}
 }
