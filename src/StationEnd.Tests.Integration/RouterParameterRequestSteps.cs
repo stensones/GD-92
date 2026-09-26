@@ -22,6 +22,12 @@ public sealed class RouterParameterRequestSteps
 	private static readonly RouterParameterRequestApplicationPool applications = new();
 	private static readonly SemaphoreSlim scenarioGate = new(1, 1);
 
+	// Local Postgres/RabbitMQ containers can occasionally take much longer than
+	// HttpClient's 100-second default to commit, under heavy concurrent Docker load
+	// on developer machines. This generous timeout avoids spurious test failures
+	// without masking genuine application hangs.
+	private static readonly TimeSpan TestHttpClientTimeout = TimeSpan.FromMinutes(5);
+
 	private DistributedApplication? application;
 	private HttpClient? client;
 	private HttpResponseMessage? response;
@@ -2690,7 +2696,8 @@ public sealed class RouterParameterRequestSteps
 	{
 		using var routerClient = new HttpClient
 		{
-			BaseAddress = this.application!.GetEndpoint("Router")
+			BaseAddress = this.application!.GetEndpoint("Router"),
+			Timeout = TestHttpClientTimeout
 		};
 		using var response = await routerClient.PostAsync("/testing/reset-state", null);
 		response.EnsureSuccessStatusCode();
@@ -2795,7 +2802,8 @@ public sealed class RouterParameterRequestSteps
 			AllowAutoRedirect = false
 		})
 		{
-			BaseAddress = application.GetEndpoint("Node-Manager-UA")
+			BaseAddress = application.GetEndpoint("Node-Manager-UA"),
+			Timeout = TestHttpClientTimeout
 		};
 	}
 
@@ -2806,7 +2814,8 @@ public sealed class RouterParameterRequestSteps
 			AllowAutoRedirect = true
 		})
 		{
-			BaseAddress = application.GetEndpoint("Node-Manager-UA")
+			BaseAddress = application.GetEndpoint("Node-Manager-UA"),
+			Timeout = TestHttpClientTimeout
 		};
 	}
 
