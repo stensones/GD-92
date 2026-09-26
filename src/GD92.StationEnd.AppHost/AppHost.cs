@@ -66,7 +66,7 @@ if (useExternalPostgres)
 			"Testing__EnableRouterStateReset",
 			enableRouterTestStateReset.ToString())
 		.WithHttpEndpoint(name: "http", env: "ASPNETCORE_HTTP_PORTS")
-		.WithHttpHealthCheck("/health");
+		.WithHttpHealthCheck("/health", endpointName: "http");
 
 	builder.AddProject<Projects.LANMTA>("LAN-MTA")
 		.WithReference(rabbitMq)
@@ -104,7 +104,16 @@ if (useExternalPostgres)
 }
 else
 {
-	var postgres = builder.AddPostgres("postgres");
+	// A fixed (non-generated) password keeps the persistent Postgres data
+	// volume's baked-in credentials in sync with what each AppHost run
+	// passes to it, avoiding "password authentication failed" errors when
+	// a randomly-generated password isn't reused across separate
+	// `aspire run` sessions.
+	var postgresPassword = builder.AddParameter(
+		"postgres-password",
+		"station-end-dev-postgres",
+		secret: true);
+	var postgres = builder.AddPostgres("postgres", password: postgresPassword);
 	if (usePersistentPostgres)
 	{
 		postgres.WithDataVolume()
@@ -133,7 +142,7 @@ else
 			"Testing__EnableRouterStateReset",
 			enableRouterTestStateReset.ToString())
 		.WithHttpEndpoint(name: "http", env: "ASPNETCORE_HTTP_PORTS")
-		.WithHttpHealthCheck("/health");
+		.WithHttpHealthCheck("/health", endpointName: "http");
 
 	builder.AddProject<Projects.LANMTA>("LAN-MTA")
 		.WithReference(rabbitMq)
